@@ -1,6 +1,16 @@
 library(readxl)
+library(FSA)
+library(AquaticLifeHistory)
+library(dplyr)
 setwd("C:\\Users\\jgorzo\\OneDrive - New Jersey Office of Information Technology\\Documents\\data\\")
 #lines below won't work if file is open
+
+#init <- getInitial(Length ~ SSasymp(Age, Asym, resp0, lrc), data = ny)
+#Asym <- init[1]
+#resp0 <- init[2]
+#lrc <- init[3]
+#fm1 <- nls(Length ~ SSasymp(Age, Asym, resp0, lrc), data = ny) 
+
 ny_comm <- read_excel("2025SA_NY_Tautog Data 2021-2023_corrected.xlsx", sheet="CommBioSamples", range = cell_rows(6:901))
 ny_comm$state <- "NY"
 ny_comm$mode <- "comm"
@@ -15,4 +25,34 @@ njny <- rbind(ny_comm, nj_comm[,names(ny_comm)], ny_rec)
 njny$structure <- njny$`Ageing Structure`
 njny$structure[njny$structure %in% c("opercular", "opec", "Operculum")] <- "operc"
 njny$structure[njny$structure == "Otolith"] <- "oto"
-#write.csv(njny, "njny.csv")
+njny$Length <- njny$`Total Length (cm)` #need this exact col name for AquaticLifeHistory pkg
+njny$`Total Length (cm)` <- NULL
+njny$`Ageing Structure` <- NULL
+njny$subregion <- "B"
+njny[njny$Region=="LIS",]$subregion <- "LIS"
+#write.csv(njny, "njny.csv", row.names=F)
+
+#pick back up here, try models with means 
+summarized <- njny[!is.na(njny$structure) & !is.na(njny$Age),] %>% group_by(subregion, structure, Age) %>% summarize(m = mean(Length))
+#plot(njny$Age, njny$Length)
+#f.starts <- vbStarts(Length~Age,data=njny, methLinf="oldAge") 
+#plot(njny[njny$structure=="both",]$Age, njny[njny$structure=="both",]$Length)
+ny <- njny[njny$structure=="both" & !is.na(njny$structure),] # this is the data subset that performs best, only NY
+#plot(ny$Age, ny$Length)
+ny <- njny[!is.na(njny$structure) &  njny$structure=="oto" & njny$Region!="LIS",] 
+N.AgeLen <- nrow(ny)
+Age <- ny$Age
+Len <- ny$Length
+f.starts <- vbStarts(Length~Age,data=ny, methLinf="oldAge") 
+f.starts$K <- 0.3
+f.starts$t0 <- 0
+vbmod <- Length ~ Linf * (1 - exp(-K * (Age - t0)))
+mymod <- nls(vbmod, data = ny, start = f.starts)
+
+#converges for LIS, both
+#for both across entire region, produces bad start value but fixed by t0 = 0
+#separating out to NJ-NYB both (i.e. all of NY) doesn't converge
+
+nj <- njny[njny$state=="NJ",] #& njny$structure=="both"
+
+Estimate_Growth(data = njny, models = "VB", Birth.Len = 0) #doesn't converge for all models
