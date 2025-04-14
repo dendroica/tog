@@ -42,11 +42,8 @@ f.starts$K <- 0.3
 vbmod <- m ~ Linf * (1 - exp(-K * (Age - t0)))
 mymod <- nls(vbmod, data = ny, start = f.starts)
 #plot(njny$Age, njny$Length)
-#f.starts <- vbStarts(Length~Age,data=njny, methLinf="oldAge") 
 #plot(njny[njny$structure=="both",]$Age, njny[njny$structure=="both",]$Length)
 ny <- njny[njny$structure=="both" & !is.na(njny$structure),] # this is the data subset that performs best, only NY
-#plot(ny$Age, ny$Length)
-#ny <- njny[!is.na(njny$structure) &  njny$structure=="oto" & njny$Region!="LIS",] 
 N.AgeLen <- nrow(ny)
 Age <- ny$Age
 Len <- ny$Length
