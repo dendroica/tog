@@ -2,6 +2,8 @@ library(readxl)
 library(FSA)
 library(AquaticLifeHistory)
 library(dplyr)
+library(ggplot2)
+
 setwd("C:\\Users\\jgorzo\\OneDrive - New Jersey Office of Information Technology\\Documents\\data\\")
 #lines below won't work if file is open
 
@@ -31,19 +33,35 @@ njny$`Ageing Structure` <- NULL
 njny$subregion <- "B"
 njny[njny$Region=="LIS",]$subregion <- "LIS"
 #write.csv(njny, "njny.csv", row.names=F)
+njny <- njny[!is.na(njny$Age),]
+tg <- njny[,c("Age", "Region", "state", "subregion", "structure", "Length")]
+
+#dt <- tg %>%
+#  dplyr::group_by(Age) %>%
+#  dplyr::summarise(
+#    mean = mean(Length),
+#    lci = t.test(Length, conf.level = 0.95)$conf.int[1], not enough observations in each age...
+#    uci = t.test(Length, conf.level = 0.95)$conf.int[2])
+#dt
+
+nj <- njny[njny$state=="NY" & njny$structure=="oto",] #& njny$structure=="oto"
+p <- ggplot(nj, aes(x=as.factor(Age), y=Length)) + 
+  geom_boxplot() + theme_classic(base_size = 20)
+p
 
 #pick back up here, try models with means 
 summarized <- njny[!is.na(njny$structure) & !is.na(njny$Age),] %>% group_by(subregion, structure) %>% summarize(m = mean(Length), n = n())
 summarized <- njny[!is.na(njny$structure) & !is.na(njny$Age),] %>% group_by(subregion, structure, Age) %>% summarize(m = mean(Length), n = n())
-ny <- summarized[!is.na(summarized$structure) &  summarized$structure=="oto" & summarized$subregion=="LIS",] #& summarized$subregion!="LIS" 
-plot(ny$Age, ny$m)
-f.starts <- vbStarts(m~Age,data=ny, methLinf="oldAge") 
-f.starts$K <- 0.3
-vbmod <- m ~ Linf * (1 - exp(-K * (Age - t0)))
-mymod <- nls(vbmod, data = ny, start = f.starts)
+#ny <- summarized[!is.na(summarized$structure) &  summarized$structure=="oto" & summarized$subregion=="LIS",] #& summarized$subregion!="LIS" 
+#plot(ny$Age, ny$m)
+#f.starts <- vbStarts(m~Age,data=ny, methLinf="oldAge") 
+#f.starts$K <- 0.3
+#vbmod <- m ~ Linf * (1 - exp(-K * (Age - t0)))
+#mymod <- nls(vbmod, data = ny, start = f.starts)
 #plot(njny$Age, njny$Length)
 #plot(njny[njny$structure=="both",]$Age, njny[njny$structure=="both",]$Length)
 ny <- njny[njny$structure=="both" & !is.na(njny$structure),] # this is the data subset that performs best, only NY
+ny <- njny[!is.na(njny$structure) &  njny$structure=="operc" & njny$state=="NJ",]
 N.AgeLen <- nrow(ny)
 Age <- ny$Age
 Len <- ny$Length
@@ -57,7 +75,7 @@ mymod <- nls(vbmod, data = ny, start = f.starts)
 #for both across entire region, produces bad start value but fixed by t0 = 0
 #separating out to NJ-NYB both (i.e. all of NY) doesn't converge
 
-nj <- njny[njny$state=="NJ",] #& njny$structure=="both"
-
 Estimate_Growth(data = njny[!is.na(njny$structure) &  njny$structure=="operc" & njny$subregion=="B",], models = "VB", Birth.Len = 0) #doesn't converge for all models
 #Windows trick for writing to clipboard in table form: write.table(summarized, "clipboard-16384", sep = "\t", row.names = FALSE, quote = FALSE)
+Estimate_Growth(data = nj[!is.na(nj$structure) &  nj$structure=="operc",], models = "VB", Birth.Len = 0) #doesn't converge for all models
+Estimate_Growth(data = njny[!is.na(njny$structure) &  njny$structure=="oto" & njny$state=="NY" & njny$subregion!="LIS",], models = "VB", Birth.Len = 0) #doesn't converge for all models
