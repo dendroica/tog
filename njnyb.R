@@ -40,8 +40,8 @@ njny$`Ageing Structure` <- NULL
 #write.csv(njny, "njny.csv", row.names=F) this would include LIS
 njny <- njny[njny$Region!="LIS",]
 njny$subregion <- "B"
-
 njny <- njny[!is.na(njny$Age),]
+
 tg <- njny[,c("Age", "Region", "state", "subregion", "structure", "Length")]
 
 #dt <- tg %>%
@@ -70,6 +70,7 @@ summarized <- njny[!is.na(njny$structure) & !is.na(njny$Age),] %>% group_by(stru
 #plot(njny[njny$structure=="both",]$Age, njny[njny$structure=="both",]$Length)
 ny <- njny[njny$structure=="both" & !is.na(njny$structure),] # this is the data subset that performs best, only NY
 ny <- njny[!is.na(njny$structure) &  njny$structure=="oto" & njny$state=="NJ",] # & njny$state=="NJ"
+ny <- njny[njny$structure=="both" | njny$structure=="operc",]
 N.AgeLen <- nrow(ny)
 Age <- ny$Age
 Len <- ny$Length
@@ -77,7 +78,7 @@ f.starts <- vbStarts(Length~Age,data=ny, methLinf="oldAge")
 f.starts$K <- 0.3
 f.starts$t0 <- 0
 vbmod <- Length ~ Linf * (1 - exp(-K * (Age - t0)))
-mymod <- nls(vbmod, data = ny, start = f.starts)
+#mymod <- nls(vbmod, data = ny, start = f.starts)
 
 #converges for LIS, both
 #for both across entire region, produces bad start value but fixed by t0 = 0
