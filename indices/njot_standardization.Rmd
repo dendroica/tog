@@ -1,0 +1,757 @@
+---
+title: "Bluefish index standardization - NJ Ocean trawl"
+author: "M Celestino"
+date: "`r Sys.time()`"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      cache = FALSE)
+```
+
+## Bluefish index standardization
+
+### Step 1: Data processing
+
+Load functions & libraries
+```{r}
+#source("f:\\BF_WG\\FIG\\figFuns.R")
+source("C:\\Users\\galax\\OneDrive - New Jersey Office of Information Technology\\Documents\\data\\tog\\bootstrap_functions.R")
+
+library(car, quietly = FALSE)
+library(lmtest, quietly = FALSE)
+library(glmmTMB, quietly = FALSE)
+library(DHARMa, quietly = FALSE)
+library(bbmle, quietly = FALSE)
+library(ggeffects, quietly = FALSE)
+library(ggplot2, quietly = FALSE)
+require(readxl, quietly = FALSE)
+require(lattice, quietly = FALSE)
+require(emmeans, quietly = FALSE)
+require(rmarkdown, quietly = FALSE)
+require(knitr, quietly = FALSE)
+library(reshape2, quietly=TRUE, verbose=FALSE)
+library(doBy, quietly=TRUE, verbose=FALSE)
+library(dplyr, quietly=TRUE, verbose=FALSE,warn.conflicts=FALSE)
+
+geomean0 <- function(x) {
+  exp(mean(log(x + 1))) - 1
+}
+
+pctPos <- function(x) {
+  x <- ifelse(x > 0, 1, 0)
+  mean(x)
+}
+
+disp3 <- function(mod = NA) {
+  E <- residuals(mod, type = "pearson")
+  d <- sum(E^2) / summary(mod)$AICtab[5]
+  return(d)
+}
+```
+
+Read in data
+```{r}
+indata3 <- read.csv("C:\\Users\\galax\\OneDrive - New Jersey Office of Information Technology\\Documents\\data\\njot.csv", header = TRUE)
+
+indata <- read_excel("C:\\Users\\galax\\OneDrive - New Jersey Office of Information Technology\\Documents\\data\\tog\\Tautog Data Template 2025_NJDEP.xlsx", sheet="Survey Tow Data", range = cell_rows(5:6246)) 
+head(indata)
+str(indata)
+
+summary(indata)
+```
+
+Some data exploration to determine which years and covariates to keep; then remove missing values
+```{r}
+# limit to just yrs >1989 (1988 30 min tows; 1989 6 cruises; 1990 5 cruises (Dec+Feb combined into single January cruise))
+indata <- indata[indata$Year>1989,]
+
+# relabel strata:
+forMerge <- data.frame("STRATUM"=12:26,"stratum2"=rep(c("inner","middle","outer"),times=5))
+indata <- merge(indata,forMerge)                                                # year order gets shuffled here
+indata <- indata[order(indata$Year),]
+indata$depth <- indata$MAXDEPTH
+
+keepVars <- c("ID","CRUCODE","STRATUM","YRMODA","MINOUT","TOWLENGTH","depth","TEMPBOT","SALBOT","DOBOT","stratum2")
+
+# how many records would we lose to NAs:
+apply(indata[,keepVars], 2, function(x) sum(is.na(x)))
+indata$Month <- substr(indata$YRMODA,5,6)
+indata$YOY <- as.numeric(indata$TOTAL_NUMBER)
+```
+
+```{r eval=FALSE}
+matplot(1990:2019,with(indata, tapply(YOY,list(Year,substr(CRUCODE,5,5)),
+   geomean,alpha=NULL,warn=FALSE)),type="o",ylab="Geo mean per tow by cruise",
+   main="Geo mean per tow by cruise")
+
+# pct pos & geomean by cruise:
+op <- par(mfrow=c(1,2))
+round(with(indata, tapply(YOY,list(Year,substr(CRUCODE,5,5)),geomean)),2)#,alpha=NULL,warn=FALSE)),2) # geomean
+round(with(indata, tapply(YOY,list(Year,substr(CRUCODE,5,5)),pctPos)),2) # pct pos
+barplot(with(indata, tapply(YOY,list(substr(CRUCODE,5,5)),pctPos)),main="Pct positive by cruise")
+barplot(with(indata, tapply(YOY,list(substr(CRUCODE,5,5)),geomean)),main="Geometric mean by cruise") #,alpha=NULL,warn=FALSE
+
+# pct pos & geomean by stratum2:
+op <- par(mfrow=c(2,2))
+round(with(indata, tapply(YOY,list(Year,stratum2),pctPos)),2)
+barplot(with(indata, tapply(YOY,stratum2,mean)),main="Arith mean by strata")
+barplot(with(indata, tapply(YOY,stratum2,geomean)),main="Geomean by strata") #,alpha=NULL,warn=FALSE
+barplot(with(indata, tapply(YOY,stratum2,pctPos)),main="Pct positive by strata")
+barplot(with(indata, tapply(YOY,STRATUM,pctPos)),main="Pct positive by strata")
+
+# summary of pct pos by strata and cruise
+round(t(with(indata, tapply(YOY,list(stratum2,substr(CRUCODE,5,5)),pctPos))),2) # pct pos
+
+# and geomean summary:
+round(t(with(indata, tapply(YOY,list(stratum2,substr(CRUCODE,5,5)),geomean))),0) # geomean ,alpha=NULL,warn=FALSE
+
+# and again
+round(t(with(indata[is.element(indata$STRATUM,c(12,15,18,21,24)),], 
+   tapply(YOY,list(STRATUM,substr(CRUCODE,5,5)),pctPos))),2) # pct pos (inshore strata only)
+round(t(with(indata[is.element(indata$STRATUM,c(12,15,18,21,24)),], 
+   tapply(YOY,list(STRATUM,substr(CRUCODE,5,5)),geomean))),0) # geomean (inshore strata only) ,alpha=NULL,warn=FALSE
+```
+
+```{r}
+# Based on EDA, keeping just inshore stratum in October cruise - I explored cruises 4-5 and performance was worse than just cruise 5
+indata2 <- indata[is.element(as.numeric(substr(indata$CRUCODE,5,5)),5),]
+   table(indata2$Month) # check
+indata2 <- indata2[indata2$stratum2=="inner",]# | indata2$stratum2=="middle"]
+
+# how many records would we lose to NAs:
+apply(indata2[,keepVars], 2, function(x) sum(is.na(x)))
+
+
+indata2 <- indata2[complete.cases(indata2[,keepVars]),] # keep only complete cases
+summary(indata2)
+
+
+apply(indata2[,keepVars], 2, function(x) sum(is.na(x)))
+
+```
+
+
+Check for outliers
+```{r}
+# Check for outliers or weirdo values
+op <- par(mfrow=c(2,2))
+plot(indata2$SALBOT,main="SALBOT"); indata2[indata2$SALBOT<24,]
+plot(indata2$DOBOT,main="DOBOT"); indata2[indata2$DOBOT>9 | indata2$DOBOT<3,]
+plot(indata2$TEMPBOT,main="TEMPBOT")
+plot(indata2$depth,main="depth")
+pairs(indata2[,c("depth","TEMPBOT","SALBOT","DOBOT")])
+round(cor(indata2[,c("depth","TEMPBOT","SALBOT","DOBOT")],method="spearman"),2) # no strong correlations (numerically)
+```
+
+Plot distribtion of catches:
+```{r}
+op <- par(mfrow=c(1,2))
+hist(indata2$YOY,main="Bluefish",xlab="Observed Values",ylab="Frequency", breaks=seq(0,max(indata2$YOY),1))
+hist(indata2$YOY,main="Bluefish (truncated x-axis)",xlab="Observed Values",ylab="Frequency",
+   breaks=seq(0,max(indata2$YOY),1),xlim=c(0,500),ylim=c(0,100))
+par(op)
+```
+
+Finally, check to see if there are any years with zero catch that need to be removed:
+```{r}
+diff(as.numeric(names(xtabs(YOY~Year, indata2))))
+```
+
+
+Create a dataframe with all the factors we need (z-score all continuous variables; all others as.factors)
+```{r}
+dat = data.frame(CPUE = indata2$YOY,
+                 YEAR = as.factor(indata2$Year),
+                 MONTH = as.factor(indata2$Month),
+                 VESSEL=as.factor(indata2$VESSEL),
+                 STRATA=as.factor(indata2$STRATUM),
+                 STEMP = scale(indata2$TEMPSURF, center = TRUE, scale = TRUE), #Z.scr(indata2$TEMPSURF), 
+                 BTEMP = scale(indata2$TEMPBOT, center = TRUE, scale = TRUE), #Z.scr(indata2$TEMPBOT),
+                 SSAL = scale(indata2$SALSURF, center = TRUE, scale = TRUE), #Z.scr(indata2$SALSURF),
+                 BSAL = scale(indata2$SALBOT, center = TRUE, scale = TRUE), #Z.scr(indata2$SALBOT),
+                 SDO = scale(indata2$DOSURF, center = TRUE, scale = TRUE), #Z.scr(indata2$DOSURF),
+                 BDO = scale(indata2$DOBOT, center = TRUE, scale = TRUE), #Z.scr(indata2$DOBOT),
+                 DEPTH = scale(indata2$depth, center = TRUE, scale = TRUE), #Z.scr(indata2$depth),
+                 EFFORT = indata2$MINOUT)
+
+# Calculate the proportion of positive tows/sets/hauls
+dat$PosTow <- ifelse(dat$CPUE > 0, 1, 0)
+mean(dat$PosTow)
+
+# create offset for variable tow durations
+dat$lnEffort <- log(dat$EFFORT)
+
+head(dat)
+```
+
+Check collinearity
+```{r, error=TRUE}
+pairs(~YEAR+MONTH+VESSEL+STRATA+DEPTH+STEMP+BTEMP+SSAL+BSAL+SDO+BDO,data=dat)
+round(with(dat, cor(data.frame(
+  as.numeric(as.character(YEAR)),
+  as.numeric(as.character(MONTH)),
+  as.numeric(VESSEL),
+  as.numeric(as.character(STRATA)),
+  DEPTH,STEMP,BTEMP,SSAL,BSAL,SDO,BDO),method="pearson")),2)
+
+# Check the variance inflation factor for a more statistical check.
+mod = lm(CPUE ~ YEAR + MONTH + STRATA + DEPTH + BTEMP + BSAL + BDO, data = dat) #+ VESSEL
+ld.vars <- attributes(alias(mod)$Complete)$dimnames[[1]]
+vif(mod)
+```
+
+```{r}
+# look at pctPos by factor; MONTH11==0, so drop MONTH: (only a few Nov samplings and never any BF collected)
+with(dat, tapply(CPUE,list(YEAR,MONTH),pctPos))
+# vessel and year highly correlated, so removing vessel; also, since cruise=5, most records are month = 10, so removing month as a factor
+mod = lm(CPUE ~ YEAR + STRATA + DEPTH + BTEMP + BSAL + BDO, data = dat)
+vif(mod)
+pairs(~CPUE + YEAR + STRATA + DEPTH + BTEMP + BSAL + BDO,data=dat)
+round(with(dat, cor(data.frame(CPUE,as.numeric(as.character(YEAR)),as.numeric(as.character(STRATA)),DEPTH,BTEMP,BSAL,BDO),method="pearson")),2)
+```
+
+```{r}
+# drop BSAL (not strongly correlated with year, but highest among avail factors, and weakly corr with temp)
+mod = lm(CPUE ~ YEAR + STRATA + DEPTH + BDO + BTEMP, data = dat)
+vif(mod)
+mod <- as.formula("CPUE ~ YEAR + STRATA + DEPTH + BDO + BTEMP")
+# You want GVIF to be less than ~3. YEAR >> 3 but need year; drop BTEMP (corr with year)
+#mod = lm(CPUE ~ YEAR + STRATA + DEPTH + BSAL + BDO, data = dat)
+#vif(mod)
+#round(with(dat, cor(data.frame(CPUE,as.numeric(YEAR),as.numeric(as.character(STRATA)),DEPTH,BSAL,BDO),method="pearson")),2)
+```
+
+
+
+### Step 2: Model selection 
+
+Compare negative binom, zero-infl neg binom, zero-altered neg binom
+
+#### Model 1: Negative Binomial
+```{r,error=TRUE}
+tmb1.NB = glmmTMB(mod, offset=lnEffort, data = dat, family = nbinom2)
+summary(tmb1.NB)
+# Calculate dispersion for a glmmTMB model
+disp3(tmb1.NB)
+```
+
+#### Model 2: ZINB
+```{r, error=TRUE, eval=F}
+#ZINB = glmmTMB(mod,offset=lnEffort, 
+#               ziformula = ~ YEAR + STRATA + DEPTH + BDO + BTEMP, data = dat, 
+#               control=glmmTMBControl(optCtrl=list(iter.max=5e6,eval.max=5e6)),
+#               family=nbinom2) # convergence problems
+#summary(ZINB)
+
+pairs(~ YEAR + STRATA + DEPTH + BDO + BTEMP,data=dat) # also looks like non-linear relationship among DEPTH and BSAL and CPUE
+```
+
+```{r}
+# Previous model bombs; large yr estimates in ZI model, so remove year
+ZINB <- glmmTMB(mod,offset=lnEffort, 
+                ziformula = ~ STRATA + DEPTH + BDO  + BTEMP, data = dat, 
+                control=glmmTMBControl(optCtrl=list(iter.max=5e3,eval.max=5e3)),
+                family=nbinom2)
+summary(ZINB) # THIS WORKS FOR TOG- JESS
+residuals(ZINB, type = "pearson")
+#tmbZI.resids(ZINB, y.dat=dat$CPUE)
+
+#JESS DOESNT NEED THIS
+# large SEs in strata in ZI model, so removing
+#ZINB <- glmmTMB(CPUE ~ YEAR + STRATA + DEPTH + BDO,offset=lnEffort, 
+#                ziformula = ~ DEPTH + BDO, data = dat, 
+#                control=glmmTMBControl(optCtrl=list(iter.max=5e3,eval.max=5e3)),
+#                family=nbinom2)
+#summary(ZINB) # ok
+```
+
+#### Model 3: ZANB (aka hurdle model)
+```{r, eval=F, error=TRUE}
+ZANB <- glmmTMB(mod, 
+                ziformula = ~ YEAR + STRATA + DEPTH + BDO + BTEMP, data = dat,
+                offset=lnEffort,family = truncated_nbinom2(link = "log"))
+summary(ZANB) #convergence problem
+```
+
+```{r eval=F}
+# high SEs in YEAR, so removing
+ZANB <- glmmTMB(mod, 
+                ziformula = ~ DEPTH + BDO + BTEMP, data = dat,
+                offset=lnEffort,family = truncated_nbinom2(link = "log"))
+summary(ZANB) # doesn't converge
+
+#tmbZI.resids(ZANB, y.dat=dat$CPUE)
+```
+
+
+#### Preliminary model comparisons
+```{r, error=TRUE}
+AICtab(tmb1.NB, ZINB) # ZANB won for bluefish but won't converge for tog
+```
+
+
+### Step 3: Factor selection (by model)
+
+#### Negative Binomial
+```{r, error=TRUE}
+NB1 <- glmmTMB(mod, offset=lnEffort, data = dat, family = nbinom2)
+#summary(NB1)
+drop1(NB1,test="Chi")
+
+# drop BDO:
+NB2 <- glmmTMB(CPUE ~ YEAR + STRATA + DEPTH + offset(lnEffort), data = dat, family = nbinom2)
+#summary(NB2)
+drop1(NB2,test="Chi")
+
+# drop depth:
+NB3 <- glmmTMB(CPUE ~ YEAR + STRATA + offset(lnEffort), data = dat, family = nbinom2)
+#summary(NB3)
+drop1(NB3,test="Chi") # all terms significant
+
+# Let's compare to a model with year only.
+NB0 <- glmmTMB(CPUE ~ YEAR+offset(lnEffort), data = dat, family = nbinom2)
+#summary(NB0)
+```
+
+```{r}
+NB5 <- glmmTMB(CPUE ~ YEAR + STRATA + DEPTH + BDO, offset=lnEffort, data = dat, family = nbinom2)
+#summary(NB5)
+drop1(NB5,test="Chi")
+
+NB6 <- glmmTMB(CPUE ~ YEAR + STRATA + DEPTH + BTEMP, offset=lnEffort, data = dat, family = nbinom2)
+#summary(NB6)
+drop1(NB6,test="Chi")
+
+NB7 <- glmmTMB(CPUE ~ YEAR + STRATA + BTEMP, offset=lnEffort, data = dat, family = nbinom2)
+#summary(NB7)
+drop1(NB7,test="Chi")
+
+NB8 <- glmmTMB(CPUE ~ YEAR + BTEMP, offset=lnEffort, data = dat, family = nbinom2)
+#summary(NB8)
+drop1(NB8,test="Chi")
+
+NB9 <- glmmTMB(CPUE ~ YEAR + BDO, offset=lnEffort, data = dat, family = nbinom2)
+#summary(NB8)
+drop1(NB9,test="Chi")
+
+NB10 <- glmmTMB(CPUE ~ YEAR + STRATA + BDO, offset=lnEffort, data = dat, family = nbinom2)
+#summary(NB8)
+drop1(NB10,test="Chi")
+
+NB11 <- glmmTMB(CPUE ~ YEAR + STRATA + BDO + BTEMP, offset=lnEffort, data = dat, family = nbinom2)
+#summary(NB8)
+drop1(NB11,test="Chi")
+
+NB12 <- glmmTMB(CPUE ~ YEAR + BDO + BTEMP, offset=lnEffort, data = dat, family = nbinom2)
+#summary(NB8)
+drop1(NB12,test="Chi")
+
+NB13 <- glmmTMB(CPUE ~ YEAR + DEPTH + BDO + BTEMP, offset=lnEffort, data = dat, family = nbinom2)
+#summary(NB8)
+drop1(NB13,test="Chi")
+```
+
+```{r}
+NB14 <- glmmTMB(CPUE ~ YEAR + DEPTH + BTEMP, offset=lnEffort, data = dat, family = nbinom2)
+#summary(NB8)
+drop1(NB14,test="Chi")
+
+AICtab(NB1, NB2, NB3, NB0, NB5, NB6, NB7, NB8, NB9, NB10, NB12, NB11, NB13, NB14) # so NB1 wins
+lrtest(NB0, NB3, NB2, NB1)
+sapply(list(NB3,NB2,NB1,NB0),disp3)
+```
+
+
+#### ZINB
+```{r, error=TRUE}
+# ZINB (starting with final model from above):
+#ZINB1 <- glmmTMB(mod,offset=lnEffort, 
+#                ziformula = ~ STRATA + YEAR + DEPTH + BDO + BTEMP, data = dat, 
+#                control=glmmTMBControl(optCtrl=list(iter.max=5e3,eval.max=5e3)),
+#                family=nbinom2)
+#summary(ZINB1)
+#drop1(ZINB1,test="Chi") 
+
+# ZINB (starting with final model from above):
+ZINB1 <- glmmTMB(mod,offset=lnEffort, 
+                ziformula = ~ DEPTH + BDO + BTEMP, data = dat, 
+                control=glmmTMBControl(optCtrl=list(iter.max=5e3,eval.max=5e3)),
+                family=nbinom2)
+summary(ZINB1)
+drop1(ZINB1,test="Chi") # convergence problems
+```
+
+```{r}
+# drop DO from conditional (not significant):
+ZINB2 <- glmmTMB(CPUE ~ YEAR + STRATA + DEPTH,offset=lnEffort, 
+                ziformula = ~ STRATA + DEPTH, data = dat, 
+                control=glmmTMBControl(optCtrl=list(iter.max=5e3,eval.max=5e3)),
+                family=nbinom2) # convergence problems
+summary(ZINB2)
+drop1(ZINB2,test="Chi")
+```
+
+```{r}
+#CPUE ~ YEAR + STRATA + DEPTH + BTEMP
+# drop depth from ZI (very param large estimate):
+ZINB3 <- glmmTMB(CPUE ~ YEAR + STRATA + DEPTH + BTEMP,offset=lnEffort, 
+                ziformula = ~ STRATA + DEPTH + BTEMP, data = dat, 
+                control=glmmTMBControl(optCtrl=list(iter.max=5e3,eval.max=5e3)),
+                family=nbinom2) # convergence problems
+#summary(ZINB3)
+#drop1(ZINB3,test="Chi")
+
+ZINB6 <- glmmTMB(CPUE ~ YEAR + STRATA + DEPTH + BTEMP,
+                offset=lnEffort, 
+                ziformula = ~ STRATA + DEPTH, data = dat, 
+                control=glmmTMBControl(optCtrl=list(iter.max=5e3,eval.max=5e3)),
+                family=nbinom2) # convergence problems
+
+
+ZINB7 <- glmmTMB(CPUE ~ YEAR + STRATA + DEPTH + BTEMP,
+                offset=lnEffort, 
+                ziformula = ~ STRATA, data = dat, 
+                control=glmmTMBControl(optCtrl=list(iter.max=5e3,eval.max=5e3)),
+                family=nbinom2) # convergence problems
+```
+
+```{r}
+ZINB8 <- glmmTMB(CPUE ~ YEAR + STRATA + DEPTH + BTEMP,
+                offset=lnEffort, 
+                ziformula = ~ DEPTH, data = dat, 
+                control=glmmTMBControl(optCtrl=list(iter.max=5e3,eval.max=5e3)),
+                family=nbinom2) # convergence problems
+#summary(ZINB3)
+#drop1(ZINB3,test="Chi")
+```
+
+```{r}
+# drop BDO from ZI (now no ZI model):
+ZINB4 <- glmmTMB(CPUE ~ YEAR + STRATA + DEPTH,
+                offset=lnEffort, 
+                data = dat, 
+                control=glmmTMBControl(optCtrl=list(iter.max=5e3,eval.max=5e3)),
+                family=nbinom2)
+summary(ZINB4)
+drop1(ZINB4,test="Chi")
+```
+
+```{r}
+# drop depth:
+ZINB5 <- glmmTMB(CPUE ~ YEAR + STRATA,offset=lnEffort, 
+                data = dat, 
+                control=glmmTMBControl(optCtrl=list(iter.max=5e3,eval.max=5e3)),
+                family=nbinom2)
+summary(ZINB5)
+drop1(ZINB5,test="Chi") # all significant
+
+
+# a model with year only:
+ZINB0 <- glmmTMB(CPUE ~ YEAR,offset=lnEffort, 
+                data = dat, 
+                control=glmmTMBControl(optCtrl=list(iter.max=5e3,eval.max=5e3)),
+                family=nbinom2)
+summary(ZINB0)
+```
+
+```{r}
+ZINB9 <- glmmTMB(CPUE ~ YEAR + STRATA + DEPTH + BTEMP,
+                offset=lnEffort, 
+                ziformula = ~ BTEMP, data = dat, 
+                control=glmmTMBControl(optCtrl=list(iter.max=5e3,eval.max=5e3)),
+                family=nbinom2) # convergence problems
+#summary(ZINB3)
+#drop1
+```
+
+```{r}
+ZINB10 <- glmmTMB(CPUE ~ YEAR + STRATA + DEPTH + BTEMP,
+                offset=lnEffort, 
+                ziformula = ~ STRATA + BTEMP, data = dat, 
+                control=glmmTMBControl(optCtrl=list(iter.max=5e3,eval.max=5e3)),
+                family=nbinom2) # convergence problems
+#summary(ZINB3)
+#drop1
+```
+
+```{r}
+ZINB11 <- glmmTMB(CPUE ~ YEAR + STRATA + DEPTH + BTEMP,
+                offset=lnEffort, 
+                ziformula = ~ DEPTH + BTEMP, data = dat, 
+                control=glmmTMBControl(optCtrl=list(iter.max=5e3,eval.max=5e3)),
+                family=nbinom2) # convergence problems
+#summary(ZINB3)
+#drop1
+```
+
+```{r}
+AICtab(ZINB5,ZINB0, ZINB1, ZINB2, ZINB3, ZINB4, ZINB6, ZINB7, ZINB8, ZINB9, ZINB10, ZINB11) # bluefish: ZINB1-3 had convergence problems so not including
+lrtest(ZINB0,ZINB5, ZINB1,ZINB2, ZINB3, ZINB4)
+#sapply(list(ZINB5,ZINB4,ZINB0),tmbZI.resids,dat$CPUE)
+```
+
+#### ZANB (aka hurdle model)
+```{r, eval=F, error=TRUE}
+# ZANB - starting with final model from model selection above
+ZANB1 <- glmmTMB(mod, 
+   ziformula = ~ STRATA + BTEMP, 
+   data = dat,
+   offset=lnEffort,
+   family = truncated_nbinom2(link = "log"))
+summary(ZANB1)
+drop1(ZANB1,test="Chi")
+```
+
+```{r eval=FALSE}
+# drop BDO from conditional:
+ZANB2 <- glmmTMB(CPUE ~ YEAR + DEPTH + BDO + BTEMP, 
+   ziformula = ~ BTEMP + BDO, data = dat,
+   offset=lnEffort,family = truncated_nbinom2(link = "log"))
+summary(ZANB2)
+drop1(ZANB2,test="Chi")
+```
+
+```{r eval=FALSE}
+# drop Depth from conditional:
+ZANB3 <- glmmTMB(CPUE ~ YEAR + STRATA + BDO + BTEMP, 
+   ziformula = ~ STRATA, data = dat,
+   offset=lnEffort,family = truncated_nbinom2(link = "log"))
+summary(ZANB3)
+drop1(ZANB3,test="Chi")
+```
+
+```{r eval=FALSE}
+# remove BDO from ZI:
+ZANB4 <- glmmTMB(CPUE ~ YEAR + STRATA + DEPTH + BTEMP, 
+   ziformula = ~ DEPTH + STRATA, data = dat,
+   offset=lnEffort,family = truncated_nbinom2(link = "log"))
+summary(ZANB4)
+drop1(ZANB4,test="Chi")
+```
+
+```{r eval=FALSE}
+# remove depth from ZI:
+ZANB5 <- glmmTMB(CPUE ~ YEAR + STRATA + DEPTH + BDO, 
+   ziformula =  ~ YEAR + STRATA + DEPTH + BDO, data = dat,
+   offset=lnEffort,family = truncated_nbinom2(link = "log"))
+summary(ZANB5)
+drop1(ZANB5,test="Chi") # all significant
+```
+
+```{r eval = F}
+# a year-only model:
+# remove BDO from ZI:
+ZANB0 <- glmmTMB(CPUE ~ YEAR + STRATA + DEPTH, 
+   ziformula = ~ DEPTH, data = dat,
+   offset=lnEffort,family = truncated_nbinom2(link = "log"))
+summary(ZANB0) # nope
+```
+
+```{r eval=FALSE}
+# try again:
+ZANB0 <- glmmTMB(CPUE ~ YEAR + STRATA + BDO, 
+   ziformula = ~ YEAR + BDO,
+   data = dat,
+   offset=lnEffort,family = truncated_nbinom2(link = "log"))
+   # nope; errors
+
+# model comparison:
+AICtab(ZANB1, ZANB2, ZANB3, ZANB4, ZANB5)
+lrtest(ZANB5, ZANB4, ZANB3, ZANB2, ZANB1)
+#sapply(list(ZANB5,ZANB4,ZANB3,ZANB2,ZANB1),tmbZI.resids,dat$CPUE)
+
+### Model comparisons
+
+AICtab(NB3,ZINB5)
+
+### Model diagnostics
+
+#### All models
+
+# Attempts at some remedial measures:
+# all inshore strata seem to have sufficiently high pct pos tows, so not much to do here
+op <- par(mfrow=c(1,1))
+barplot(with(dat, tapply(CPUE,STRATA,pctPos)),las=3,main="Pct pos by strata") 
+
+
+# try re-assinging large catch to the 95th pctl of catch (didn't help):
+.all <- dat
+# dat <- .all  # nrow=341
+dat$CPUE[which.max(dat$CPUE)] <- quantile(dat$CPUE,0.95)
+
+ZANB5.1 <- glmmTMB(CPUE ~ YEAR + STRATA, 
+   ziformula = ~ STRATA, data = dat,
+   offset=lnEffort,family = truncated_nbinom2(link = "log"))
+summary(ZANB5.1)
+drop1(ZANB5.1,test="Chisq")
+op <- par(mfrow=c(1,2))
+plotResiduals(simulateResiduals(ZANB5.1),rank=FALSE) 
+plotResiduals(simulateResiduals(ZANB5.1),rank=TRUE)
+# low residuals at high model predictions, esp predictions over ~500 (which is near the 95th pctl of catches)
+# so, I'll re-assigning those values to the 95th percentile of timeseries
+
+dat <- .all
+dat$CPUE[dat$CPUE > quantile(dat$CPUE,0.95)] <- quantile(dat$CPUE,0.95)
+ZANB5.2 <- glmmTMB(CPUE ~ YEAR + STRATA, 
+   ziformula = ~ STRATA, data = dat,
+   offset=lnEffort,family = truncated_nbinom2(link = "log"))
+summary(ZANB5.2)
+drop1(ZANB5.2,test="Chisq")
+op <- par(mfrow=c(1,2))
+plotResiduals(simulateResiduals(ZANB5.2),rank=FALSE) 
+plotResiduals(simulateResiduals(ZANB5.2),rank=TRUE)
+# didn't really help, so going back to ZANB5
+
+dat <- .all
+
+
+# model diagnostics:
+models <- list(ZANB5,NB3,ZINB5)
+for(i in 1:length(models)) {
+   NB.sim <- simulateResiduals(models[[i]])
+   this <- names(dat)[names(dat) %in% names(models[[i]]$frame) & names(dat) != "CPUE"]
+   print(this)
+   plot(NB.sim); mtext(paste(this,collapse=" + "),side=3,adj=0,outer=FALSE,line=1,col="blue")
+
+   for(j in this) {
+      plotResiduals(NB.sim, form=dat[,j]); mtext(j,3,col="blue",adj=1)
+   }
+}
+
+
+op <- par(mfrow=c(1,2))
+plotResiduals(simulateResiduals(ZANB5),rank=FALSE) 
+plotResiduals(simulateResiduals(ZANB5),rank=TRUE)
+### Model comparisons redux
+AICtab(ZANB5,ZANB5.1,ZANB5.2,NB3,ZINB5)
+
+#Conclusion: ZANB5.2 (re-assign all catches > 95th pctl to the 95th pctl) has the lowest AIC, but diagnostics weren't much better than those from ZANB5, and the re-assignment seems like a pretty hefty change. ZANB5 diagnostics were perhaps the same to a tiny bit better than NB3 and ZINB5 (and recall that ZINB5 had no ZI model due to convergence and large SE issues). And, as the last plot above shows, the model has low DHARMa residuals at high predictions; otherwise, residuals are ok. This could be good support for nominal index rather than model-based index.
+
+### Generate and compare indices
+# quick comparison of index generated via ZANB5 vs ZANB5.2 (not very different)
+outa <- byHand2(ZANB5,nBoot=2,Method="ZANB5", modelType = "zero")
+outb <- byHand2(ZANB5.2,nBoot=2,Method="ZANB5.2", modelType = "zero")
+matplot(outa$Year,data.frame(scaleToMean(outa$Index),scaleToMean(outb$Index)),
+   type="o",xlab="",ylab="Index scaled to mean",main="Indicies scaled to mean")
+cor(outa$Index,outb$Index)
+cor(outa$Index,outb$Index,method="spearman")
+```
+
+```{r}
+# generate actual final index:
+#out <- boot.ZI(ZINB) low convergence 26.2% of bootstrap runs converged.
+#out3 <- boot.ZI(ZINB3) #low convergence 26.2% of bootstrap runs converged.
+#out4 <- boot.ZI(ZINB2) #"34.9% of bootstrap runs converged."
+#out2 <- boot.NB(NB1) # 45.4% of bootstrap runs converged.
+#out6 <- boot.ZI(ZINB6)
+#out <- byHand2(ZINB,nBoot=1000,Method="ZINB", modelType = "zero")
+
+
+#out <- boot.NB(NB6) #"43.8% of bootstrap runs converged." best model considered....
+#out7 <- boot.ZI(ZANB00)
+
+ZINB00 <- glmmTMB(CPUE ~ 1 + YEAR + STRATA + BDO + BTEMP, offset=lnEffort, data = dat, 
+                  ziformula = ~STRATA + BTEMP + BDO,
+                  family = nbinom2)
+#Zout00 <- boot.NB(ZINB00) #best yet...44.7%
+
+NB00 <- glmmTMB(CPUE ~ 1 + STRATA + YEAR + BTEMP, offset=lnEffort, data = dat, family = nbinom2)
+#NB01 <- glmmTMB(CPUE ~ STRATA + YEAR + BTEMP, offset=lnEffort, data = dat, family = nbinom2)
+out <- boot.NB(NB00) #"48.5% of bootstrap runs converged."
+```
+
+```{r}
+# Stratified mean:
+# Standardize catch for 20 minute tow (the standard unit of effort of NJOT)
+dat$Fish <- round((dat$CPUE*20)/dat$EFFORT,0)
+
+
+# specify stratum weights (km2):
+w <- c(14.7,32.5,76.7,17.4,81.3,293,59.9,235.9,279.9,17.1,198.7,185.1,34,133.6,131.9)
+w <- w[c(1,4,7,10,13)] # just the isnhore strata
+# and scale them so they sum to 1:
+wts <- w/sum(w)
+
+
+   #mean (using only inshore strata):
+   M <- with(dat, tapply(Fish,list(STRATA,YEAR),mean,na.rm=TRUE))
+   #variance:
+   V <- with(dat, tapply(Fish,list(STRATA,YEAR),var,na.rm=TRUE))
+
+
+   # Possible workaround if a year-stratum combination has NA variance (i.e., from n= 1), pool mean variance from entire year:
+   needVar <- which(is.na(V))
+   if(length(needVar)>0) {
+      allYears <- as.numeric(as.character(sort(unique(dat$YEAR))))
+      # years of interest:
+      yoi <- rep(allYears,each=5)[needVar] # just using the 5 inshore strata
+      lookupTable <- data.frame(year=allYears,.var=apply(V,2,mean,na.rm=TRUE))
+         # The special case of all NAs in a given year:
+         # If NaN, then pool timeseries mean variance
+         if(any(is.nan(lookupTable$.var))) {
+            mod <- which(is.nan(lookupTable$.var))
+            lookupTable$.var[mod] <- mean(lookupTable$.var[-mod])
+         }
+      ans <- merge(lookupTable,data.frame(year=yoi,tmp=NA),by="year",sort=FALSE)
+      V[which(is.na(V))] <- ans$.var
+   }
+   
+
+   N <- with(dat, tapply(Fish,list(STRATA,YEAR),length))
+
+   # UCL
+   UCL <-
+   apply(M*wts,2,sum,na.rm=TRUE)+
+      ((sqrt(apply(wts^2*V/N,2,sum,na.rm=TRUE)))*qnorm((1-0.95)/2,lower=FALSE))
+
+   # stratified mean:
+   .m <- apply(M*wts,2,sum,na.rm=TRUE)
+
+   # LCL
+   LCL <-
+   apply(M*wts,2,sum,na.rm=TRUE)-
+      ((sqrt(apply(wts^2*V/N,2,sum,na.rm=TRUE)))*qnorm((1-0.95)/2,lower=FALSE))
+
+   SE <- sqrt(apply(wts^2*V/N,2,sum,na.rm=TRUE))
+   CV <- SE/.m
+
+   nom <- data.frame("Year"=as.numeric(as.character(unique(dat$YEAR))),"Index"=.m,SE,
+      "LCI"=LCL,"UCI"=UCL,CV,"Method"="stratifiedMean")
+
+p.data <- expand.pred(NB00$frame)
+best <- NB00
+index.out <- data.frame(
+  Year = as.numeric(unique(as.character(dat$YEAR))), #PICK UP HERE JESS
+  #Station=as.character(unique(dat$Station)), #use unique rather than levels bc removed 3 years
+                        Index= predict(best, newdata=p.data, type="response"))
+index.out <- cbind.data.frame(index.out, out)
+index.out$CV <- index.out$SE/index.out$Index
+index.out$Method="NB"
+
+tmp <- rbind(index.out,nom)
+tmp
+   
+
+ggplot(tmp, aes(x=Year, y=Index, color=Method, shape=Method)) +
+  geom_ribbon(aes(x=Year, ymin=LCI, ymax=UCI, fill=Method), alpha=0.5) +
+  geom_line() + geom_point() +
+  xlab("Year") + theme_bw()
+  
+# scale indices to respective means:
+op <- par(mfrow=c(1,1))
+#matplot(unique(tmp$Year),sapply(split(tmp,tmp$Method), function(x) scaleToMean(x$Index)),
+ #       type="o",xlab="Year",ylab="index scaled to mean")
+
+#plot(sapply(split(tmp,tmp$Method), function(x) scaleToMean(x$Index)))
+round(cor(sapply(split(tmp,tmp$Method), function(x) x$Index)),2)
+round(cor(sapply(split(tmp,tmp$Method), function(x) x$Index),method="spearman"),2)
+
+Sys.time()
+```
+Summary:
+
+ZANB5.2 (re-assign all catches > 95th pctl to the 95th pctl) had the lowest AIC, but diagnostics weren't much better than those from ZANB5, and the re-assignment seems like a pretty hefty change. ZANB5 diagnostics were perhaps the same to a tiny bit better than NB3 and ZINB5 (and recall that ZINB5 had no ZI model due to convergence and large SE issues). ZINB5 (and alikes) has low DHARMa residuals at high predictions; otherwise, residuals are ok. This could be good support for nominal index rather than model-based index.
+
+
