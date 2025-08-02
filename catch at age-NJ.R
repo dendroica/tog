@@ -4,7 +4,9 @@
 # and combines those with the filled-in ALKs to calculate catch-at-age...
 # then weight-at-age
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-setwd("C:\\Users\\jgorzo\\OneDrive - New Jersey Office of Information Technology\\Documents")
+#setwd("C:\\Users\\jgorzo\\OneDrive - New Jersey Office of Information Technology\\Documents")
+setwd("/media/jess/9CE61C02E61BDB7A/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents")
+#on Ubuntu, you have to have this open in files/ssd to have it mounted...
 
 library(tidyverse)
 library(readxl)
@@ -13,19 +15,23 @@ library(ggplot2)
 #Find weight of recreationally harvested fish.
 #There are small sample sizes for commercially harvested, so we'll use rec weights to infer comm weights.
 
-life <- read_xlsx("data\\tog/Tautog Data Template 2025_NJDEP.xlsx", sheet = "LifeHistory", skip = 6) 
-life24 <- read_xlsx("data\\tog/Tautog Data Template 2025_NJDEP_2024-update.xlsx", sheet = "LifeHistory", skip = 6) 
+life <- read_xlsx("data/tog/Tautog Data Template 2025_NJDEP.xlsx", sheet = "LifeHistory", skip = 6)  #%>% 
+  #rename("Total.Length..cm." = "Total Length (cm)", "Weight..g." = "Weight (g)") %>%
+  #select(Year, Total.Length..cm., Age, Weight..g., Maturity, Region)
+life24 <- read_xlsx("data/tog/Tautog Data Template 2025_NJDEP_2024-update.xlsx", sheet = "LifeHistory", skip = 6) 
+#life24 <- read.csv("data/tog/tog_lifehistory.csv") %>% select(Year, Total.Length..cm., Age, Weight..g., Maturity, Region)
 #the only other place you could dig this out would be ocean trawl...? ventless trap survey??
 #ALS? MRIP type 9?
-
-
 names(life)[names(life)=="Year"] <- "Date"
 life$Year <- as.integer(format(life$Date, '%Y'))
 life24$`Weight (g)` <- life24$`Weight (g)` * 1000
+#life24$Total.Length..cm. <- life24$Total.Length..cm. / 10
 life24$`Total Length (cm)` <- life24$`Total Length (cm)` / 10
 
 lifehistory <- rbind(life[,names(life24)], life24) %>%
-  rename("Weight" = "Weight (g)") %>%  
+  #rename("Weight" = "Weight..g.") %>% 
+  rename("Weight" = "Weight (g)") %>% 
+  #mutate(Length = floor(Total.Length..cm.)) %>% 
   mutate(Length = floor(`Total Length (cm)`)) %>% 
   select(Year, Age, Weight, Region, Length)
 
@@ -54,7 +60,7 @@ LWpars <- bind_rows(lapply(c(1:4), function(i){
 }))
 
 #Load commercial catch data
-commcatchnj <- read_xlsx("data\\tog/Regional_Comm_landings_MT_07.18.25.xlsx", sheet = "MT")[,c("Year","NYB-NJ")]
+commcatchnj <- read_xlsx("data/tog/Regional_Comm_landings_MT_07.18.25.xlsx", sheet = "MT")[,c("Year","NYB-NJ")]
 names(commcatchnj)[names(commcatchnj)=="NYB-NJ"] <- "Comm" #metric tons
 commcatchnj$Comm <- commcatchnj$Comm*1000000
 commcatchyrsumnj <- commcatchnj %>% left_join(weights_meansnj) %>% mutate(CommCatchNumFish = Comm/MeanWeight)
@@ -62,7 +68,7 @@ commcatchyrsumnj <- commcatchnj %>% left_join(weights_meansnj) %>% mutate(CommCa
 
 #Load recreational catch and discard
 
-totalcatchnj <- read.csv("data\\tog/rec/RecData/Tautog_MRIP_TotalCatch_2021-2024_NJNYB.csv", header = TRUE) %>% 
+totalcatchnj <- read.csv("data/tog/rec/Tautog_MRIP_TotalCatch_2021-2024_NJNYB.csv", header = TRUE) %>% 
   mutate(DiscardMortality = Released.B2*0.025) %>% 
   mutate(TotalRecCatch = Harvest.A.B1+DiscardMortality)
 totalcatchnj <- left_join(totalcatchnj, commcatchyrsumnj) %>% mutate(TotalCatch = TotalRecCatch + CommCatchNumFish)

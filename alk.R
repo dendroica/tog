@@ -2,7 +2,10 @@ library(readxl)
 library(dplyr)
 library(ggplot2)
 
-setwd("C:\\Users\\galax\\OneDrive - New Jersey Office of Information Technology\\Documents\\data\\tog") #jgorzo galax
+#setwd("C:\\Users\\galax\\OneDrive - New Jersey Office of Information Technology\\Documents") #jgorzo galax
+setwd("/media/jess/9CE61C02E61BDB7A/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents")
+#on Ubuntu, you have to have this open in files/ssd to have it mounted...
+
 ny_comm <- read_excel("2025SA_NY_Tautog Data 2021-2023_corrected.xlsx", sheet="CommBioSamples", range = cell_rows(6:901))
 ny_comm24 <- read_excel("2025SA_NY_Tautog Data 2024-1.xlsx", sheet="CommBioSamples", range = cell_rows(6:797)) 
 ny_comm <- bind_rows(ny_comm, ny_comm24) %>% mutate(mode="comm", Year = as.character(Year))
@@ -36,8 +39,8 @@ aldat$age <- factor(aldat$Age, levels=2:15)
 aldat$Age_plus <- factor(aldat$Age_plus, levels = 2:12)
 
 all_data <- aldat
-operc <- aldat[aldat$structure=="operc",] #| aldat$structure=="both"
-oto <- aldat[aldat$structure=="oto"| aldat$structure=="both",]
+operc <- aldat[aldat$structure=="operc" | aldat$structure=="both",]
+#oto <- aldat[aldat$structure=="oto"| aldat$structure=="both",]
 
 aldat <- operc[operc$subregion=="B",] #how to...
 #We need to do yearly keys
@@ -84,7 +87,7 @@ alks <- list(tab21, tab22, tab23, tab24)
 checkgaps <- function(alk) {
   gaps <- lapply(alk, FUN = function(x) as.integer(names(rowSums(x[,2:12]))[which(rowSums(x[,2:12])==0)]))
   names(gaps) <- c(2021:2024)
-  mrip9 <- read.csv("rec/RecData/Tautog_MRIP_Type9_lengths_2021-24.csv")
+  mrip9 <- read.csv("./data/tog/rec/Tautog_MRIP_Type9_lengths_2021-24.csv")
   mrip9 <- mrip9[mrip9$REGION=="NJNYB",]
   catchmatch <- Map(function(x,y) {
     x %in% mrip9$LENGTH.ROUNDED.DOWN.TO.NEAREST.CM[mrip9$YEAR==as.integer(y)]
