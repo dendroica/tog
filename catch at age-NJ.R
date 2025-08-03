@@ -65,7 +65,6 @@ names(commcatchnj)[names(commcatchnj)=="NYB-NJ"] <- "Comm" #metric tons
 commcatchnj$Comm <- commcatchnj$Comm*1000000
 commcatchyrsumnj <- commcatchnj %>% left_join(weights_meansnj) %>% mutate(CommCatchNumFish = Comm/MeanWeight)
 
-
 #Load recreational catch and discard
 
 totalcatchnj <- read.csv("data/tog/rec/Tautog_MRIP_TotalCatch_2021-2024_NJNYB.csv", header = TRUE) %>% 
@@ -76,18 +75,20 @@ totalcatchnj <- left_join(totalcatchnj, commcatchyrsumnj) %>% mutate(TotalCatch 
 #Load ALKs, convert to proportions
 
 indir <- "./output/tog/alk/filled/opercboth"
-alk2021numnj <- read.csv(file.path(indir, "NJNYB-ALK_2021_filled.csv")) %>% select(2:13) %>% mutate(rowsum = rowSums(.[grep("X", names(.))], na.rm = TRUE)) #add row sum
-alk2021propnj <- alk2021numnj %>% mutate(across(2:12, .fns= function(x){x/rowsum})) %>% replace(is.na(.), 0)
-alk2022numnj <- read.csv(file.path(indir, "NJNYB-ALK_2022_filled.csv")) %>% select(2:13) %>% mutate(rowsum = rowSums(.[grep("X", names(.))], na.rm = TRUE)) #add row sum
-alk2022propnj <- alk2022numnj %>% mutate(across(2:12, .fns= function(x){x/rowsum})) %>% replace(is.na(.), 0)
-alk2023numnj <- read.csv(file.path(indir, "NJNYB-ALK_2023_filled.csv")) %>% select(2:13) %>% mutate(rowsum = rowSums(.[grep("X", names(.))], na.rm = TRUE)) #add row sum
-alk2023propnj <- alk2023numnj %>% mutate(across(2:12, .fns= function(x){x/rowsum})) %>% replace(is.na(.), 0)
-alk2024numnj <- read.csv(file.path(indir, "NJNYB-ALK_2024_filled.csv")) %>% select(2:13) %>% mutate(rowsum = rowSums(.[grep("X", names(.))], na.rm = TRUE)) #add row sum
-alk2024propnj <- alk2024numnj %>% mutate(across(2:12, .fns= function(x){x/rowsum})) %>% replace(is.na(.), 0)
-names(alk2021propnj)[1] <- "Length"
-names(alk2022propnj)[1] <- "Length"
-names(alk2023propnj)[1] <- "Length"
-names(alk2024propnj)[1] <- "Length"
+alk2021numnj <- read.csv(file.path(indir, "NJNYB-ALK_2021_filled.csv"))
+alk2022numnj <- read.csv(file.path(indir, "NJNYB-ALK_2022_filled.csv"))
+alk2023numnj <- read.csv(file.path(indir, "NJNYB-ALK_2023_filled.csv"))
+alk2024numnj <- read.csv(file.path(indir, "NJNYB-ALK_2024_filled.csv"))
+
+alks <- list(alk2021numnj, alk2022numnj, alk2023numnj, alk2024numnj)
+alks <- lapply(alks, function(y) {
+  y <- y %>% select(2:13) 
+})
+alkprops <- lapply(alks, function(y) {
+  y <- y %>% mutate(rowsum = rowSums(.[grep("X", names(.))], na.rm = TRUE)) %>% #add row sum
+    mutate(across(2:12, .fns= function(x){x/rowsum})) %>% replace(is.na(.), 0) %>%
+    rename("Length" = "length")
+})
 
 #Length Frequencies for Recreational Catch and Discard, modified from discard_LFnj.R from Samarah Nehemiah for LIS
 harvest_LFnj <- read.csv("./output/tog/NJNYB_RecHarvest_Frequencies.csv")
@@ -97,53 +98,49 @@ names(discard_LFnj)<- c("Length", "2021", "2022", "2023", "2024")
 discard_LF_propnj <- discard_LFnj %>% mutate(across(`2021`:`2024`, .fns = function(x){x/sum(x,na.rm = TRUE)}))
 harvest_LF_propnj <- harvest_LFnj %>% mutate(across(`2021`:`2024`, .fns = function(x){x/sum(x, na.rm = TRUE)}))
 
-#Recreational Catch Catch-at-Age
-#MRIP
-recharvestcatchatage2021nj <- left_join(harvest_LFnj[,1:2], alk2021propnj) %>% rename(Number = `2021`, Total.Count = rowsum) %>% mutate(across(paste0("X", 2:12), .fns = function(x){x*Number})) %>% replace(is.na(.), 0) %>% select(-c("Number", "Total.Count"))
-recharvestcatchatage2022nj <- left_join(harvest_LFnj[,c(1,3)], alk2022propnj) %>% rename(Number = `2022`, Total.Count = rowsum) %>% mutate(across(paste0("X", 2:12), .fns = function(x){x*Number})) %>% replace(is.na(.), 0) %>% select(-c("Number", "Total.Count"))
-recharvestcatchatage2023nj <- left_join(harvest_LFnj[,c(1,4)], alk2023propnj) %>% rename(Number = `2023`, Total.Count = rowsum) %>% mutate(across(paste0("X", 2:12), .fns = function(x){x*Number})) %>% replace(is.na(.), 0) %>% select(-c("Number", "Total.Count"))
-recharvestcatchatage2024nj <- left_join(harvest_LFnj[,c(1,5)], alk2024propnj) %>% rename(Number = `2024`, Total.Count = rowsum) %>% mutate(across(paste0("X", 2:12), .fns = function(x){x*Number})) %>% replace(is.na(.), 0)%>% select(-c("Number", "Total.Count"))
+recharvestCAA <- Map(function(x, y) {
+  rechar_year <- left_join(harvest_LFnj[,c(1, x+1)], y) %>% 
+    rename(Number = as.character(2020+x), Total.Count = rowsum) %>%
+    mutate(across(paste0("X", 2:12), .fns = function(x){x*Number})) %>% replace(is.na(.), 0) %>% 
+    select(-c("Number", "Total.Count"))
+}, 1:4, alkprops)
 
 #Commercial Catch Catch-at-Age and Weight-at-Age after Katie Drew's template
 #She fits a length-weight relationship, then convert the length-bins to weight bins.
 #Then calculates the sample weight frequencies by multiplying the numbers at length by the weight at length
 #Then she calculates the portion of the sample weight in each length bin 
 
-alklist <- list(alk2021propnj[,-13], alk2022propnj[,-13], alk2023propnj[,-13], alk2024propnj[,-13]) 
+alklist <- list(alkprops[[1]][,-13], alkprops[[2]][,-13], alkprops[[3]][,-13], alkprops[[4]][,-13]) 
+
+recharvestCAA <- Map(function(x, y) {
+  rechar_year <- left_join(harvest_LFnj[,c(1, x+1)], y) %>% 
+    rename(Number = as.character(2020+x), Total.Count = rowsum) %>%
+    mutate(across(paste0("X", 2:12), .fns = function(x){x*Number})) %>% replace(is.na(.), 0) %>% 
+    select(-c("Number", "Total.Count"))
+}, 1:4, alkprops)
 
 ##Recreational Discard Catch-at-Age
-recdiscardcatchatage2021_prop <- left_join(discard_LF_propnj[,1:2], alk2021propnj) %>% rename(Number = `2021`, Total.Count = rowsum) %>% mutate(across(paste0("X", 2:12), .fns = function(x){x*Number})) %>% replace(is.na(.), 0)
-recdiscardcatchatage2021_num <- recdiscardcatchatage2021_prop[,c(1,3:14)]
-recdiscardcatchatage2021_num[,c(2:13)]<- recdiscardcatchatage2021_num[,c(2:13)]*totalcatchnj$DiscardMortality[which(totalcatchnj$Year==2021)]
-recdiscardcatchatage2021_num <- recdiscardcatchatage2021_num[recdiscardcatchatage2021_num$Length %in% 29:59,]
-
-recdiscardcatchatage2022_prop <- left_join(discard_LF_propnj[,c(1,3)], alk2022propnj) %>% rename(Number = `2022`, Total.Count = rowsum) %>% mutate(across(paste0("X", 2:12), .fns = function(x){x*Number})) %>% replace(is.na(.), 0)
-recdiscardcatchatage2022_num <- recdiscardcatchatage2022_prop[,c(1,3:14)]
-recdiscardcatchatage2022_num[,c(2:13)]<- recdiscardcatchatage2022_num[,c(2:13)]*totalcatchnj$DiscardMortality[which(totalcatchnj$Year==2022)]
-recdiscardcatchatage2022_num <- recdiscardcatchatage2022_num[recdiscardcatchatage2022_num$Length %in% 29:59,]
-
-recdiscardcatchatage2023_prop <- left_join(discard_LF_propnj[,c(1,4)], alk2023propnj) %>% rename(Number = `2023`, Total.Count = rowsum) %>% mutate(across(paste0("X", 2:12), .fns = function(x){x*Number})) %>% replace(is.na(.), 0)
-recdiscardcatchatage2023_num <- recdiscardcatchatage2023_prop[,c(1,3:14)]
-recdiscardcatchatage2023_num[,c(2:13)]<- recdiscardcatchatage2023_num[,c(2:13)]*totalcatchnj$DiscardMortality[which(totalcatchnj$Year==2023)]
-recdiscardcatchatage2023_num <- recdiscardcatchatage2023_num[recdiscardcatchatage2023_num$Length %in% 29:59,]
-
-recdiscardcatchatage2024_prop <- left_join(discard_LF_propnj[,c(1,5)], alk2024propnj) %>% rename(Number = `2024`, Total.Count = rowsum) %>% mutate(across(paste0("X", 2:12), .fns = function(x){x*Number})) %>% replace(is.na(.), 0)
-recdiscardcatchatage2024_num <- recdiscardcatchatage2024_prop[,c(1,3:14)]
-recdiscardcatchatage2024_num[,c(2:13)]<- recdiscardcatchatage2024_num[,c(2:13)]*totalcatchnj$DiscardMortality[which(totalcatchnj$Year==2024)]
-recdiscardcatchatage2024_num <- recdiscardcatchatage2024_num[recdiscardcatchatage2024_num$Length %in% 29:59,]
+recdiscardCAA <- lapply(1:4, function(a) {
+  discardprops <- apply(alkprops[[a]][,2:12], 2, function(x) x * discard_LF_propnj[, a+1])
+  yr <- 2020+a
+  discardnums <- as.data.frame(discardprops * totalcatchnj$DiscardMortality[totalcatchnj$Year==yr])
+  discardnums$Length <-  discard_LF_propnj[, 1]
+  discardnums <- discardnums[discardnums$Length %in% 29:60,]
+  discardnums <- discardnums[,c(12,1:11)]
+})
 
 caa2 <- list(
-  recdiscardcatchatage2021_num[,2:12] + recharvestcatchatage2021nj[,2:12], #/1000,
-  recdiscardcatchatage2022_num[,2:12] + recharvestcatchatage2022nj[,2:12], #/1000,
-  recdiscardcatchatage2023_num[,2:12] + recharvestcatchatage2023nj[,2:12], #/1000,
-  recdiscardcatchatage2024_num[,2:12] + recharvestcatchatage2024nj[,2:12] #/1000
+  recdiscardCAA[[1]][,2:12] + recharvestCAA[[1]][,2:12], #/1000,
+  recdiscardCAA[[2]][,2:12] + recharvestCAA[[2]][,2:12], #/1000,
+  recdiscardCAA[[3]][,2:12] + recharvestCAA[[3]][,2:12], #/1000,
+  recdiscardCAA[[4]][,2:12] + recharvestCAA[[4]][,2:12] #/1000
 )
 
 caa <- cbind(X1=c(0,0,0,0), rbind(
-  apply(recdiscardcatchatage2021_num[,2:12] + recharvestcatchatage2021nj[,2:12], 2, sum), #/1000,
-  apply(recdiscardcatchatage2022_num[,2:12] + recharvestcatchatage2022nj[,2:12], 2, sum), #/1000,
-  apply(recdiscardcatchatage2023_num[,2:12] + recharvestcatchatage2023nj[,2:12], 2, sum), #/1000,
-  apply(recdiscardcatchatage2024_num[,2:12] + recharvestcatchatage2024nj[,2:12], 2, sum) #/1000
+  apply(recdiscardCAA[[1]][,2:12] + recharvestCAA[[1]][,2:12], 2, sum), #/1000,
+  apply(recdiscardCAA[[2]][,2:12] + recharvestCAA[[2]][,2:12], 2, sum), #/1000,
+  apply(recdiscardCAA[[3]][,2:12] + recharvestCAA[[3]][,2:12], 2, sum), #/1000,
+  apply(recdiscardCAA[[4]][,2:12] + recharvestCAA[[4]][,2:12], 2, sum) #/1000
 ))
 
 waas <- list()

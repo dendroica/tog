@@ -12,7 +12,7 @@ library(tidyverse)
 library(readxl)
 # Length Freq for MRIP harvest
 
-MRIP_har <- read.csv("C:\\Users\\jgorzo\\OneDrive - New Jersey Office of Information Technology\\Documents/data/tog/rec\\Tautog_MRIP_AB1_LFs_2021-2024_NJNYB.csv", header=TRUE)
+MRIP_har <- read.csv("C:\\Users\\galax\\OneDrive - New Jersey Office of Information Technology\\Documents/data/tog/rec\\Tautog_MRIP_AB1_LFs_2021-2024_NJNYB.csv", header=TRUE)
 # check it
 head(MRIP_har)
 str(MRIP_har)
@@ -39,7 +39,7 @@ max(MRIP_har$Length)
 
 
 # make dataframe with all lengths represented, easier for putting into Excel sheet (if used)
-lengths <- seq(29, 59)
+lengths <- seq(29, 60)
 MARI_har_lfs <- data.frame(lengths) 
 names(MARI_har_lfs) <- "Length"
 
@@ -47,20 +47,20 @@ Yr_List <- unique(MRIP_har$Year)
 
  for (i in Yr_List) {
    Yr_All <- MRIP_har[MRIP_har$Year == i,] #c(1,8,9)
-   Yr_L60 <- Yr_All[Yr_All$Length < 59,]
+   Yr_L60 <- Yr_All[Yr_All$Length < 60,]
    names(Yr_L60)[5] <- i
    Yr_i <- Yr_L60[,c(4:5)]
    MARI_har_lfs <- merge(MARI_har_lfs, Yr_i, all.x=TRUE)
    
    Yr_max <- max(Yr_All$Length)
-   if (Yr_max >= 59) {
-     Yr_G60 <- Yr_All[Yr_All$Length >= 59,]
+   if (Yr_max >= 60) {
+     Yr_G60 <- Yr_All[Yr_All$Length >= 60,]
      Yr_60 <- sum(Yr_G60$Number)
-     MARI_har_lfs[MARI_har_lfs$Length==59,i] <- Yr_60
+     MARI_har_lfs[MARI_har_lfs$Length==60,i] <- Yr_60
    }
  }
 
-write.csv(MARI_har_lfs, "NJNYB_RecHarvest_Frequencies.csv", row.names=FALSE)
+write.csv(MARI_har_lfs, "C:\\Users\\galax\\OneDrive - New Jersey Office of Information Technology\\Documents/output/tog/NJNYB_RecHarvest_Frequencies.csv", row.names=FALSE)
 
 
 #####################################################################################
