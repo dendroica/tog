@@ -1,3 +1,5 @@
+#code experiment: not used in results and DO NOT USE
+
 library(readxl)
 library(dplyr)
 library(ggplot2)
@@ -286,7 +288,7 @@ fill24[fill24$length %in% 57,12] <- 1
 
 nearfill <- list(fill21, nearfill[[2]], fill23, fill24)
 
-write.csv(nearfill[[1]], "./output/tog/alk/filled/opercboth/NJNYB-ALK_2021_filled.csv")
-write.csv(nearfill[[2]], "./output/tog/alk/filled/opercboth/NJNYB-ALK_2022_filled.csv")
-write.csv(nearfill[[3]], "./output/tog/alk/filled/opercboth/NJNYB-ALK_2023_filled.csv")
-write.csv(nearfill[[4]], "./output/tog/alk/filled/opercboth/NJNYB-ALK_2024_filled.csv")
+#write.csv(nearfill[[1]], "./output/tog/alk/filled/opercboth/NJNYB-ALK_2021_filled.csv")
+#write.csv(nearfill[[2]], "./output/tog/alk/filled/opercboth/NJNYB-ALK_2022_filled.csv")
+#write.csv(nearfill[[3]], "./output/tog/alk/filled/opercboth/NJNYB-ALK_2023_filled.csv")
+#write.csv(nearfill[[4]], "./output/tog/alk/filled/opercboth/NJNYB-ALK_2024_filled.csv")
