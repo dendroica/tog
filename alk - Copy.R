@@ -56,10 +56,10 @@ aldat$age <- factor(aldat$Age, levels=2:17)
 aldat$Age_plus <- factor(aldat$Age_plus, levels = 2:12)
 #aldat$Age_plus <- factor(aldat$Age_plus, levels = 1:12)
 
-operc <- aldat[aldat$structure=="operc" | aldat$structure=="both",] #| aldat$structure=="both"
-oto <- aldat[aldat$structure=="oto",]
-aldata <- operc[operc$subregion=="B",] #how to...
-#aldata <- aldat[aldat$subregion=="B",] ...revisit with new lengths/ages...
+#operc <- aldat[aldat$structure=="operc" | aldat$structure=="both",] #| aldat$structure=="both"
+#oto <- aldat[aldat$structure=="oto",]
+#aldata <- operc[operc$subregion=="B",] #how to...
+aldata <- aldat[aldat$subregion=="B",] #...revisit with new lengths/ages...
 
 #We need to do yearly keys
 tt21 <- filter(aldata, Year == "2021")
@@ -113,9 +113,8 @@ proptab24 <- tab24[,-1]/rowSums(tab24[,-1])
 ###########STEP 1: fill with otolith data
 alks <- list(tab21, tab22, tab23, tab24)
 
-#using rec data to see what gaps need to be filled, I don't think type 9 gets included?
-#mrip9 <- read.csv("./data/tog/rec/Tautog_MRIP_Type9_lengths_2021-24.csv")
-#mrip9 <- mrip9[mrip9$REGION=="NJNYB",]
+mrip9 <- read.csv("./data/tog/rec/Tautog_MRIP_Type9_lengths_2021-24.csv")
+mrip9 <- mrip9[mrip9$REGION=="NJNYB",]
 als <- read_excel("./data/tog/rec/ALS_Tautog_2021-2024.xlsx")
 als <- als[als$Region=="NJNYB",]
 als$Length_cm<-als$Length_IN*2.54 #convert inches to cm
@@ -130,7 +129,7 @@ checkgaps <- function(alk) {
   gaps <- lapply(alk, FUN = function(x) as.integer(names(rowSums(x[,2:12]))[which(rowSums(x[,2:12])==0)]))
   names(gaps) <- c(2021:2024)
   catchmatch <- Map(function(x,y) {
-    x %in% unique(c(als$Length_cm[als$Year==as.integer(y)], MRIP_har$Length[MRIP_har$Year==as.integer(y)])) #mrip9$LENGTH.ROUNDED.DOWN.TO.NEAREST.CM[mrip9$YEAR==as.integer(y)],
+    x %in% unique(c(mrip9$LENGTH.ROUNDED.DOWN.TO.NEAREST.CM[mrip9$YEAR==as.integer(y)], als$Length_cm[als$Year==as.integer(y)], MRIP_har$Length[MRIP_har$Year==as.integer(y)]))
   }, gaps, names(gaps))
   tofill <- Map(function(x,y) {x[y]},
                 gaps, catchmatch)
@@ -140,28 +139,28 @@ gapstofill <- checkgaps(alks)
 
 #You can see that there are a usually one or a few missing at the small extreme, many at the large extreme, and then one or two that are "internal." In 2022 the internal is 27cm, in 2023 the internal is 55cm
 
-otofill <- Map(function(x,y) {
-  check <- oto[oto$Year==y & oto$Length %in% x & oto$subregion=="B",]
-  if (nrow(check) > 0) {
-    otofill <- tabyr(check)
-    otofill <- otofill[otofill$length %in% check$Length,]
+#otofill <- Map(function(x,y) {
+#  check <- oto[oto$Year==y & oto$Length %in% x & oto$subregion=="B",]
+#  if (nrow(check) > 0) {
+#    otofill <- tabyr(check)
+#    otofill <- otofill[otofill$length %in% check$Length,]
     #otofill$year <- y
-  } else {otofill <- data.frame()}
-  return(otofill)
-}, gapstofill[[2]], names(gapstofill[[2]]))
+#  } else {otofill <- data.frame()}
+#  return(otofill)
+#}, gapstofill[[2]], names(gapstofill[[2]]))
 
-otofilled <- Map(function(x,y) {
-  if(nrow(y) > 0) {
-    x[x$length %in% y$length,] <- y
-    }
-  return(x)
-}, alks, otofill)
+#otofilled <- Map(function(x,y) {
+#  if(nrow(y) > 0) {
+#    x[x$length %in% y$length,] <- y
+#    }
+#  return(x)
+#}, alks, otofill)
 
 otofilled <- Map(
   function(x,y) {
     x$year <- y
     return(x)},
-  otofilled, c(2021:2024))
+  alks, c(2021:2024))
 
 otofilled <- lapply(otofilled, function(y) {
   y$length <- as.integer(y$length)
@@ -208,19 +207,18 @@ nearfill <- Map(function(x,y) {
     if(x[i] == min(y$length)) { #if the gap to fill is the smallest bin in the ALK...
       if(x[i] + 1 != x[i+1]) { #if the next greater length bin isn't empty...
         y[y$length==x[i],c(2:12)] <- y[y$length==x[i]+1,c(2:12)] #...fill from below
-      } else if (sum(lis[lis[,1]==x[i],c(2:12)]) == 0) { #e.g. need to fill 29 for 2021, 2023 
-        #sum(dmv[dmv[,1]==x[i],c(2:12)]) > 0 shows preference for DMV when it has values
-        y[y$length==x[i],c(2:12)] <- dmv[dmv[,1]==x[i],c(2:12)] #if the next greatest length bin from the smallest is empty, fill from DMV
-      } else {
-        y[y$length==x[i],c(2:12)] <- lis[lis[,1]==x[i],c(2:12)]
-      }
+      } else if (sum(dmv[dmv[,1]==x[i],c(2:12)]) > 0) { #e.g. need to fill 29 for 2021, 2023
+          y[y$length==x[i],c(2:12)] <- dmv[dmv[,1]==x[i],c(2:12)] #if the next greatest length bin from the smallest is empty, fill from DMV
+        } else {
+          y[y$length==x[i],c(2:12)] <- lis[lis[,1]==x[i],c(2:12)]
+        }
     } else if(x[i] == max(y$length)) { #if the gap to fill is the largest bin in the ALK...
       if(x[i] - 1 != x[i-1] & sum(y[y$length==x[i]-1, c(2:12)]) > 0) { #if the next smallest length bin doesn't need filling and has values...
         y[y$length==x[i],c(2:12)] <- y[y$length==x[i]-1,c(2:12)] #...fill from above
       } else if (y[y$length==max(y$length[y$rowsum > 0]),12] == y[y$length==max(y$length[y$rowsum > 0]),"rowsum"]) { #if the closest length bin with values are all in 12, fill down
         y[y$length==x[i],c(2:12)] <- y[y$length==max(y$length[y$rowsum > 0]),c(2:12)]
       } else {
-        if (sum(lis[lis[,1]==x[i],c(2:12)]) == 0) {
+        if (sum(dmv[dmv[,1]==x[i],c(2:12)]) > 0) {
           y[y$length==x[i],c(2:12)] <- dmv[dmv[,1]==x[i],c(2:12)]
         } else {
           y[y$length==x[i],c(2:12)] <- lis[lis[,1]==x[i],c(2:12)]
@@ -262,7 +260,7 @@ nearfill <- Map(function(x,y) {
     } else if (!(x[i] + 1) %in% x & (x[i] - 1) %in% x & sum(y[y$length==x[i]+1,c(2:12)]) > 0) {
       y[y$length==x[i],c(2:12)] <- y[y$length==x[i]+1,c(2:12)]
     } else {
-      if(sum(lis[lis[,1]==x[i],c(2:12)]) == 0) {
+      if(sum(dmv[dmv[,1]==x[i],c(2:12)]) > 0) {
         y[y$length==x[i],c(2:12)] <- dmv[dmv[,1]==x[i],c(2:12)]
       } else {
         y[y$length==x[i],c(2:12)] <- lis[lis[,1]==x[i],c(2:12)] 
@@ -280,10 +278,10 @@ fill21 <- nearfill[[1]]
 fill23 <- nearfill[[3]]
 fill23[fill23$length==59, ] <- fill21[fill21$length==59,]
 
-#by this point, from the filling steps above, the next closest length bin to the end...
-#...that had values was just 1 in age 12, so used that to fill down
+#by this point, from the filling steps above, the closest length bins on either side...
+#...that had values were just 1 in age 12, so used that to fill 
 fill24 <- nearfill[[4]]
-fill24[fill24$length %in% 57:60,12] <- 1
+fill24[fill24$length %in% 57,12] <- 1
 #############
 
 nearfill <- list(fill21, nearfill[[2]], fill23, fill24)
