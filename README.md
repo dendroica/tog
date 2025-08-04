@@ -1,2 +1,2 @@
-# tog
-Tautog stock assessment update: NJ-NY bight
+# Tautog stock assessment update
+NJ-NY bight
