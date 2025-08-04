@@ -109,7 +109,7 @@ discard<- bind_rows(ALS_LF, MRIP9_LF) %>%
 #write.csv(ALS_LF,"ALS_LF.csv")
 #write.csv(MRIP9_LF,"MRIP9_LF.csv")
 #write.csv(VAS_LF,"VAS_LF.csv")
-write.csv(discard,"discard_LF.csv")
+write.csv(discard,"C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/discard_LF.csv")
 
 
 
