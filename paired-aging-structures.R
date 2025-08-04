@@ -1,8 +1,12 @@
 library(readxl)
 library(ggplot2)
 setwd("C:\\Users\\jgorzo\\OneDrive - New Jersey Office of Information Technology\\Documents\\data\\")
+
+#INPUT#####################
 #lines below won't work if file is open
 ny_rec <- read_excel("2025SA_NY_Tautog Data 2021-2023_corrected.xlsx", sheet="Paired Age Samples", range = cell_rows(6:208))
+##########################
+
 ny_rec$state <- "NY"
 ny_rec$oto <- ny_rec$`Otolith Age`
 ny_rec$`Otolith Age` <- NULL
