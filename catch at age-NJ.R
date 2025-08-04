@@ -7,21 +7,34 @@
 setwd("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents")
 #setwd("/media/jess/9CE61C02E61BDB7A/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents")
 #on Ubuntu, you have to have this open in files/ssd to have it mounted...
-
 library(tidyverse)
 library(readxl)
 library(ggplot2)
 
+#INPUTS USED#############################
+life <- read_xlsx("data/tog/Tautog Data Template 2025_NJDEP.xlsx", sheet = "LifeHistory", skip = 6)  
+life24 <- read_xlsx("data/tog/Tautog Data Template 2025_NJDEP_2024-update.xlsx", sheet = "LifeHistory", skip = 6) 
+
+#Load ALKs
+indir <- "./output/tog/alk/filled/opercboth"
+alk2021numnj <- read.csv(file.path(indir, "NJNYB-ALK_2021_filled.csv"))
+alk2022numnj <- read.csv(file.path(indir, "NJNYB-ALK_2022_filled.csv"))
+alk2023numnj <- read.csv(file.path(indir, "NJNYB-ALK_2023_filled.csv"))
+alk2024numnj <- read.csv(file.path(indir, "NJNYB-ALK_2024_filled.csv"))
+
+#Load recreational catch and discard
+read.csv("data/tog/rec/Tautog_MRIP_TotalCatch_2021-2024_NJNYB.csv", header = TRUE)
+
+#Load commercial catch data
+commcatchnj <- read_xlsx("data/tog/Regional_Comm_landings_MT_07.18.25.xlsx", sheet = "MT")[,c("Year","NYB-NJ")]
+
+#Length Frequencies for Recreational Catch and Discard, modified from discard_LFnj.R from Samarah Nehemiah for LIS
+harvest_LFnj <- read.csv("./output/tog/NJNYB_RecHarvest_Frequencies.csv")
+discard_LFnj <- read.csv("./output/tog/discard_LF.csv")[,2:6]
+#########################################
 #Find weight of recreationally harvested fish.
 #There are small sample sizes for commercially harvested, so we'll use rec weights to infer comm weights.
 
-life <- read_xlsx("data/tog/Tautog Data Template 2025_NJDEP.xlsx", sheet = "LifeHistory", skip = 6)  #%>% 
-  #rename("Total.Length..cm." = "Total Length (cm)", "Weight..g." = "Weight (g)") %>%
-  #select(Year, Total.Length..cm., Age, Weight..g., Maturity, Region)
-life24 <- read_xlsx("data/tog/Tautog Data Template 2025_NJDEP_2024-update.xlsx", sheet = "LifeHistory", skip = 6) 
-#life24 <- read.csv("data/tog/tog_lifehistory.csv") %>% select(Year, Total.Length..cm., Age, Weight..g., Maturity, Region)
-#the only other place you could dig this out would be ocean trawl...? ventless trap survey??
-#ALS? MRIP type 9?
 names(life)[names(life)=="Year"] <- "Date"
 life$Year <- as.integer(format(life$Date, '%Y'))
 life24$`Weight (g)` <- life24$`Weight (g)` * 1000
@@ -59,27 +72,16 @@ LWpars <- bind_rows(lapply(c(1:4), function(i){
   #ggplot(data = preds.listnj[[i]], aes(x = Length, y = Pred)) + geom_point() + ggtitle(paste(2020+i))
 }))
 
-#Load commercial catch data
-commcatchnj <- read_xlsx("data/tog/Regional_Comm_landings_MT_07.18.25.xlsx", sheet = "MT")[,c("Year","NYB-NJ")]
 names(commcatchnj)[names(commcatchnj)=="NYB-NJ"] <- "Comm" #metric tons
 commcatchnj$Comm <- commcatchnj$Comm*1000000
 commcatchyrsumnj <- commcatchnj %>% left_join(weights_meansnj) %>% mutate(CommCatchNumFish = Comm/MeanWeight)
 
-#Load recreational catch and discard
-
-totalcatchnj <- read.csv("data/tog/rec/Tautog_MRIP_TotalCatch_2021-2024_NJNYB.csv", header = TRUE) %>% 
+totalcatchnj <- totalcatchnj %>% 
   mutate(DiscardMortality = Released.B2*0.025) %>% 
   mutate(TotalRecCatch = Harvest.A.B1+DiscardMortality)
 totalcatchnj <- left_join(totalcatchnj, commcatchyrsumnj) %>% mutate(TotalCatch = TotalRecCatch + CommCatchNumFish)
 
-#Load ALKs, convert to proportions
-
-indir <- "./output/tog/alk/filled/opercboth"
-alk2021numnj <- read.csv(file.path(indir, "NJNYB-ALK_2021_filled.csv"))
-alk2022numnj <- read.csv(file.path(indir, "NJNYB-ALK_2022_filled.csv"))
-alk2023numnj <- read.csv(file.path(indir, "NJNYB-ALK_2023_filled.csv"))
-alk2024numnj <- read.csv(file.path(indir, "NJNYB-ALK_2024_filled.csv"))
-
+#convert to proportions
 alks <- list(alk2021numnj, alk2022numnj, alk2023numnj, alk2024numnj)
 alks <- lapply(alks, function(y) {
   y <- y %>% select(2:13) 
@@ -90,9 +92,6 @@ alkprops <- lapply(alks, function(y) {
     rename("Length" = "length")
 })
 
-#Length Frequencies for Recreational Catch and Discard, modified from discard_LFnj.R from Samarah Nehemiah for LIS
-harvest_LFnj <- read.csv("./output/tog/NJNYB_RecHarvest_Frequencies.csv")
-discard_LFnj <- read.csv("./output/tog/discard_LF.csv")[,2:6]
 names(harvest_LFnj)<- c("Length", "2021", "2022", "2023", "2024")
 names(discard_LFnj)<- c("Length", "2021", "2022", "2023", "2024")
 discard_LF_propnj <- discard_LFnj %>% mutate(across(`2021`:`2024`, .fns = function(x){x/sum(x,na.rm = TRUE)}))
@@ -104,11 +103,6 @@ recharvestCAA <- Map(function(x, y) {
     mutate(across(paste0("X", 2:12), .fns = function(x){x*Number})) %>% replace(is.na(.), 0) %>% 
     select(-c("Number", "Total.Count"))
 }, 1:4, alkprops)
-
-#Commercial Catch Catch-at-Age and Weight-at-Age after Katie Drew's template
-#She fits a length-weight relationship, then convert the length-bins to weight bins.
-#Then calculates the sample weight frequencies by multiplying the numbers at length by the weight at length
-#Then she calculates the portion of the sample weight in each length bin 
 
 alklist <- list(alkprops[[1]][,-13], alkprops[[2]][,-13], alkprops[[3]][,-13], alkprops[[4]][,-13]) 
 
