@@ -1,8 +1,6 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## Length Frequencies --------------
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
 library(tidyverse)
 library(dplyr)
 library(openxlsx)
@@ -13,18 +11,14 @@ library(ggplot2)
 rm(list=ls()) 
 
 
-#read in data for discard LF
+#read in data for discard LF#########
+mrip9 <- read.csv("C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/data/tog/rec/Tautog_MRIP_Type9_lengths_2021-24.csv", header=TRUE)
+#American Littoral Society 
+als <- read_excel("C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/data/tog/rec/ALS_Tautog_2021-2024.xlsx", col_names = TRUE)
+####################
 
-#### american littoral society #####
-mrip9 <- read.csv("C:\\Users\\galax\\OneDrive - New Jersey Office of Information Technology\\Documents/data/tog/rec/Tautog_MRIP_Type9_lengths_2021-24.csv", header=TRUE)
-#mrip9<-read.csv("Data/MRIP/Tautog_MRIP_Type9_lengths_2021-24.csv",header=TRUE)
-head(mrip9)
 mrip9<-subset(mrip9, REGION=="NJNYB")
-
-als <- read_excel("C:\\Users\\galax\\OneDrive - New Jersey Office of Information Technology\\Documents/data/tog/rec\\ALS_Tautog_2021-2024.xlsx", col_names = TRUE)
-#als<- read_excel("Data/MRIP/ALS_Tautog_2021-2024.xlsx", sheet ="tautog tags",col_names = TRUE)#american littoral society
 head(als)  
-
 str(als)
 
 als<-subset(als,Region=="NJNYB")
