@@ -106,10 +106,10 @@ discard<- bind_rows(ALS_LF, MRIP9_LF) %>%
 
 
 #save LF
-write.csv(ALS_LF,"ALS_LF.csv")
-write.csv(MRIP9_LF,"MRIP9_LF.csv")
+#write.csv(ALS_LF,"ALS_LF.csv")
+#write.csv(MRIP9_LF,"MRIP9_LF.csv")
 #write.csv(VAS_LF,"VAS_LF.csv")
-write.csv(discard,"ALS+T9+VAS_LF.csv")
+write.csv(discard,"discard_LF.csv")
 
 
 
