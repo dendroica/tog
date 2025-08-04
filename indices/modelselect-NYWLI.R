@@ -1,3 +1,5 @@
+#clean up to include input data here
+
 library(buildmer)
 mod <- as.formula("Tautog ~ Year + SurfaceTemp + Salinity + DO")
 bmc <- buildmerControl(include= ~ Year)
