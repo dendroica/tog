@@ -137,10 +137,10 @@ caa2 <- list(
 )
 
 caa <- cbind(X1=c(0,0,0,0), rbind(
-  apply(recdiscardCAA[[1]][,2:12] + recharvestCAA[[1]][,2:12], 2, sum), #/1000,
-  apply(recdiscardCAA[[2]][,2:12] + recharvestCAA[[2]][,2:12], 2, sum), #/1000,
-  apply(recdiscardCAA[[3]][,2:12] + recharvestCAA[[3]][,2:12], 2, sum), #/1000,
-  apply(recdiscardCAA[[4]][,2:12] + recharvestCAA[[4]][,2:12], 2, sum) #/1000
+  apply(recdiscardCAA[[1]][,2:12] + recharvestCAA[[1]][,2:12], 2, sum) /1000,
+  apply(recdiscardCAA[[2]][,2:12] + recharvestCAA[[2]][,2:12], 2, sum) /1000,
+  apply(recdiscardCAA[[3]][,2:12] + recharvestCAA[[3]][,2:12], 2, sum) /1000,
+  apply(recdiscardCAA[[4]][,2:12] + recharvestCAA[[4]][,2:12], 2, sum) /1000
 ))
 
 waas <- list()

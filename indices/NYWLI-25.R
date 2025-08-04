@@ -585,6 +585,11 @@ SE <- boot.GAM(best, nboots=1000) #100% convergence! JESS
 
 index.out <- cbind.data.frame(index.out, SE)
 
+
+index.out$Year <- as.integer(levels(unique(dat$YEAR)))
+index.out <- index.out[index.out$Year > 1988,]
+index.out <- rbind(index.out, c(1994, -1, -1, -1, -1), c(2009, -1, -1, -1, -1))
+index.out <- index.out[order(index.out$Year),]
 index.out$CV <- index.out$SE/index.out$Index
 
 jpeg("NY_WLI_index.jpeg", width=8, height=5, units="in",res=600)

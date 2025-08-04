@@ -53,24 +53,25 @@ disp3 <- function(mod = NA) {
 
 Read in data
 ```{r}
-indata3 <- read.csv("C:\\Users\\galax\\OneDrive - New Jersey Office of Information Technology\\Documents\\data\\njot.csv", header = TRUE)
-
-indata <- read_excel("C:\\Users\\galax\\OneDrive - New Jersey Office of Information Technology\\Documents\\data\\tog\\Tautog Data Template 2025_NJDEP.xlsx", sheet="Survey Tow Data", range = cell_rows(5:6246)) 
+#indata3 <- read.csv("C:\\Users\\galax\\OneDrive - New Jersey Office of Information Technology\\Documents\\data\\njot.csv", header = TRUE)
+library(foreign)
+indata <- read.dbf("C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/data/tog/TOABUN.DBF")
+#indata <- read_excel("C:\\Users\\galax\\OneDrive - New Jersey Office of Information Technology\\Documents\\data\\tog\\Tautog Data Template 2025_NJDEP.xlsx", sheet="Survey Tow Data", range = cell_rows(5:6246)) 
 head(indata)
 str(indata)
 
 summary(indata)
 ```
 
-Some data exploration to determine which years and covariates to keep; then remove missing values
+Some data exploration to determine which YEARs and covariates to keep; then remove missing values
 ```{r}
 # limit to just yrs >1989 (1988 30 min tows; 1989 6 cruises; 1990 5 cruises (Dec+Feb combined into single January cruise))
-indata <- indata[indata$Year>1989,]
+indata <- indata[indata$YEAR>1988,]
 
 # relabel strata:
 forMerge <- data.frame("STRATUM"=12:26,"stratum2"=rep(c("inner","middle","outer"),times=5))
-indata <- merge(indata,forMerge)                                                # year order gets shuffled here
-indata <- indata[order(indata$Year),]
+indata <- merge(indata,forMerge)                                                # YEAR order gets shuffled here
+indata <- indata[order(indata$YEAR),]
 indata$depth <- indata$MAXDEPTH
 
 keepVars <- c("ID","CRUCODE","STRATUM","YRMODA","MINOUT","TOWLENGTH","depth","TEMPBOT","SALBOT","DOBOT","stratum2")
@@ -78,24 +79,24 @@ keepVars <- c("ID","CRUCODE","STRATUM","YRMODA","MINOUT","TOWLENGTH","depth","TE
 # how many records would we lose to NAs:
 apply(indata[,keepVars], 2, function(x) sum(is.na(x)))
 indata$Month <- substr(indata$YRMODA,5,6)
-indata$YOY <- as.numeric(indata$TOTAL_NUMBER)
+indata$YOY <- as.numeric(indata$NUMBER)
 ```
 
 ```{r eval=FALSE}
-matplot(1990:2019,with(indata, tapply(YOY,list(Year,substr(CRUCODE,5,5)),
+matplot(1990:2019,with(indata, tapply(YOY,list(YEAR,substr(CRUCODE,5,5)),
    geomean,alpha=NULL,warn=FALSE)),type="o",ylab="Geo mean per tow by cruise",
    main="Geo mean per tow by cruise")
 
 # pct pos & geomean by cruise:
 op <- par(mfrow=c(1,2))
-round(with(indata, tapply(YOY,list(Year,substr(CRUCODE,5,5)),geomean)),2)#,alpha=NULL,warn=FALSE)),2) # geomean
-round(with(indata, tapply(YOY,list(Year,substr(CRUCODE,5,5)),pctPos)),2) # pct pos
+round(with(indata, tapply(YOY,list(YEAR,substr(CRUCODE,5,5)),geomean)),2)#,alpha=NULL,warn=FALSE)),2) # geomean
+round(with(indata, tapply(YOY,list(YEAR,substr(CRUCODE,5,5)),pctPos)),2) # pct pos
 barplot(with(indata, tapply(YOY,list(substr(CRUCODE,5,5)),pctPos)),main="Pct positive by cruise")
 barplot(with(indata, tapply(YOY,list(substr(CRUCODE,5,5)),geomean)),main="Geometric mean by cruise") #,alpha=NULL,warn=FALSE
 
 # pct pos & geomean by stratum2:
 op <- par(mfrow=c(2,2))
-round(with(indata, tapply(YOY,list(Year,stratum2),pctPos)),2)
+round(with(indata, tapply(YOY,list(YEAR,stratum2),pctPos)),2)
 barplot(with(indata, tapply(YOY,stratum2,mean)),main="Arith mean by strata")
 barplot(with(indata, tapply(YOY,stratum2,geomean)),main="Geomean by strata") #,alpha=NULL,warn=FALSE
 barplot(with(indata, tapply(YOY,stratum2,pctPos)),main="Pct positive by strata")
@@ -116,7 +117,7 @@ round(t(with(indata[is.element(indata$STRATUM,c(12,15,18,21,24)),],
 
 ```{r}
 # Based on EDA, keeping just inshore stratum in October cruise - I explored cruises 4-5 and performance was worse than just cruise 5
-indata2 <- indata[is.element(as.numeric(substr(indata$CRUCODE,5,5)),5),]
+indata2 <- indata[as.numeric(substr(indata$CRUCODE,5,5)) %in% 4:5,]
    table(indata2$Month) # check
 indata2 <- indata2[indata2$stratum2=="inner",]# | indata2$stratum2=="middle"]
 
@@ -154,16 +155,16 @@ hist(indata2$YOY,main="Bluefish (truncated x-axis)",xlab="Observed Values",ylab=
 par(op)
 ```
 
-Finally, check to see if there are any years with zero catch that need to be removed:
+Finally, check to see if there are any YEARs with zero catch that need to be removed:
 ```{r}
-diff(as.numeric(names(xtabs(YOY~Year, indata2))))
+diff(as.numeric(names(xtabs(YOY~YEAR, indata2))))
 ```
 
 
 Create a dataframe with all the factors we need (z-score all continuous variables; all others as.factors)
 ```{r}
 dat = data.frame(CPUE = indata2$YOY,
-                 YEAR = as.factor(indata2$Year),
+                 YEAR = as.factor(indata2$YEAR),
                  MONTH = as.factor(indata2$Month),
                  VESSEL=as.factor(indata2$VESSEL),
                  STRATA=as.factor(indata2$STRATUM),
@@ -205,7 +206,7 @@ vif(mod)
 ```{r}
 # look at pctPos by factor; MONTH11==0, so drop MONTH: (only a few Nov samplings and never any BF collected)
 with(dat, tapply(CPUE,list(YEAR,MONTH),pctPos))
-# vessel and year highly correlated, so removing vessel; also, since cruise=5, most records are month = 10, so removing month as a factor
+# vessel and YEAR highly correlated, so removing vessel; also, since cruise=5, most records are month = 10, so removing month as a factor
 mod = lm(CPUE ~ YEAR + STRATA + DEPTH + BTEMP + BSAL + BDO, data = dat)
 vif(mod)
 pairs(~CPUE + YEAR + STRATA + DEPTH + BTEMP + BSAL + BDO,data=dat)
@@ -213,11 +214,11 @@ round(with(dat, cor(data.frame(CPUE,as.numeric(as.character(YEAR)),as.numeric(as
 ```
 
 ```{r}
-# drop BSAL (not strongly correlated with year, but highest among avail factors, and weakly corr with temp)
+# drop BSAL (not strongly correlated with YEAR, but highest among avail factors, and weakly corr with temp)
 mod = lm(CPUE ~ YEAR + STRATA + DEPTH + BDO + BTEMP, data = dat)
 vif(mod)
 mod <- as.formula("CPUE ~ YEAR + STRATA + DEPTH + BDO + BTEMP")
-# You want GVIF to be less than ~3. YEAR >> 3 but need year; drop BTEMP (corr with year)
+# You want GVIF to be less than ~3. YEAR >> 3 but need YEAR; drop BTEMP (corr with YEAR)
 #mod = lm(CPUE ~ YEAR + STRATA + DEPTH + BSAL + BDO, data = dat)
 #vif(mod)
 #round(with(dat, cor(data.frame(CPUE,as.numeric(YEAR),as.numeric(as.character(STRATA)),DEPTH,BSAL,BDO),method="pearson")),2)
@@ -249,7 +250,7 @@ pairs(~ YEAR + STRATA + DEPTH + BDO + BTEMP,data=dat) # also looks like non-line
 ```
 
 ```{r}
-# Previous model bombs; large yr estimates in ZI model, so remove year
+# Previous model bombs; large yr estimates in ZI model, so remove YEAR
 ZINB <- glmmTMB(mod,offset=lnEffort, 
                 ziformula = ~ STRATA + DEPTH + BDO  + BTEMP, data = dat, 
                 control=glmmTMBControl(optCtrl=list(iter.max=5e3,eval.max=5e3)),
@@ -310,7 +311,7 @@ NB3 <- glmmTMB(CPUE ~ YEAR + STRATA + offset(lnEffort), data = dat, family = nbi
 #summary(NB3)
 drop1(NB3,test="Chi") # all terms significant
 
-# Let's compare to a model with year only.
+# Let's compare to a model with YEAR only.
 NB0 <- glmmTMB(CPUE ~ YEAR+offset(lnEffort), data = dat, family = nbinom2)
 #summary(NB0)
 ```
@@ -448,7 +449,7 @@ summary(ZINB5)
 drop1(ZINB5,test="Chi") # all significant
 
 
-# a model with year only:
+# a model with YEAR only:
 ZINB0 <- glmmTMB(CPUE ~ YEAR,offset=lnEffort, 
                 data = dat, 
                 control=glmmTMBControl(optCtrl=list(iter.max=5e3,eval.max=5e3)),
@@ -541,7 +542,7 @@ drop1(ZANB5,test="Chi") # all significant
 ```
 
 ```{r eval = F}
-# a year-only model:
+# a YEAR-only model:
 # remove BDO from ZI:
 ZANB0 <- glmmTMB(CPUE ~ YEAR + STRATA + DEPTH, 
    ziformula = ~ DEPTH, data = dat,
@@ -633,7 +634,7 @@ AICtab(ZANB5,ZANB5.1,ZANB5.2,NB3,ZINB5)
 # quick comparison of index generated via ZANB5 vs ZANB5.2 (not very different)
 outa <- byHand2(ZANB5,nBoot=2,Method="ZANB5", modelType = "zero")
 outb <- byHand2(ZANB5.2,nBoot=2,Method="ZANB5.2", modelType = "zero")
-matplot(outa$Year,data.frame(scaleToMean(outa$Index),scaleToMean(outb$Index)),
+matplot(outa$YEAR,data.frame(scaleToMean(outa$Index),scaleToMean(outb$Index)),
    type="o",xlab="",ylab="Index scaled to mean",main="Indicies scaled to mean")
 cor(outa$Index,outb$Index)
 cor(outa$Index,outb$Index,method="spearman")
@@ -681,20 +682,20 @@ wts <- w/sum(w)
    V <- with(dat, tapply(Fish,list(STRATA,YEAR),var,na.rm=TRUE))
 
 
-   # Possible workaround if a year-stratum combination has NA variance (i.e., from n= 1), pool mean variance from entire year:
+   # Possible workaround if a YEAR-stratum combination has NA variance (i.e., from n= 1), pool mean variance from entire YEAR:
    needVar <- which(is.na(V))
    if(length(needVar)>0) {
-      allYears <- as.numeric(as.character(sort(unique(dat$YEAR))))
-      # years of interest:
-      yoi <- rep(allYears,each=5)[needVar] # just using the 5 inshore strata
-      lookupTable <- data.frame(year=allYears,.var=apply(V,2,mean,na.rm=TRUE))
-         # The special case of all NAs in a given year:
+      allYEARs <- as.numeric(as.character(sort(unique(dat$YEAR))))
+      # YEARs of interest:
+      yoi <- rep(allYEARs,each=5)[needVar] # just using the 5 inshore strata
+      lookupTable <- data.frame(YEAR=allYEARs,.var=apply(V,2,mean,na.rm=TRUE))
+         # The special case of all NAs in a given YEAR:
          # If NaN, then pool timeseries mean variance
          if(any(is.nan(lookupTable$.var))) {
             mod <- which(is.nan(lookupTable$.var))
             lookupTable$.var[mod] <- mean(lookupTable$.var[-mod])
          }
-      ans <- merge(lookupTable,data.frame(year=yoi,tmp=NA),by="year",sort=FALSE)
+      ans <- merge(lookupTable,data.frame(YEAR=yoi,tmp=NA),by="YEAR",sort=FALSE)
       V[which(is.na(V))] <- ans$.var
    }
    
@@ -717,32 +718,37 @@ wts <- w/sum(w)
    SE <- sqrt(apply(wts^2*V/N,2,sum,na.rm=TRUE))
    CV <- SE/.m
 
-   nom <- data.frame("Year"=as.numeric(as.character(unique(dat$YEAR))),"Index"=.m,SE,
+   nom <- data.frame("YEAR"=as.numeric(as.character(unique(dat$YEAR))),"Index"=.m,SE,
       "LCI"=LCL,"UCI"=UCL,CV,"Method"="stratifiedMean")
 
 p.data <- expand.pred(NB00$frame)
 best <- NB00
 index.out <- data.frame(
-  Year = as.numeric(unique(as.character(dat$YEAR))), #PICK UP HERE JESS
-  #Station=as.character(unique(dat$Station)), #use unique rather than levels bc removed 3 years
+  YEAR = as.numeric(unique(as.character(dat$YEAR))), #PICK UP HERE JESS
+  #Station=as.character(unique(dat$Station)), #use unique rather than levels bc removed 3 YEARs
                         Index= predict(best, newdata=p.data, type="response"))
 index.out <- cbind.data.frame(index.out, out)
+#gaps <- which(diff(x) > 1) + 1 # Identify the index of the element after the gap
+#missing_numbers <- x[gaps] - 1 # Find the missing number(s)
+index.out <- rbind(index.out, c(2020, -1, -1, -1, -1), c(2021, -1, -1, -1, -1))
 index.out$CV <- index.out$SE/index.out$Index
-index.out$Method="NB"
 
+index.out <- index.out[order(index.out$YEAR),]
+index.out$Method="NB"
+write.csv(index.out, "octrawl.csv")
 tmp <- rbind(index.out,nom)
 tmp
    
 
-ggplot(tmp, aes(x=Year, y=Index, color=Method, shape=Method)) +
-  geom_ribbon(aes(x=Year, ymin=LCI, ymax=UCI, fill=Method), alpha=0.5) +
+ggplot(tmp, aes(x=YEAR, y=Index, color=Method, shape=Method)) +
+  geom_ribbon(aes(x=YEAR, ymin=LCI, ymax=UCI, fill=Method), alpha=0.5) +
   geom_line() + geom_point() +
-  xlab("Year") + theme_bw()
+  xlab("YEAR") + theme_bw()
   
 # scale indices to respective means:
 op <- par(mfrow=c(1,1))
-#matplot(unique(tmp$Year),sapply(split(tmp,tmp$Method), function(x) scaleToMean(x$Index)),
- #       type="o",xlab="Year",ylab="index scaled to mean")
+#matplot(unique(tmp$YEAR),sapply(split(tmp,tmp$Method), function(x) scaleToMean(x$Index)),
+ #       type="o",xlab="YEAR",ylab="index scaled to mean")
 
 #plot(sapply(split(tmp,tmp$Method), function(x) scaleToMean(x$Index)))
 round(cor(sapply(split(tmp,tmp$Method), function(x) x$Index)),2)
