@@ -29,7 +29,7 @@ read.csv("data/tog/rec/Tautog_MRIP_TotalCatch_2021-2024_NJNYB.csv", header = TRU
 commcatchnj <- read_xlsx("data/tog/Regional_Comm_landings_MT_07.18.25.xlsx", sheet = "MT")[,c("Year","NYB-NJ")]
 
 #Length Frequencies for Recreational Catch and Discard, modified from discard_LFnj.R from Samarah Nehemiah for LIS
-harvest_LFnj <- read.csv("./output/tog/NJNYB_RecHarvest_Frequencies.csv")
+harvest_LFnj <- read.csv("./output/tog/harvest_LF.csv")
 discard_LFnj <- read.csv("./output/tog/discard_LF.csv")[,2:6]
 #########################################
 #Find weight of recreationally harvested fish.
