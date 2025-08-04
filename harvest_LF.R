@@ -1,18 +1,15 @@
 # Tautock Stock Assessment
-# MARI Region
-# MRIP length freq data
-
-#set wd
-#setwd("C:\\Users\\Nichole.Ares\\OneDrive - State of Rhode Island\\tautog\\Stock Assessment_Work\\2025 Update\\MRIP_LengthFreq")
+# Length Freq for MRIP harvest
 
 # packages
 library(ggplot2)
 options(scipen=999)
 library(tidyverse)
 library(readxl)
-# Length Freq for MRIP harvest
 
-MRIP_har <- read.csv("C:\\Users\\galax\\OneDrive - New Jersey Office of Information Technology\\Documents/data/tog/rec\\Tautog_MRIP_AB1_LFs_2021-2024_NJNYB.csv", header=TRUE)
+#INPUT####################################
+MRIP_har <- read.csv("C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/data/tog/rec/Tautog_MRIP_AB1_LFs_2021-2024_NJNYB.csv", header=TRUE)
+###################
 # check it
 head(MRIP_har)
 str(MRIP_har)
@@ -60,7 +57,7 @@ Yr_List <- unique(MRIP_har$Year)
    }
  }
 
-write.csv(MARI_har_lfs, "C:\\Users\\galax\\OneDrive - New Jersey Office of Information Technology\\Documents/output/tog/NJNYB_RecHarvest_Frequencies.csv", row.names=FALSE)
+write.csv(MARI_har_lfs, "C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/NJNYB_RecHarvest_Frequencies.csv", row.names=FALSE)
 
 
 #####################################################################################
