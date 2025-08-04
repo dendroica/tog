@@ -4,8 +4,8 @@
 # and combines those with the filled-in ALKs to calculate catch-at-age...
 # then weight-at-age
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-setwd("C:\\Users\\galax\\OneDrive - New Jersey Office of Information Technology\\Documents")
-#setwd("/media/jess/9CE61C02E61BDB7A/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents")
+setwd("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents")
+#setwd("/media/jess/9CE61C02E61BDB7A/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents")
 #on Ubuntu, you have to have this open in files/ssd to have it mounted...
 
 library(tidyverse)

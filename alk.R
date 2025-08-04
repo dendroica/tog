@@ -2,20 +2,40 @@ library(readxl)
 library(dplyr)
 library(ggplot2)
 
-setwd("C:\\Users\\galax\\OneDrive - New Jersey Office of Information Technology\\Documents") #jgorzo galax
-#setwd("/media/jess/9CE61C02E61BDB7A/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents")
+setwd("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents") #jgorzo jgorzo
+#setwd("/media/jess/9CE61C02E61BDB7A/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents")
 #on Ubuntu, you have to have this open in files/ssd to have it mounted...
 
+#INPUTS USED: UNFILLED ALK###################################
 #Using CommBioSamples and RecBioSamples to compute age-length key (ALK)
 ny_comm <- read_excel("./data/tog/2025SA_NY_Tautog Data 2021-2023_corrected.xlsx", sheet="CommBioSamples", range = cell_rows(6:901))
 ny_comm24 <- read_excel("./data/tog/2025SA_NY_Tautog Data 2024-1.xlsx", sheet="CommBioSamples", range = cell_rows(6:797)) 
-ny_comm <- bind_rows(ny_comm, ny_comm24) %>% mutate(mode="comm", Year = as.character(Year))
 ny_rec <- read_excel("./data/tog/2025SA_NY_Tautog Data 2021-2023_corrected.xlsx", sheet="RecBioSamples", range = cell_rows(6:110)) %>% 
   mutate(mode="rec", Year = as.character(Year))
-ny <- bind_rows(ny_comm, ny_rec) %>% mutate(state="NY")
-
 nj_comm <- read_excel("./data/tog/Tautog Data Template 2025_NJDEP.xlsx", sheet="CommBioSamples", range = cell_rows(6:682)) %>% mutate(Year = format(Year, '%Y'))
 nj_comm24 <- read_excel("./data/tog/Tautog Data Template 2025_NJDEP_2024data.xlsx", sheet="CommBioSamples", range = cell_rows(6:239)) %>% mutate(Year = as.character(Year))
+
+#Using rec harvest and live releases to see what gaps need to be filled...
+als <- read_excel("./data/tog/rec/ALS_Tautog_2021-2024.xlsx")
+MRIP_har <- read.csv("./data/tog/rec/Tautog_MRIP_AB1_LFs_2021-2024_NJNYB.csv", header=TRUE)
+
+#INPUTS USED: FILLING THE ALK
+#Used adjacent states to fill the gaps where needed...
+lis21 <- read_excel("./data/tog/other/LIS_ALK_unfilled060325.xlsx", sheet="LIS_2021")
+lis22 <- read_excel("./data/tog/other/LIS_ALK_unfilled060325.xlsx", sheet="LIS_2022")
+lis23 <- read_excel("./data/tog/other/LIS_ALK_unfilled060325.xlsx", sheet="LIS_2023")
+lis24 <- read_excel("./data/tog/other/LIS_ALK_unfilled060325.xlsx", sheet="LIS_2024")
+
+dmv21 <- read_excel("./data/tog/other/dmv/DMV_ALK_unfilled.xlsx", sheet="ALK_2021_unfilled")
+dmv22 <- read_excel("./data/tog/other/dmv/DMV_ALK_unfilled.xlsx", sheet="ALK_2022_unfilled")
+dmv23 <- read_excel("./data/tog/other/dmv/DMV_ALK_unfilled.xlsx", sheet="ALK_2023_unfilled")
+dmv24 <- read_excel("./data/tog/other/dmv/DMV_ALK_unfilled.xlsx", sheet="ALK_2024_unfilled")
+#############################################################################################
+
+###########UNFILLED ALK####################
+#data shaping
+ny_comm <- bind_rows(ny_comm, ny_comm24) %>% mutate(mode="comm", Year = as.character(Year))
+ny <- bind_rows(ny_comm, ny_rec) %>% mutate(state="NY")
 nj_comm <- bind_rows(nj_comm[,which(names(nj_comm) %in% names(nj_comm24))], nj_comm24[,which(names(nj_comm24) %in% names(nj_comm))]) %>%
   mutate(state="NJ", mode="comm")
 
@@ -108,19 +128,19 @@ proptab24 <- tab24[,-1]/rowSums(tab24[,-1])
 
 #write.csv(proptab21, "NJNYB-ALK_2021_unfilled-prop.csv")
 #write.csv(proptab22, "NJNYB-ALK_2022_unfilled-prop.csv")
-#write.csv(proptab23, "NJNYB-ALK_2023_unfilled-prop.csv")
+#write.csv(proptab23, "NJNYB-ALK_2023_unfilled-prop.csv") #unfilled ALKS produced
+#############################################################################
 
-###########STEP 1: fill with otolith data
+#############FILLING THE ALK
 alks <- list(tab21, tab22, tab23, tab24)
 
 #using rec data to see what gaps need to be filled, I don't think type 9 gets included?
 #mrip9 <- read.csv("./data/tog/rec/Tautog_MRIP_Type9_lengths_2021-24.csv")
 #mrip9 <- mrip9[mrip9$REGION=="NJNYB",]
-als <- read_excel("./data/tog/rec/ALS_Tautog_2021-2024.xlsx")
+
 als <- als[als$Region=="NJNYB",]
 als$Length_cm<-als$Length_IN*2.54 #convert inches to cm
 als$Length_cm<-floor(als$Length_cm)
-MRIP_har <- read.csv("./data/tog/rec/Tautog_MRIP_AB1_LFs_2021-2024_NJNYB.csv", header=TRUE)
 
 #min(unique(c(mrip9$LENGTH.ROUNDED.DOWN.TO.NEAREST.CM, als$Length_cm, MRIP_har$Length))) = 12
 #max(unique(c(mrip9$LENGTH.ROUNDED.DOWN.TO.NEAREST.CM, als$Length_cm, MRIP_har$Length))) = 83
@@ -136,10 +156,20 @@ checkgaps <- function(alk) {
                 gaps, catchmatch)
 return(list(gaps, tofill))}
 
-gapstofill <- checkgaps(alks)
+#gapstofill <- checkgaps(alks) #[[2]] 
 
-#You can see that there are a usually one or a few missing at the small extreme, many at the large extreme, and then one or two that are "internal." In 2022 the internal is 27cm, in 2023 the internal is 55cm
+#STEP 1: if last age bin with values is all in 12+ and the end of the key is 0s
+agefilled <- lapply(alks, function(y) {
+  y$length <- as.integer(y$length)
+  y <- y %>% mutate(rowsum = rowSums(.[2:12], na.rm = TRUE)) #add row sum
+  datao <- max(y$length[y$rowsum > 0]) #last row with values
+  if (y[y$length==datao,12] == y[y$length==datao,"rowsum"] & datao < max(y$length)) {
+    y[y$length %in% (datao+1):max(y$length),12] <- y[y$length==datao,12] # fill down
+  }
+  return(y)})
 
+gapstofill <- checkgaps(agefilled) #[[2]
+###########STEP 1: fill with otolith data from my own region (NJNYB)
 otofill <- Map(function(x,y) {
   check <- oto[oto$Year==y & oto$Length %in% x & oto$subregion=="B",]
   if (nrow(check) > 0) {
@@ -155,7 +185,7 @@ otofilled <- Map(function(x,y) {
     x[x$length %in% y$length,] <- y
     }
   return(x)
-}, alks, otofill)
+}, agefilled, otofill)
 
 otofilled <- Map(
   function(x,y) {
@@ -163,31 +193,16 @@ otofilled <- Map(
     return(x)},
   otofilled, c(2021:2024))
 
-otofilled <- lapply(otofilled, function(y) {
-  y$length <- as.integer(y$length)
-  y <- y %>% mutate(rowsum = rowSums(.[2:12], na.rm = TRUE)) #add row sum
-  datao <- max(y$length[y$rowsum > 0]) #last row with values
-  if (y[y$length==datao,12] == y[y$length==datao,"rowsum"] & datao < max(y$length)) {
-    y[y$length %in% (datao+1):max(y$length),12] <- y[y$length==datao,12]
-  }
-return(y)})
-########################STEP 2: fill 
+gapstofill <- checkgaps(otofilled)
+
+#filled 31, 48 in 2024...
+########################STEP 2: fill with adjacent rows, or neighboring states
 lis_opercboth <- operc[operc$subregion=="LIS",]
 lis_oto <- oto[oto$subregion=="LIS",]
 
-gapstofill <- checkgaps(otofilled)
-
-lis21 <- read_excel("./data/tog/other/LIS_ALK_unfilled060325.xlsx", sheet="LIS_2021")
-lis22 <- read_excel("./data/tog/other/LIS_ALK_unfilled060325.xlsx", sheet="LIS_2022")
-lis23 <- read_excel("./data/tog/other/LIS_ALK_unfilled060325.xlsx", sheet="LIS_2023")
-lis24 <- read_excel("./data/tog/other/LIS_ALK_unfilled060325.xlsx", sheet="LIS_2024")
 LIS_unfill <- list(lis21, lis22, lis23, lis24)
 names(LIS_unfill) <- c("2021", "2022", "2023", "2024")
 
-dmv21 <- read_excel("./data/tog/other/dmv/DMV_ALK_unfilled.xlsx", sheet="ALK_2021_unfilled")
-dmv22 <- read_excel("./data/tog/other/dmv/DMV_ALK_unfilled.xlsx", sheet="ALK_2022_unfilled")
-dmv23 <- read_excel("./data/tog/other/dmv/DMV_ALK_unfilled.xlsx", sheet="ALK_2023_unfilled")
-dmv24 <- read_excel("./data/tog/other/dmv/DMV_ALK_unfilled.xlsx", sheet="ALK_2024_unfilled")
 dmv_unfill <- list(dmv21, dmv22, dmv23, dmv24)
 names(dmv_unfill) <- c("2021", "2022", "2023", "2024")
 
@@ -205,64 +220,39 @@ nearfill <- Map(function(x,y) {
   #print(str(y))
   
   for(i in 1:length(x)) {
-    if(x[i] == min(y$length)) { #if the gap to fill is the smallest bin in the ALK...
+    if(x[i] == min(y$length)) { ###if the gap to fill is the smallest bin in the ALK...
       if(x[i] + 1 != x[i+1]) { #if the next greater length bin isn't empty...
         y[y$length==x[i],c(2:12)] <- y[y$length==x[i]+1,c(2:12)] #...fill from below
       } else if (sum(lis[lis[,1]==x[i],c(2:12)]) == 0) { #e.g. need to fill 29 for 2021, 2023 
         #sum(dmv[dmv[,1]==x[i],c(2:12)]) > 0 shows preference for DMV when it has values
-        y[y$length==x[i],c(2:12)] <- dmv[dmv[,1]==x[i],c(2:12)] #if the next greatest length bin from the smallest is empty, fill from DMV
+        y[y$length==x[i],c(2:12)] <- dmv[dmv[,1]==x[i],c(2:12)] #if the next greatest length bin from the smallest is empty, and LIS is empty, fill from DMV
       } else {
-        y[y$length==x[i],c(2:12)] <- lis[lis[,1]==x[i],c(2:12)]
+        y[y$length==x[i],c(2:12)] <- lis[lis[,1]==x[i],c(2:12)] #prefer to fill with LIS
       }
-    } else if(x[i] == max(y$length)) { #if the gap to fill is the largest bin in the ALK...
+    } else if(x[i] == max(y$length)) { ###if the gap to fill is the largest bin in the ALK...
       if(x[i] - 1 != x[i-1] & sum(y[y$length==x[i]-1, c(2:12)]) > 0) { #if the next smallest length bin doesn't need filling and has values...
         y[y$length==x[i],c(2:12)] <- y[y$length==x[i]-1,c(2:12)] #...fill from above
-      } else if (y[y$length==max(y$length[y$rowsum > 0]),12] == y[y$length==max(y$length[y$rowsum > 0]),"rowsum"]) { #if the closest length bin with values are all in 12, fill down
-        y[y$length==x[i],c(2:12)] <- y[y$length==max(y$length[y$rowsum > 0]),c(2:12)]
       } else {
-        if (sum(lis[lis[,1]==x[i],c(2:12)]) == 0) {
+        if (sum(lis[lis[,1]==x[i],c(2:12)]) == 0) { #preference for filling from LIS when it has data
           y[y$length==x[i],c(2:12)] <- dmv[dmv[,1]==x[i],c(2:12)]
         } else {
           y[y$length==x[i],c(2:12)] <- lis[lis[,1]==x[i],c(2:12)]
         }
       }
-    #} else if (all(x[i]:max(y$length) %in% x)) { #look for a run of 0 values at the end of the key
-    #  if (sum(y[y$length==lastrowfilled,c(2:11)]) == 0) {
-    #    y[y$length==x[i],c(2:12)] <- y[y$length==lastrowfilled,c(2:12)]
-    #  } else {
-    #    if(sum(lis[lis[,1]==x[i],c(2:12)]) == 0) {
-    #      y[y$length==x[i],c(2:12)] <- dmv[dmv[,1]==x[i],c(2:12)]
-    #    } else {
-    #      y[y$length==x[i],c(2:12)] <- lis[lis[,1]==x[i],c(2:12)]
-    #    }
-    #  }
-    #} else if (all(x[i]:(max(y$length)-1) %in% x) & sum(y[y$length==max(y$length),2:12]) == 0) { #handle the same as above if the last row is empty...
-    #  if (sum(y[y$length==lastrowfilled,c(2:11)]) == 0) {
-    #    y[y$length==x[i],c(2:12)] <- y[y$length==lastrowfilled,c(2:12)]
-    #    if(i == length(x)) { #if you're done filling the key after this iteration, fill last row with 12+
-    #      y[y$length==max(y$length),c(2:12)] <- y[y$length==lastrowfilled,c(2:12)]
-    #    }
-    #  } else {
-    #    if(sum(lis[lis[,1]==x[i],c(2:12)]) == 0) {
-    #      y[y$length==x[i],c(2:12)] <- dmv[dmv[,1]==x[i],c(2:12)]
-    #    } else {
-    #      y[y$length==x[i],c(2:12)] <- lis[lis[,1]==x[i],c(2:12)]
-    #    }
-    #  }
-    } else if (i == length(x)) { #if it's the last bin to be filled and it's not the largest length bin in the key...
+    } else if (i == length(x)) { ###if it's the last bin to be filled (and it's not the largest length bin in the key...)
       if(x[i] - 1 == x[i-1]) { #if the bin above it is empty...
-        y[y$length==x[i],c(2:12)] <- y[y$length==x[i]+1,c(2:12)] #...fill with the bin below (this logic may have been specific to this data...)
+        y[y$length==x[i],c(2:12)] <- y[y$length==x[i]+1,c(2:12)] #...fill with the bin below
       } else {
         y[y$length==x[i],c(2:12)] <- y[y$length==x[i]+1,c(2:12)] + y[y$length==x[i]-1,c(2:12)]
       }
-    } else if (!(x[i] + 1) %in% x & !(x[i] - 1) %in% x) { #if there are values on either side...
+    } else if (!(x[i] + 1) %in% x & !(x[i] - 1) %in% x) { ###any row "in the middle": if there are values on either side...
       y[y$length==x[i],c(2:12)] <- y[y$length==x[i]+1,c(2:12)] + y[y$length==x[i]-1,c(2:12)]
-    } else if ((x[i] + 1) %in% x & !(x[i] - 1) %in% x) {
+    } else if ((x[i] + 1) %in% x & !(x[i] - 1) %in% x) { #if the bin below is empty...
         y[y$length==x[i],c(2:12)] <- y[y$length==x[i]-1,c(2:12)]
-    } else if (!(x[i] + 1) %in% x & (x[i] - 1) %in% x & sum(y[y$length==x[i]+1,c(2:12)]) > 0) {
+    } else if (!(x[i] + 1) %in% x & (x[i] - 1) %in% x & sum(y[y$length==x[i]+1,c(2:12)]) > 0) { #if the bin above is empty and the bin below has non-0 values
       y[y$length==x[i],c(2:12)] <- y[y$length==x[i]+1,c(2:12)]
     } else {
-      if(sum(lis[lis[,1]==x[i],c(2:12)]) == 0) {
+      if(sum(lis[lis[,1]==x[i],c(2:12)]) == 0) { #if 0s on both sides, fill from adjacent region (LIS first)
         y[y$length==x[i],c(2:12)] <- dmv[dmv[,1]==x[i],c(2:12)]
       } else {
         y[y$length==x[i],c(2:12)] <- lis[lis[,1]==x[i],c(2:12)] 
@@ -275,20 +265,15 @@ nearfill <- Map(function(x,y) {
 
 checkgaps(nearfill)[[2]]
 
-#fill from other years
-fill21 <- nearfill[[1]]
-fill23 <- nearfill[[3]]
-fill23[fill23$length==59, ] <- fill21[fill21$length==59,]
-
 #by this point, from the filling steps above, the next closest length bin to the end...
 #...that had values was just 1 in age 12, so used that to fill down
 fill24 <- nearfill[[4]]
 fill24[fill24$length %in% 57:60,12] <- 1
 #############
 
-nearfill <- list(fill21, nearfill[[2]], fill23, fill24)
+nearfill <- list(nearfill[[1]], nearfill[[2]], nearfill[[3]], fill24)
 
-#write.csv(nearfill[[1]], "./output/tog/alk/filled/opercboth/NJNYB-ALK_2021_filled.csv")
-#write.csv(nearfill[[2]], "./output/tog/alk/filled/opercboth/NJNYB-ALK_2022_filled.csv")
-#write.csv(nearfill[[3]], "./output/tog/alk/filled/opercboth/NJNYB-ALK_2023_filled.csv")
-#write.csv(nearfill[[4]], "./output/tog/alk/filled/opercboth/NJNYB-ALK_2024_filled.csv")
+write.csv(nearfill[[1]], "./output/tog/alk/filled/opercboth/NJNYB-ALK_2021_filled.csv")
+write.csv(nearfill[[2]], "./output/tog/alk/filled/opercboth/NJNYB-ALK_2022_filled.csv")
+write.csv(nearfill[[3]], "./output/tog/alk/filled/opercboth/NJNYB-ALK_2023_filled.csv")
+write.csv(nearfill[[4]], "./output/tog/alk/filled/opercboth/NJNYB-ALK_2024_filled.csv")
