@@ -6,10 +6,8 @@ library(dplyr)
 library(openxlsx)
 library(readxl)
 library(ggplot2)
-
 #clear data
 rm(list=ls()) 
-
 
 #read in data for discard LF#########
 mrip9 <- read.csv("C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/data/tog/rec/Tautog_MRIP_Type9_lengths_2021-24.csv", header=TRUE)
