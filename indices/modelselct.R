@@ -1,3 +1,5 @@
+#cleanup to put data source in
+
 library(buildmer)
 bmc <- buildmerControl(include= ~offset(lnEffort))
 nb <- buildglmmTMB(mod, dat, family = nbinom2, 
