@@ -1,0 +1,153 @@
+---
+title: "Bluefish stratified arithmetic mean index - NEFSC trawl (Bigelow)"
+author: "M Celestino"
+date: "`r Sys.time()`"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      cache = FALSE)
+#knitr::root.dir("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents")
+```
+
+## Bluefish index standardization
+
+### Step 1: Data processing
+
+Load functions & libraries
+```{r}
+library(ggplot2, quietly = TRUE, verbose=FALSE)
+library(readxl, quietly = TRUE, verbose=FALSE)
+library(rmarkdown, quietly = TRUE, verbose=FALSE)
+library(knitr, quietly = TRUE, verbose=FALSE)
+library(dplyr)
+library(tidyr)
+```
+
+### Generate index from catch records first (so we can get SE & CV)
+
+### Generate index from length records to aportion into ages
+
+We need the code below to apportion the index into ages (should give the same stratified mean as from catch records, above).
+```{r, error=TRUE}
+########################## Index from length records:
+
+# Concatenation of Cruise6 [6 char], Stratum [leading zeros, 5 digits],
+#  Tow [leading zeros, 3 digits] and Station values [leading zeros 4 digits].
+library(foreign)
+len <- read.dbf("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/data/tog/TOLENG.DBF")
+catch <- read.dbf("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/data/tog/TOABUN.DBF") #Technology/Documents/data/tog/examples/NEFSC_Fall_Survey_Data_for_Std_V3.xlsx", #same as a in block above
+ #  sheet="BLUEFISH_FALL_BIG_SAW60_09_21",range="A63:AJ713",na="NA")) # from v2 of the catch query
+catch <- catch[catch$YEAR>1988,]
+len <- len[len$YEAR>1988,]
+
+#len2 <- as.data.frame(read_xlsx("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/data/tog/examples/blf_nefsc_trawl_lengths_mgmtTrk.xlsx",sheet="Sheet1",
+#   range="A1:L12152"))
+
+catch <- catch[as.numeric(substr(catch$CRUCODE,5,5)) %in% 4:5,]
+#table(indata2$Month) # check
+   
+forMerge <- data.frame("STRATUM"=12:26,"stratum2"=rep(c("inner","middle","outer"),times=5))
+indata <- merge(catch,forMerge)                                                # YEAR order gets shuffled here
+indata2 <- indata[indata$stratum2=="inner",]# | indata2$stratum2=="middle"]
+```
+
+```{r}
+# new code to fix issue in 2022 data query:
+#catch[catch$EST_YEAR==2022,"EXPCATCHNUM"] <-  
+#   catch[catch$EST_YEAR==2022,"EXPCATCHNUM"]*catch[catch$EST_YEAR==2022,"SWEPT_AREA_RATIO"]
+
+
+# Some preliminaries to merge catch with length records:
+#CRUISE6 <- catch$CRUISE6
+#STRATUM <- paste("0",catch$STRATUM,sep="")
+#TOW <- paste(ifelse(nchar(catch$TOW)<2,"00","0"),catch$TOW,sep="") # need to account for TOW=10 with ifelse
+
+#n <- nchar(catch$STATION)
+
+#STATION <- vector("numeric",length(n))
+#for(i in 1:length(n)) {
+#   STATION[i] <- paste(paste(rep("0",4-n[i]),collapse=""),catch$STATION[i],sep="")
+#}
+
+
+#keep <- paste(CRUISE6,STRATUM,TOW,STATION,sep="")
+#catch$ID <- keep
+
+# Keep just the length records for which we have catch records
+A <- len[len$ID %in% indata2$ID,]
+
+# Merge the catch records with length records
+oceanLen <- merge(indata2,A,all=TRUE)
+
+# Verify that expanded len freq sums to expanded catch (i.e., the length
+#  records match the catch numbers):
+# Check first few by hand:
+#oceanLen$EXPNUMLEN <- oceanLen$SWEPT_AREA_RATIO * oceanLen$EXPNUMLEN            # only meaningful for Bigelow (swept area ratio for Albatross = 1)
+#oceanLen[1:25,c("ID","EXPCATCHNUM","EXPNUMLEN")] # manually check a few
+
+# Check to see if there are any NAs:
+#apply(apply(oceanLen[,c("LENGTH","")],2,is.na),2,any) # yes, so need to change:
+
+# Change missing lengths to 1cm:
+oceanLen[is.na(oceanLen$LENGTH),"LENGTH"] <- 1
+# Change missing frequencies to 0
+oceanLen[is.na(oceanLen$FREQUENCY),"FREQUENCY"] <- 0
+
+
+# Then automate to check all:
+summary(
+tmp <- sapply(split(oceanLen,oceanLen$ID), function(z) {
+   z$NUMBER[1]-sum(z$FREQUENCY)
+   }
+)
+) # pretty good! (+/- ~1e-13)
+plot(tmp)                                                                       # note that Bigelow catch records are expanded somewhat differently than length records
+oceanLen[is.element(oceanLen$ID,names(which(tmp>0))),]
+oceanLen[is.element(oceanLen$ID,names(which(tmp<0))),]
+rm(tmp)
+
+# double check zeros:
+oceanLen[oceanLen$NUMBER==0,c("NUMBER","FREQUENCY")]
+head(len)
+mylen <- len[len$LENGTH >= 29 & len$LENGTH < 61 & len$YEAR %in% c(2021:2024),]
+agglen <- mylen %>% group_by(LENGTH, YEAR) %>% 
+  summarise(total = sum(FREQUENCY), .groups = "drop")
+#agglen <- rbind(agglen, c(60, 2022, 0))
+agglen <- agglen %>% complete(LENGTH = 29:60, YEAR,
+    fill = list(total = 0))
+
+indir <- "C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/alk/filled/opercboth"
+alk2021numnj <- read.csv(file.path(indir, "NJNYB-ALK_2021_filled.csv"))
+alk2022numnj <- read.csv(file.path(indir, "NJNYB-ALK_2022_filled.csv"))
+alk2023numnj <- read.csv(file.path(indir, "NJNYB-ALK_2023_filled.csv"))
+alk2024numnj <- read.csv(file.path(indir, "NJNYB-ALK_2024_filled.csv"))
+
+alks <- list(alk2021numnj, alk2022numnj, alk2023numnj, alk2024numnj)
+alks <- lapply(alks, function(y) {
+  y <- y %>% select(2:14) 
+})
+alkprops <- lapply(alks, function(y) {
+  y <- y %>% mutate(rowsum = rowSums(.[grep("X", names(.))], na.rm = TRUE)) %>% #add row sum
+    mutate(across(2:12, .fns= function(x){x/rowsum})) %>% replace(is.na(.), 0) %>%
+    rename("LENGTH" = "length")
+})
+
+alkprops <- bind_rows(alkprops)
+```
+
+```{r}
+#no length data 2021
+yrs <- bind_rows(lapply(2:4, function(x) {
+  yr <- 2020 + x
+  alk <- alkprops[alkprops$year==yr,]
+  lf <- agglen[agglen$YEAR==yr,]
+  discardprops <- apply(alk[,2:12], 2, function(x) x * lf[, "total"]) %>% bind_cols
+  names(discardprops) <- c(2:12)
+  caa <- apply(discardprops, 2, sum)
+  paa <- caa/sum(caa)
+}))
+write.csv(yrs, "yrs_octrawl_lf.csv")
+################################################################################
+```
