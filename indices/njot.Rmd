@@ -55,7 +55,7 @@ Read in data
 ```{r}
 library(foreign)
 indata <- read.dbf("C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/data/tog/TOABUN.DBF")
-#this is OC TRAWL DATA through 20244
+#this is OC TRAWL DATA through 20244 (cruise 5 never happened for 2024)
 
 head(indata)
 str(indata)
