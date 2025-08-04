@@ -57,7 +57,7 @@ Yr_List <- unique(MRIP_har$Year)
    }
  }
 
-write.csv(MARI_har_lfs, "C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/NJNYB_RecHarvest_Frequencies.csv", row.names=FALSE)
+write.csv(MARI_har_lfs, "C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/harvest_LF.csv", row.names=FALSE)
 
 
 #####################################################################################
