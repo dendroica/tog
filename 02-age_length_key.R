@@ -136,10 +136,9 @@ checkgaps <- function(alk) {
   tofill <- Map(function(x,y) {x[y]},
                 gaps, catchmatch)
 return(list(gaps, tofill))}
-
 #gapstofill <- checkgaps(alks) #[[2]] 
 
-#STEP 1: if last age bin with values is all in 12+ and the end of the key is 0s
+####STEP 1: if last age bin with values is all in 12+ and the end of the key is 0s
 agefilled <- lapply(alks, function(y) {
   y$length <- as.integer(y$length)
   y <- y %>% mutate(rowsum = rowSums(.[2:12], na.rm = TRUE)) #add row sum
@@ -150,7 +149,7 @@ agefilled <- lapply(alks, function(y) {
   return(y)})
 
 gapstofill <- checkgaps(agefilled) #[[2]
-###########STEP 1: fill with otolith data from my own region (NJNYB)
+####STEP 2: fill with otolith data from my own region (NJNYB)
 otofill <- Map(function(x,y) {
   check <- oto[oto$Year==y & oto$Length %in% x & oto$Region=="B",]
   if (nrow(check) > 0) {
