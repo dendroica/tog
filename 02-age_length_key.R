@@ -29,7 +29,7 @@ dmv21 <- read_excel("./data/tog/other/dmv/DMV_ALK_unfilled.xlsx", sheet="ALK_202
 dmv22 <- read_excel("./data/tog/other/dmv/DMV_ALK_unfilled.xlsx", sheet="ALK_2022_unfilled")
 dmv23 <- read_excel("./data/tog/other/dmv/DMV_ALK_unfilled.xlsx", sheet="ALK_2023_unfilled")
 dmv24 <- read_excel("./data/tog/other/dmv/DMV_ALK_unfilled.xlsx", sheet="ALK_2024_unfilled")
-#############################################################################################
+###############################################################
 
 ###########UNFILLED ALK####################
 #data shaping
@@ -56,7 +56,9 @@ njny$tl_cm <- floor(njny$Length)
 ##max(njny[njny$Region=="B" & njny$structure=="operc",]$tl_cm) = 83
 ##sort(unique(njny[njny$Region=="B" & njny$structure=="operc",]$tl_cm)) 29 is next largest length incl in rec data
 
-alk <- njny[njny$tl_cm >= 29 & njny$tl_cm < 61,]
+for_alk <- njny[njny$tl_cm >= 29 & njny$tl_cm < 61,] %>%
+  mutate(alk, Age_plus = ifelse(Age>=12, 12, Age)) %>%
+  filter(Region == "B")
 #The previous assessment bounds for NJ-NYB were 15-60cm and MA-RI uses 14-60cm
 #This final bounding was ad-hoc from filling the ALK. The gaps left to fill...
 #...by the end of this script when trying to use the full range of data (to 83cm)
@@ -64,21 +66,14 @@ alk <- njny[njny$tl_cm >= 29 & njny$tl_cm < 61,]
 #Given that the region's last limit was 60cm and MA-RI also only goes to 60cm...
 #...that felt like a reasonable cutoff, and the highest the rec data goes below 63cm is 60cm
 
-alk$TL_cm <- factor(alk$tl_cm, levels=29:60)
-aldat <- mutate(alk, Age_plus = ifelse(Age>=12, 12, Age))
-aldat$age <- factor(aldat$Age, levels=2:17)
-aldat$Age_plus <- factor(aldat$Age_plus, levels = 2:12)
+for_alk$TL_cm <- factor(for_alk$tl_cm, levels=29:60)
+for_alk$Age_plus <- factor(for_alk$Age_plus, levels = 2:12)
 
-operc <- aldat[aldat$structure=="operc" | aldat$structure=="both",]
-oto <- aldat[aldat$structure=="oto",]
-aldata <- operc[operc$Region=="B",]
-#aldata <- aldat[aldat$Region=="B",] ...revisit with new lengths/ages...
-
-#We need to do yearly keys
-tt21 <- filter(aldata, Year == "2021")
-tt22 <- filter(aldata, Year == "2022")
-tt23 <- filter(aldata, Year == "2023")
-tt24 <- filter(aldata, Year == "2024")
+operc <- for_alk[for_alk$structure=="operc" | for_alk$structure=="both",]
+oto <- for_alk[for_alk$structure=="oto",]
+#alk_data <- for_alk ...revisit with new lengths/ages...
+alk_data <- operc
+alks <- split(alk_data, alk_data$Year)
 
 tabyr <- function(dat) {
   tab <- table(dat$`TL_cm`, dat$Age_plus) #if you switch to full age you'll need to change Age_plus to Age
@@ -89,43 +84,26 @@ tabyr <- function(dat) {
   return(df)
 }
 
-tab21 <- tabyr(tt21)
-tab22 <- tabyr(tt22)
-tab23 <- tabyr(tt23)
-tab24 <- tabyr(tt24)
-
-#Age as a proportion of all individuals of that size in a year
-proptab21 <- tab21[,-1]/rowSums(tab21[,-1])
-proptab22 <- tab22[,-1]/rowSums(tab22[,-1])
-proptab23 <- tab23[,-1]/rowSums(tab23[,-1])
-proptab24 <- tab24[,-1]/rowSums(tab24[,-1])
-
-#write.csv(tab21[,-1], "NJNYB-ALK_2021_unfilled.csv")
-#write.csv(tab22[,-1], "NJNYB-ALK_2022_unfilled.csv")
-#write.csv(tab23[,-1], "NJNYB-ALK_2023_unfilled.csv")
-#write.csv(tab24[,-1], "NJNYB-ALK_2024_unfilled.csv")
-
-#write.csv(proptab21, "NJNYB-ALK_2021_unfilled-prop.csv")
-#write.csv(proptab22, "NJNYB-ALK_2022_unfilled-prop.csv")
-#write.csv(proptab23, "NJNYB-ALK_2023_unfilled-prop.csv")
+alks <- lapply(alks, tabyr)
+#write.csv(alks[[1]][,-1], "NJNYB-ALK_2021_unfilled.csv")
+#write.csv(alks[[2]][,-1], "NJNYB-ALK_2022_unfilled.csv")
+#write.csv(alks[[3]][,-1], "NJNYB-ALK_2023_unfilled.csv")
+#write.csv(alks[[4]][,-1], "NJNYB-ALK_2024_unfilled.csv")
 #############################################################################
 
 #############FILLING THE ALK
 # We have several rows (length bins) that have no age samples.
 # These are gaps that need to be filled.
-alks <- list(tab21, tab22, tab23, tab24)
-
 #using rec data to see what gaps need to be filled, I don't think type 9 gets included?
 #mrip9 <- read.csv("./data/tog/rec/Tautog_MRIP_Type9_lengths_2021-24.csv")
 #mrip9 <- mrip9[mrip9$REGION=="NJNYB",]
-
 als <- als[als$Region=="NJNYB",]
 als$Length_cm<-als$Length_IN*2.54 #convert inches to cm
 als$Length_cm<-floor(als$Length_cm)
 
-#min(unique(c(mrip9$LENGTH.ROUNDED.DOWN.TO.NEAREST.CM, als$Length_cm, MRIP_har$Length))) = 12
-#max(unique(c(mrip9$LENGTH.ROUNDED.DOWN.TO.NEAREST.CM, als$Length_cm, MRIP_har$Length))) = 83
-#sort(unique(c(mrip9$LENGTH.ROUNDED.DOWN.TO.NEAREST.CM, als$Length_cm, MRIP_har$Length)))
+#min(unique(c(als$Length_cm, MRIP_har$Length))) = 17
+#max(unique(c(als$Length_cm, MRIP_har$Length))) = 83
+#sort(unique(c(als$Length_cm, MRIP_har$Length)))
 
 checkgaps <- function(alk) {
   gaps <- lapply(alk, FUN = function(x) as.integer(names(rowSums(x[,2:12]))[which(rowSums(x[,2:12])==0)]))
@@ -138,17 +116,18 @@ checkgaps <- function(alk) {
 return(list(gaps, tofill))}
 #gapstofill <- checkgaps(alks) #[[2]] 
 
-####STEP 1: if last age bin with values is all in 12+ and the end of the key is 0s
+####STEP 1: if last age bin with values is all in 12+ fill down to the end
 agefilled <- lapply(alks, function(y) {
   y$length <- as.integer(y$length)
   y <- y %>% mutate(rowsum = rowSums(.[2:12], na.rm = TRUE)) #add row sum
   datao <- max(y$length[y$rowsum > 0]) #last row with values
   if (y[y$length==datao,12] == y[y$length==datao,"rowsum"] & datao < max(y$length)) {
-    y[y$length %in% (datao+1):max(y$length),12] <- y[y$length==datao,12] # fill down
+    y[y$length %in% (datao+1):max(y$length),12] <- y[y$length==datao,12]
   }
   return(y)})
 
 gapstofill <- checkgaps(agefilled) #[[2]
+
 ####STEP 2: fill with otolith data from my own region (NJNYB)
 otofill <- Map(function(x,y) {
   check <- oto[oto$Year==y & oto$Length %in% x & oto$Region=="B",]
@@ -174,12 +153,9 @@ otofilled <- Map(
   otofilled, c(2021:2024))
 
 gapstofill <- checkgaps(otofilled)
-
 #filled 31, 48 in 2024...
-####STEP 3: fill with adjacent rows, or neighboring states
-lis_opercboth <- operc[operc$Region=="LIS",]
-lis_oto <- oto[oto$Region=="LIS",]
 
+####STEP 3: fill with adjacent rows, or neighboring states
 LIS_unfill <- list(lis21, lis22, lis23, lis24)
 names(LIS_unfill) <- c("2021", "2022", "2023", "2024")
 
