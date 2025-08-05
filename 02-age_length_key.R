@@ -66,14 +66,12 @@ alk <- njny[njny$tl_cm >= 29 & njny$tl_cm < 61,]
 
 alk$TL_cm <- factor(alk$tl_cm, levels=29:60)
 aldat <- mutate(alk, Age_plus = ifelse(Age>=12, 12, Age))
-#aldat$age <- factor(aldat$Age, levels=2:15)
 aldat$age <- factor(aldat$Age, levels=2:17)
 aldat$Age_plus <- factor(aldat$Age_plus, levels = 2:12)
-#aldat$Age_plus <- factor(aldat$Age_plus, levels = 1:12)
 
-operc <- aldat[aldat$structure=="operc" | aldat$structure=="both",] #| aldat$structure=="both"
+operc <- aldat[aldat$structure=="operc" | aldat$structure=="both",]
 oto <- aldat[aldat$structure=="oto",]
-aldata <- operc[operc$Region=="B",] #how to...
+aldata <- operc[operc$Region=="B",]
 #aldata <- aldat[aldat$Region=="B",] ...revisit with new lengths/ages...
 
 #We need to do yearly keys
