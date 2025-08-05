@@ -176,7 +176,7 @@ otofilled <- Map(
 gapstofill <- checkgaps(otofilled)
 
 #filled 31, 48 in 2024...
-########################STEP 2: fill with adjacent rows, or neighboring states
+####STEP 3: fill with adjacent rows, or neighboring states
 lis_opercboth <- operc[operc$Region=="LIS",]
 lis_oto <- oto[oto$Region=="LIS",]
 
