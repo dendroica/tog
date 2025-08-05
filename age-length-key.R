@@ -19,7 +19,7 @@ nj_comm24 <- read_excel("./data/tog/Tautog Data Template 2025_NJDEP_2024data.xls
 als <- read_excel("./data/tog/rec/ALS_Tautog_2021-2024.xlsx")
 MRIP_har <- read.csv("./data/tog/rec/Tautog_MRIP_AB1_LFs_2021-2024_NJNYB.csv", header=TRUE)
 
-#INPUTS USED: FILLING THE ALK
+#INPUTS USED: FILLING THE ALK##############################
 #Used adjacent states to fill the gaps where needed...
 lis21 <- read_excel("./data/tog/other/LIS_ALK_unfilled060325.xlsx", sheet="LIS_2021")
 lis22 <- read_excel("./data/tog/other/LIS_ALK_unfilled060325.xlsx", sheet="LIS_2022")
