@@ -83,7 +83,6 @@ tt24 <- filter(aldata, Year == "2024")
 tabyr <- function(dat) {
   tab <- table(dat$`TL_cm`, dat$Age_plus) #if you switch to full age you'll need to change Age_plus to Age
   tab1 <- matrix(tab, ncol = 11, dimnames= dimnames(tab)) #if you switch to full age you'll need to change the 11
-  #tab1 <- matrix(tab, ncol = 12, dimnames= dimnames(tab))
   tab2 <- data.frame(tab1)
   df <- data.frame(names = row.names(tab2), tab2)
   colnames(df) <- c("length", as.character(2:12)) #If you switch to full age you'll need to change the 12
@@ -94,17 +93,12 @@ tab21 <- tabyr(tt21)
 tab22 <- tabyr(tt22)
 tab23 <- tabyr(tt23)
 tab24 <- tabyr(tt24)
-#write_xlsx(list(ALK_2021_unfilled = tab21, ALK_2022_unfilled = tab22, ALK_2023_unfilled=tab23), "./Output/DMV_ALK_unfilled.xlsx")
 
 #Age as a proportion of all individuals of that size in a year
 proptab21 <- tab21[,-1]/rowSums(tab21[,-1])
 proptab22 <- tab22[,-1]/rowSums(tab22[,-1])
 proptab23 <- tab23[,-1]/rowSums(tab23[,-1])
 proptab24 <- tab24[,-1]/rowSums(tab24[,-1])
-# We have several rows (length bins) that have no age samples.
-# These are gaps that need to be filled.
-#Here they are for each year
-
 
 #write.csv(tab21[,-1], "NJNYB-ALK_2021_unfilled.csv")
 #write.csv(tab22[,-1], "NJNYB-ALK_2022_unfilled.csv")
@@ -113,10 +107,12 @@ proptab24 <- tab24[,-1]/rowSums(tab24[,-1])
 
 #write.csv(proptab21, "NJNYB-ALK_2021_unfilled-prop.csv")
 #write.csv(proptab22, "NJNYB-ALK_2022_unfilled-prop.csv")
-#write.csv(proptab23, "NJNYB-ALK_2023_unfilled-prop.csv") #unfilled ALKS produced
+#write.csv(proptab23, "NJNYB-ALK_2023_unfilled-prop.csv")
 #############################################################################
 
 #############FILLING THE ALK
+# We have several rows (length bins) that have no age samples.
+# These are gaps that need to be filled.
 alks <- list(tab21, tab22, tab23, tab24)
 
 #using rec data to see what gaps need to be filled, I don't think type 9 gets included?
