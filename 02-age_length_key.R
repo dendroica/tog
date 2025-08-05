@@ -10,10 +10,9 @@ setwd("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Do
 #Using CommBioSamples and RecBioSamples to compute age-length key (ALK)
 ny_comm <- read_excel("./data/tog/2025SA_NY_Tautog Data 2021-2023_corrected.xlsx", sheet="CommBioSamples", range = cell_rows(6:901))
 ny_comm24 <- read_excel("./data/tog/2025SA_NY_Tautog Data 2024-1.xlsx", sheet="CommBioSamples", range = cell_rows(6:797)) 
-ny_rec <- read_excel("./data/tog/2025SA_NY_Tautog Data 2021-2023_corrected.xlsx", sheet="RecBioSamples", range = cell_rows(6:110)) %>% 
-  mutate(mode="rec", Year = as.character(Year))
-nj_comm <- read_excel("./data/tog/Tautog Data Template 2025_NJDEP.xlsx", sheet="CommBioSamples", range = cell_rows(6:682)) %>% mutate(Year = format(Year, '%Y'))
-nj_comm24 <- read_excel("./data/tog/Tautog Data Template 2025_NJDEP_2024data.xlsx", sheet="CommBioSamples", range = cell_rows(6:239)) %>% mutate(Year = as.character(Year))
+ny_rec <- read_excel("./data/tog/2025SA_NY_Tautog Data 2021-2023_corrected.xlsx", sheet="RecBioSamples", range = cell_rows(6:110))
+nj_comm <- read_excel("./data/tog/Tautog Data Template 2025_NJDEP.xlsx", sheet="CommBioSamples", range = cell_rows(6:682)) 
+nj_comm24 <- read_excel("./data/tog/Tautog Data Template 2025_NJDEP_2024data.xlsx", sheet="CommBioSamples", range = cell_rows(6:239))
 
 #Using rec harvest and live releases to see what gaps need to be filled...
 als <- read_excel("./data/tog/rec/ALS_Tautog_2021-2024.xlsx")
@@ -34,10 +33,10 @@ dmv24 <- read_excel("./data/tog/other/dmv/DMV_ALK_unfilled.xlsx", sheet="ALK_202
 
 ###########UNFILLED ALK####################
 #data shaping
-ny_comm <- bind_rows(ny_comm, ny_comm24) %>% mutate(mode="comm", Year = as.character(Year))
-ny <- bind_rows(ny_comm, ny_rec) %>% mutate(state="NY")
-nj_comm <- bind_rows(nj_comm[,which(names(nj_comm) %in% names(nj_comm24))], nj_comm24[,which(names(nj_comm24) %in% names(nj_comm))]) %>%
-  mutate(state="NJ", mode="comm")
+ny <- bind_rows(ny_comm, ny_comm24, ny_rec) %>% mutate(Year = as.character(Year))
+nj_comm <- nj_comm %>% mutate(Year = format(Year, '%Y'))
+nj_comm24 <- nj_comm24 %>% mutate(Year = as.character(Year))
+nj_comm <- bind_rows(nj_comm[,which(names(nj_comm) %in% names(nj_comm24))], nj_comm24[,which(names(nj_comm24) %in% names(nj_comm))])
 
 njny <- bind_rows(ny, nj_comm[,names(ny)])
 njny$structure <- njny$`Ageing Structure`
@@ -51,7 +50,7 @@ njny <- njny[!is.na(njny$Age) & !is.na(njny$Length) & njny$Age < 23,] #cutoff fr
 
 njny$subregion <- "B"
 njny[njny$Region=="LIS",]$subregion <- "LIS"
-tg <- njny[,c("Age", "Region", "state", "subregion", "structure", "Length", "Year")]
+tg <- njny[,c("Age", "Region", "subregion", "structure", "Length", "Year")]
 tg$tl_cm <- floor(tg$Length)
 ##min(tg[tg$subregion=="B" & tg$structure=="operc",]$tl_cm) = 4
 ##max(tg[tg$subregion=="B" & tg$structure=="operc",]$tl_cm) = 83
