@@ -34,40 +34,37 @@ dmv24 <- read_excel("./data/tog/other/dmv/DMV_ALK_unfilled.xlsx", sheet="ALK_202
 ###########UNFILLED ALK####################
 #data shaping
 ny <- bind_rows(ny_comm, ny_comm24, ny_rec) %>% mutate(Year = as.character(Year))
+
 nj_comm <- nj_comm %>% mutate(Year = format(Year, '%Y'))
 nj_comm24 <- nj_comm24 %>% mutate(Year = as.character(Year))
 nj_comm <- bind_rows(nj_comm[,which(names(nj_comm) %in% names(nj_comm24))], nj_comm24[,which(names(nj_comm24) %in% names(nj_comm))])
 
 njny <- bind_rows(ny, nj_comm[,names(ny)])
 njny$structure <- njny$`Ageing Structure`
+njny$`Ageing Structure` <- NULL
 njny$structure[njny$structure %in% c("opercular", "opec", "Operculum")] <- "operc"
 njny$structure[njny$structure == "Otolith"] <- "oto"
+
 njny$Length <- njny$`Total Length (cm)` #need this exact col name for AquaticLifeHistory pkg
 njny$`Total Length (cm)` <- NULL
-njny$`Ageing Structure` <- NULL
-#write.csv(njny, "njny.csv", row.names=F) this would include LIS
 njny <- njny[!is.na(njny$Age) & !is.na(njny$Length) & njny$Age < 23,] #cutoff from looking at data, getting rid of 9999 and 99999 vals
 
-njny$subregion <- "B"
-njny[njny$Region=="LIS",]$subregion <- "LIS"
-tg <- njny[,c("Age", "Region", "subregion", "structure", "Length", "Year")]
-tg$tl_cm <- floor(tg$Length)
-##min(tg[tg$subregion=="B" & tg$structure=="operc",]$tl_cm) = 4
-##max(tg[tg$subregion=="B" & tg$structure=="operc",]$tl_cm) = 83
-##sort(unique(tg[tg$subregion=="B" & tg$structure=="operc",]$tl_cm)) 29 is next largest length incl rec data
+njny$Region[njny$Region != "LIS"] <- "B"
+njny <- njny[,c("Age", "Region", "structure", "Length", "Year")]
+njny$tl_cm <- floor(njny$Length)
+##min(njny[njny$Region=="B" & njny$structure=="operc",]$tl_cm) = 4
+##max(njny[njny$Region=="B" & njny$structure=="operc",]$tl_cm) = 83
+##sort(unique(njny[njny$Region=="B" & njny$structure=="operc",]$tl_cm)) 29 is next largest length incl in rec data
 
+alk <- njny[njny$tl_cm >= 29 & njny$tl_cm < 61,]
 #The previous assessment bounds for NJ-NYB were 15-60cm and MA-RI uses 14-60cm
-#alk <- tg[tg$tl_cm >= 29 & tg$tl_cm < 60,]
-
 #This final bounding was ad-hoc from filling the ALK. The gaps left to fill...
 #...by the end of this script were 63cm onward, and 63cm does not occur...
 #...in any annual raw (unfilled) data for NJ-NYB. 
 #That and the larger gaps that were left after filling from all regions...
 #...and at least MA-RI doesn't even go that high. So that felt like a reasonable cutoff...
 #...and the highest the rec data goes below 63cm is 60cm
-alk <- tg[tg$tl_cm >= 29 & tg$tl_cm < 61,] 
 
-#alk$TL_cm <- factor(alk$tl_cm, levels=29:59) #should this be 29 - 83 now to match the rec data?
 alk$TL_cm <- factor(alk$tl_cm, levels=29:60)
 aldat <- mutate(alk, Age_plus = ifelse(Age>=12, 12, Age))
 #aldat$age <- factor(aldat$Age, levels=2:15)
@@ -77,8 +74,8 @@ aldat$Age_plus <- factor(aldat$Age_plus, levels = 2:12)
 
 operc <- aldat[aldat$structure=="operc" | aldat$structure=="both",] #| aldat$structure=="both"
 oto <- aldat[aldat$structure=="oto",]
-aldata <- operc[operc$subregion=="B",] #how to...
-#aldata <- aldat[aldat$subregion=="B",] ...revisit with new lengths/ages...
+aldata <- operc[operc$Region=="B",] #how to...
+#aldata <- aldat[aldat$Region=="B",] ...revisit with new lengths/ages...
 
 #We need to do yearly keys
 tt21 <- filter(aldata, Year == "2021")
@@ -170,7 +167,7 @@ agefilled <- lapply(alks, function(y) {
 gapstofill <- checkgaps(agefilled) #[[2]
 ###########STEP 1: fill with otolith data from my own region (NJNYB)
 otofill <- Map(function(x,y) {
-  check <- oto[oto$Year==y & oto$Length %in% x & oto$subregion=="B",]
+  check <- oto[oto$Year==y & oto$Length %in% x & oto$Region=="B",]
   if (nrow(check) > 0) {
     otofill <- tabyr(check)
     otofill <- otofill[otofill$length %in% check$Length,]
@@ -196,8 +193,8 @@ gapstofill <- checkgaps(otofilled)
 
 #filled 31, 48 in 2024...
 ########################STEP 2: fill with adjacent rows, or neighboring states
-lis_opercboth <- operc[operc$subregion=="LIS",]
-lis_oto <- oto[oto$subregion=="LIS",]
+lis_opercboth <- operc[operc$Region=="LIS",]
+lis_oto <- oto[oto$Region=="LIS",]
 
 LIS_unfill <- list(lis21, lis22, lis23, lis24)
 names(LIS_unfill) <- c("2021", "2022", "2023", "2024")
