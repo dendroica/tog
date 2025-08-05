@@ -23,7 +23,7 @@ alk2023numnj <- read.csv(file.path(indir, "NJNYB-ALK_2023_filled.csv"))
 alk2024numnj <- read.csv(file.path(indir, "NJNYB-ALK_2024_filled.csv"))
 
 #Load recreational catch and discard
-read.csv("data/tog/rec/Tautog_MRIP_TotalCatch_2021-2024_NJNYB.csv", header = TRUE)
+totalcatchnj <- read.csv("data/tog/rec/Tautog_MRIP_TotalCatch_2021-2024_NJNYB.csv", header = TRUE)
 
 #Load commercial catch data
 commcatchnj <- read_xlsx("data/tog/Regional_Comm_landings_MT_07.18.25.xlsx", sheet = "MT")[,c("Year","NYB-NJ")]
