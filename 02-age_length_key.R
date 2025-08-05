@@ -80,14 +80,6 @@ tt22 <- filter(aldata, Year == "2022")
 tt23 <- filter(aldata, Year == "2023")
 tt24 <- filter(aldata, Year == "2024")
 
-#default_palette = scales::hue_pal()(14)
-#names(default_palette) <- 2:15
-
-#p <- ggplot(operc, aes(x=tl_cm, color=age, fill=age)) + 
-#  labs(title="Age distribution per length bin (2cm)",x="Length", y = "Count") +
-#  geom_histogram(alpha=0.5, binwidth=2) + scale_fill_manual(values = default_palette, drop=FALSE) +
-#  facet_grid(cols=vars(Year))
-
 tabyr <- function(dat) {
   tab <- table(dat$`TL_cm`, dat$Age_plus) #if you switch to full age you'll need to change Age_plus to Age
   tab1 <- matrix(tab, ncol = 11, dimnames= dimnames(tab)) #if you switch to full age you'll need to change the 11
