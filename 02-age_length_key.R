@@ -71,11 +71,17 @@ for_alk$Age_plus <- factor(for_alk$Age_plus, levels = 2:12)
 
 operc <- for_alk[for_alk$structure == "operc" | for_alk$structure == "both", ]
 oto <- for_alk[for_alk$structure == "oto", ]
-# alk_data <- for_alk ...revisit with new lengths/ages...
-alk_data <- operc
-alks <- split(alk_data, alk_data$Year)
+#alk_data <- operc
 
-tabyr <- function(dat) {
+#Originally, our region elected to use only operculum data...
+#but both after looking at the gaps left in the data and what was available for filling
+#and what the consequences were of filling various ways, it made for a more cohesive key
+#to use all data for the region. From a 6/13 email with Katie, she commented
+#that there does not appear to be strong evidence of bias between aging structures for NJ
+alk_data <- for_alk
+annual_al <- split(alk_data, alk_data$Year) #could try across all structures...
+
+pivot_alk <- function(dat) {
   tab <- table(dat$`TL_cm`, dat$Age_plus) # if you switch to full age you'll need to change Age_plus to Age
   tab1 <- matrix(tab, ncol = 11, dimnames = dimnames(tab)) # if you switch to full age you'll need to change the 11
   tab2 <- data.frame(tab1)
@@ -84,7 +90,7 @@ tabyr <- function(dat) {
   return(df)
 }
 
-alks <- lapply(alks, tabyr)
+alks <- lapply(annual_al, pivot_alk)
 # write.csv(alks[[1]][,-1], "NJNYB-ALK_2021_unfilled.csv")
 # write.csv(alks[[2]][,-1], "NJNYB-ALK_2022_unfilled.csv")
 # write.csv(alks[[3]][,-1], "NJNYB-ALK_2023_unfilled.csv")
@@ -137,15 +143,28 @@ age12_filled_alks <- lapply(alks, function(alk) {
 gaps_to_fill <- check_gaps(age12_filled_alks)
 
 #### STEP 2: fill with otolith data from my own region (NJNYB)
+
+#From Katie's 6/13 email:
+#Given that (1) there is no clear evidence of bias between the structures from the data we have and 
+#(2) this is probably for length bins with overall small sample sizes whether you are borrowing from NJ otoliths or other years/regions, 
+#I think either option is justifiable. There’s going to be uncertainty either way – 
+#does the benefit of using the NJ otoliths outweigh the fact that we’re creating a different gap-filling protocol for NJ-NYB than for other regions? 
+#We let the regions determine their own gap-filling procedures last time, 
+#so I don’t think it’s a big deal if there are differences from region to region this time, 
+#especially if it’s well-documented, but I don’t know how the full SAS feels.
+#If, after working with the data, you feel using the NJ otoliths before looking to another region or year, 
+#is the way to go, I’d support that. 
+
+#...here is my attempt at well-documenting! :)
 oto_fill_rows <- Map(function(gaps, yr) {
   check <- oto[oto$Year == yr & oto$tl_cm %in% gaps, ]
   if (nrow(check) > 0) {
-    otofill <- tabyr(check)
-    otofill <- otofill[otofill$length %in% check$tl_cm, ]
+    oto_for_fill <- pivot_alk(check)
+    oto_for_fill <- oto_for_fill[oto_for_fill$length %in% check$tl_cm, ]
   } else {
-    otofill <- data.frame()
+    oto_for_fill <- data.frame()
   }
-  return(otofill)
+  return(oto_for_fill)
 }, gaps_to_fill, names(gaps_to_fill))
 
 otofilled <- Map(function(alk, otofill) {
@@ -234,7 +253,7 @@ fill24[fill24$length %in% 57:60, 12] <- 1
 
 nearfill <- list(nearfill[[1]], nearfill[[2]], nearfill[[3]], fill24)
 
-write.csv(nearfill[[1]], "./output/tog/alk/filled/opercboth/NJNYB-ALK_2021_filled.csv")
-write.csv(nearfill[[2]], "./output/tog/alk/filled/opercboth/NJNYB-ALK_2022_filled.csv")
-write.csv(nearfill[[3]], "./output/tog/alk/filled/opercboth/NJNYB-ALK_2023_filled.csv")
-write.csv(nearfill[[4]], "./output/tog/alk/filled/opercboth/NJNYB-ALK_2024_filled.csv")
+write.csv(nearfill[[1]], "./output/tog/alk/filled/allstr/NJNYB-ALK_2021_filled.csv")
+write.csv(nearfill[[2]], "./output/tog/alk/filled/allstr/NJNYB-ALK_2022_filled.csv")
+write.csv(nearfill[[3]], "./output/tog/alk/filled/allstr/NJNYB-ALK_2023_filled.csv")
+write.csv(nearfill[[4]], "./output/tog/alk/filled/allstr/NJNYB-ALK_2024_filled.csv")

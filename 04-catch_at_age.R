@@ -16,7 +16,7 @@ life <- read_xlsx("data/tog/Tautog Data Template 2025_NJDEP.xlsx", sheet = "Life
 life24 <- read_xlsx("data/tog/Tautog Data Template 2025_NJDEP_2024-update.xlsx", sheet = "LifeHistory", skip = 6) 
 
 #Load ALKs
-indir <- "./output/tog/alk/filled/opercboth"
+indir <- "./output/tog/alk/filled/allstr"
 alk2021numnj <- read.csv(file.path(indir, "NJNYB-ALK_2021_filled.csv"))
 alk2022numnj <- read.csv(file.path(indir, "NJNYB-ALK_2022_filled.csv"))
 alk2023numnj <- read.csv(file.path(indir, "NJNYB-ALK_2023_filled.csv"))
@@ -171,4 +171,5 @@ mysum <- apply(caa, 1, sum)
 prop <- apply(caa[,1:12], 2, function(x) x/mysum)
 waa <- cbind(X1=c(0,0,0,0), bind_rows(waas))/1000 #final output: weight-at-age
 #for the ASAP inputs, these appear to be scaled?
-
+write.csv(caa, "caa.csv")
+write.csv(waa, "waa.csv")
