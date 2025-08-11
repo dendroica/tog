@@ -2,33 +2,33 @@ library(readxl)
 library(dplyr)
 library(ggplot2)
 
-setwd("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents") # jgorzo jgorzo
+root <- "C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents" # jgorzo jgorzo
 # setwd("/media/jess/9CE61C02E61BDB7A/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents")
 # on Ubuntu, you have to have this open in files/ssd to have it mounted...
 
 # INPUTS USED: UNFILLED ALK###################################
 # Using CommBioSamples and RecBioSamples to compute age-length key (ALK)
-ny_comm <- read_excel("./data/tog/2025SA_NY_Tautog Data 2021-2023_corrected.xlsx", sheet = "CommBioSamples", range = cell_rows(6:901))
-ny_comm24 <- read_excel("./data/tog/2025SA_NY_Tautog Data 2024-1.xlsx", sheet = "CommBioSamples", range = cell_rows(6:797))
-ny_rec <- read_excel("./data/tog/2025SA_NY_Tautog Data 2021-2023_corrected.xlsx", sheet = "RecBioSamples", range = cell_rows(6:110))
-nj_comm <- read_excel("./data/tog/Tautog Data Template 2025_NJDEP.xlsx", sheet = "CommBioSamples", range = cell_rows(6:682))
-nj_comm24 <- read_excel("./data/tog/Tautog Data Template 2025_NJDEP_2024data.xlsx", sheet = "CommBioSamples", range = cell_rows(6:239))
+ny_comm <- read_excel(file.path(root, "data/tog/2025SA_NY_Tautog Data 2021-2023_corrected.xlsx"), sheet = "CommBioSamples", range = cell_rows(6:901))
+ny_comm24 <- read_excel(file.path(root, "data/tog/2025SA_NY_Tautog Data 2024-1.xlsx"), sheet = "CommBioSamples", range = cell_rows(6:797))
+ny_rec <- read_excel(file.path(root, "data/tog/2025SA_NY_Tautog Data 2021-2023_corrected.xlsx"), sheet = "RecBioSamples", range = cell_rows(6:110))
+nj_comm <- read_excel(file.path(root, "data/tog/Tautog Data Template 2025_NJDEP.xlsx"), sheet = "CommBioSamples", range = cell_rows(6:682))
+nj_comm24 <- read_excel(file.path(root, "data/tog/Tautog Data Template 2025_NJDEP_2024data.xlsx"), sheet = "CommBioSamples", range = cell_rows(6:239))
 
 # Using rec harvest and live releases to see what gaps need to be filled...
-als <- read_excel("./data/tog/rec/ALS_Tautog_2021-2024.xlsx")
-MRIP_har <- read.csv("./data/tog/rec/Tautog_MRIP_AB1_LFs_2021-2024_NJNYB.csv", header = TRUE)
+als <- read_excel(file.path(root, "data/tog/rec/ALS_Tautog_2021-2024.xlsx"))
+MRIP_har <- read.csv(file.path(root, "data/tog/rec/Tautog_MRIP_AB1_LFs_2021-2024_NJNYB.csv"), header = TRUE)
 
 # INPUTS USED: FILLING THE ALK##############################
 # Used adjacent states to fill the gaps where needed...
-lis21 <- read_excel("./data/tog/other/LIS_ALK_unfilled060325.xlsx", sheet = "LIS_2021")
-lis22 <- read_excel("./data/tog/other/LIS_ALK_unfilled060325.xlsx", sheet = "LIS_2022")
-lis23 <- read_excel("./data/tog/other/LIS_ALK_unfilled060325.xlsx", sheet = "LIS_2023")
-lis24 <- read_excel("./data/tog/other/LIS_ALK_unfilled060325.xlsx", sheet = "LIS_2024")
+lis21 <- read_excel(file.path(root, "data/tog/other/LIS_ALK_unfilled060325.xlsx"), sheet = "LIS_2021")
+lis22 <- read_excel(file.path(root, "data/tog/other/LIS_ALK_unfilled060325.xlsx"), sheet = "LIS_2022")
+lis23 <- read_excel(file.path(root, "data/tog/other/LIS_ALK_unfilled060325.xlsx"), sheet = "LIS_2023")
+lis24 <- read_excel(file.path(root, "data/tog/other/LIS_ALK_unfilled060325.xlsx"), sheet = "LIS_2024")
 
-dmv21 <- read_excel("./data/tog/other/dmv/DMV_ALK_unfilled.xlsx", sheet = "ALK_2021_unfilled")
-dmv22 <- read_excel("./data/tog/other/dmv/DMV_ALK_unfilled.xlsx", sheet = "ALK_2022_unfilled")
-dmv23 <- read_excel("./data/tog/other/dmv/DMV_ALK_unfilled.xlsx", sheet = "ALK_2023_unfilled")
-dmv24 <- read_excel("./data/tog/other/dmv/DMV_ALK_unfilled.xlsx", sheet = "ALK_2024_unfilled")
+dmv21 <- read_excel(file.path(root, "data/tog/other/dmv/DMV_ALK_unfilled.xlsx"), sheet = "ALK_2021_unfilled")
+dmv22 <- read_excel(file.path(root, "data/tog/other/dmv/DMV_ALK_unfilled.xlsx"), sheet = "ALK_2022_unfilled")
+dmv23 <- read_excel(file.path(root, "data/tog/other/dmv/DMV_ALK_unfilled.xlsx"), sheet = "ALK_2023_unfilled")
+dmv24 <- read_excel(file.path(root, "data/tog/other/dmv/DMV_ALK_unfilled.xlsx"), sheet = "ALK_2024_unfilled")
 ###############################################################
 
 ########### UNFILLED ALK####################
@@ -253,7 +253,7 @@ fill24[fill24$length %in% 57:60, 12] <- 1
 
 nearfill <- list(nearfill[[1]], nearfill[[2]], nearfill[[3]], fill24)
 
-write.csv(nearfill[[1]], "./output/tog/alk/filled/allstr/NJNYB-ALK_2021_filled.csv")
-write.csv(nearfill[[2]], "./output/tog/alk/filled/allstr/NJNYB-ALK_2022_filled.csv")
-write.csv(nearfill[[3]], "./output/tog/alk/filled/allstr/NJNYB-ALK_2023_filled.csv")
-write.csv(nearfill[[4]], "./output/tog/alk/filled/allstr/NJNYB-ALK_2024_filled.csv")
+write.csv(nearfill[[1]], file.path(root, "output/tog/alk/filled/allstr/NJNYB-ALK_2021_filled.csv"))
+write.csv(nearfill[[2]], file.path(root, "output/tog/alk/filled/allstr/NJNYB-ALK_2022_filled.csv"))
+write.csv(nearfill[[3]], file.path(root, "output/tog/alk/filled/allstr/NJNYB-ALK_2023_filled.csv"))
+write.csv(nearfill[[4]], file.path(root, "output/tog/alk/filled/allstr/NJNYB-ALK_2024_filled.csv"))
