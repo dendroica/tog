@@ -2,7 +2,7 @@ library(readxl)
 library(dplyr)
 library(ggplot2)
 
-root <- "C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents" # jgorzo jgorzo
+root <- "C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents" # jgorzo 
 # setwd("/media/jess/9CE61C02E61BDB7A/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents")
 # on Ubuntu, you have to have this open in files/ssd to have it mounted...
 
