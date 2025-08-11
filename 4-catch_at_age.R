@@ -84,9 +84,9 @@ totalcatchnj <- left_join(totalcatchnj, commcatchyrsumnj) %>% mutate(TotalCatch 
 
 #convert to proportions
 alks <- list(alk2021numnj, alk2022numnj, alk2023numnj, alk2024numnj)
-alks <- lapply(alks, function(y) {
-  y <- y %>% select(2:13) 
-})
+#alks <- lapply(alks, function(y) {
+#  y <- y %>% select(2:13) 
+#})
 alkprops <- lapply(alks, function(y) {
   y <- y %>% mutate(rowsum = rowSums(.[grep("X", names(.))], na.rm = TRUE)) %>% #add row sum
     mutate(across(2:12, .fns= function(x){x/rowsum})) %>% replace(is.na(.), 0) %>%

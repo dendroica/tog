@@ -78,18 +78,16 @@ alk_data <- operc
 #of bias between aging structures for NJ. So I tested doing with the full data too
 #alk_data <- for_alk
 
-annual_al <- split(alk_data, alk_data$Year) #could try across all structures...
+annual_al <- split(alk_data, alk_data$Year)
 
-pivot_alk <- function(dat) {
+alks <- lapply(annual_al, function(dat) {
   tab <- table(dat$`TL_cm`, dat$Age_plus) # if you switch to full age you'll need to change Age_plus to Age
   tab1 <- matrix(tab, ncol = 11, dimnames = dimnames(tab)) # if you switch to full age you'll need to change the 11
   tab2 <- data.frame(tab1)
   df <- data.frame(names = row.names(tab2), tab2)
   colnames(df) <- c("length", as.character(2:12)) # If you switch to full age you'll need to change the 12
   return(df)
-}
-
-alks <- lapply(annual_al, pivot_alk)
+})
 # write.csv(alks[[1]][,-1], "NJNYB-ALK_2021_unfilled.csv")
 # write.csv(alks[[2]][,-1], "NJNYB-ALK_2022_unfilled.csv")
 # write.csv(alks[[3]][,-1], "NJNYB-ALK_2023_unfilled.csv")
@@ -111,14 +109,12 @@ als$Length_cm <- floor(als$Length_cm)
 check_gaps <- function(alks) {
   gaps <- lapply(alks, FUN = function(alk) as.integer(names(rowSums(alk[, 2:12]))[which(rowSums(alk[, 2:12]) == 0)])) # these are all of the gaps that exist
   names(gaps) <- c(2021:2024)
-
   catch_match <- Map(
     function(gap, yr) {
       gap %in% unique(c(als$Length_cm[als$Year == as.integer(yr)], MRIP_har$Length[MRIP_har$Year == as.integer(yr)])) # mrip9$LENGTH.ROUNDED.DOWN.TO.NEAREST.CM[mrip9$YEAR==as.integer(y)],
     },
     gaps, names(gaps)
   )
-
   gaps_to_fill <- Map(
     function(alk_gap, len_catch) {
       alk_gap[len_catch]
@@ -168,81 +164,79 @@ oto_filled_alks <- Map(function(gaps, yr, alk) {
   if (nrow(oto_for_fill) > 0) {
     alk[alk$length %in% oto_for_fill$length, ] <- oto_for_fill
   }
-  alk$year <- yr
   return(alk)
 }, gaps_to_fill, names(gaps_to_fill), age12_filled_alks)
 
 #### STEP 3: fill with adjacent rows, or where you can't, neighboring state ALKs
-lis_unfilled_alksed_alks <- list(lis21, lis22, lis23, lis24)
+lis_unfilled_alks <- list(lis21, lis22, lis23, lis24)
 names(lis_unfilled_alks) <- c("2021", "2022", "2023", "2024")
 
-dmv_unfilled_alksed_alks <- list(dmv21, dmv22, dmv23, dmv24)
+dmv_unfilled_alks <- list(dmv21, dmv22, dmv23, dmv24)
 names(dmv_unfilled_alks) <- c("2021", "2022", "2023", "2024")
 
-gaps_to_fill <- check_gaps(otofilled)
+gaps_to_fill <- check_gaps(oto_filled_alks)
 
-nearfill <- Map(function(alk, gaps_to_fill) {
-  dmv <- dmv_unfilled_alks[[as.character(alk$year[1])]]
-  lis <- lis_unfilled_alks[[as.character(alk$year[1])]][, c(1, 3:13)]
-  gaps <- which(diff(gaps_to_fill) > 1) + 1 # Identify the index of the element after the gap
-  missing_numbers <- gaps_to_fill[gaps] - 1 # Find the missing number(s)
-  lastrowfilled <- missing_numbers[length(missing_numbers)]
-
-  for (i in 1:length(gaps_to_fill)) {
-    if (gaps_to_fill[i] == min(alk$length)) { ### if the gap to fill is the smallest bin in the ALK...
-      if (gaps_to_fill[i] + 1 != gaps_to_fill[i + 1]) { # if the next greater length bin isn't empty...
-        alk[alk$length == gaps_to_fill[i], c(2:12)] <- alk[alk$length == gaps_to_fill[i] + 1, c(2:12)] # ...fill from below
-      } else if (sum(lis[lis[, 1] == gaps_to_fill[i], c(2:12)]) == 0) { # e.g. need to fill 29 for 2021, 2023
-        # sum(dmv[dmv[,1]==gaps_to_fill[i],c(2:12)]) > 0 shows preference for DMV when it has values
-        alk[alk$length == gaps_to_fill[i], c(2:12)] <- dmv[dmv[, 1] == gaps_to_fill[i], c(2:12)] # if the next greatest length bin from the smallest is empty, and LIS is empy, fill from DMV
+near_filled_alks <- Map(function(alk, gaps, yr) {
+  dmv <- dmv_unfilled_alks[[as.character(yr)]]
+  lis <- lis_unfilled_alks[[as.character(yr)]][, c(1, 3:13)]
+  
+  filled <- lapply(1:length(gaps), function(i) { 
+    if (gaps[i] == min(alk$length)) { ### if the gap to fill is the smallest bin in the ALK...
+      if (gaps[i] + 1 != gaps[i + 1]) { # if the next greater length bin isn't empty...
+        filler <- alk[alk$length == gaps[i] + 1, c(2:12)] # ...fill from below
+      } else if (sum(lis[lis[, 1] == gaps[i], c(2:12)]) == 0) { #if not, use LIS if it has values for that bin
+        # sum(dmv[dmv[,1]==gaps[i],c(2:12)]) > 0 shows preference for DMV when it has values
+        filler <- dmv[dmv[, 1] == gaps[i], c(2:12)] # else fill from DMV
       } else {
-        alk[alk$length == gaps_to_fill[i], c(2:12)] <- lis[lis[, 1] == gaps_to_fill[i], c(2:12)] # prefer to fill with LIS
+        filler <- lis[lis[, 1] == gaps[i], c(2:12)] 
       }
-    } else if (gaps_to_fill[i] == max(alk$length)) { ### if the gap to fill is the largest bin in the ALK...
-      if (gaps_to_fill[i] - 1 != gaps_to_fill[i - 1] & sum(alk[alk$length == gaps_to_fill[i] - 1, c(2:12)]) > 0) { # if the next smallest length bin doesn't need filling and has values...
-        alk[alk$length == gaps_to_fill[i], c(2:12)] <- alk[alk$length == gaps_to_fill[i] - 1, c(2:12)] # ...fill from above
+    } else if (gaps[i] == max(alk$length)) { ### if the gap to fill is the largest bin in the ALK...
+      if (gaps[i] - 1 != gaps[i - 1] & sum(alk[alk$length == gaps[i] - 1, c(2:12)]) > 0) { # if the next smallest length bin doesn't need filling and has values...
+        filler <- alk[alk$length == gaps[i] - 1, c(2:12)] # ...fill from above
       } else {
-        if (sum(lis[lis[, 1] == gaps_to_fill[i], c(2:12)]) == 0) { # preference for filling from LIS when it has data
-          alk[alk$length == gaps_to_fill[i], c(2:12)] <- dmv[dmv[, 1] == gaps_to_fill[i], c(2:12)]
+        if (sum(lis[lis[, 1] == gaps[i], c(2:12)]) == 0) { # preference for filling from LIS when it has data
+          filler <- dmv[dmv[, 1] == gaps[i], c(2:12)]
         } else {
-          alk[alk$length == gaps_to_fill[i], c(2:12)] <- lis[lis[, 1] == gaps_to_fill[i], c(2:12)]
+          filler <- lis[lis[, 1] == gaps[i], c(2:12)]
         }
       }
-    } else if (i == length(gaps_to_fill)) { ### if it's the last bin to be filled (and it's not the largest length bin in the ALK...)
-      if (gaps_to_fill[i] - 1 == gaps_to_fill[i - 1]) { # if the bin above it is empty...
-        alk[alk$length == gaps_to_fill[i], c(2:12)] <- alk[alk$length == gaps_to_fill[i] + 1, c(2:12)] # ...fill with the bin below
+    } else if (i == length(gaps)) { ### if it's the last bin to be filled (and it's not the largest length bin in the ALK...)
+      if (gaps[i] - 1 == gaps[i - 1]) { # if the bin above it is empty...
+        filler <- alk[alk$length == gaps[i] + 1, c(2:12)] # ...fill with the bin below
       } else {
-        alk[alk$length == gaps_to_fill[i], c(2:12)] <- alk[alk$length == gaps_to_fill[i] + 1, c(2:12)] + alk[alk$length == gaps_to_fill[i] - 1, c(2:12)]
+        filler <- alk[alk$length == gaps[i] + 1, c(2:12)] + alk[alk$length == gaps[i] - 1, c(2:12)]
       }
-    } else if (!(gaps_to_fill[i] + 1) %in% gaps_to_fill & !(gaps_to_fill[i] - 1) %in% gaps_to_fill) { ### any row "in the middle": if there are values on either side...
-      alk[alk$length == gaps_to_fill[i], c(2:12)] <- alk[alk$length == gaps_to_fill[i] + 1, c(2:12)] + alk[alk$length == gaps_to_fill[i] - 1, c(2:12)]
-    } else if ((gaps_to_fill[i] + 1) %in% gaps_to_fill & !(gaps_to_fill[i] - 1) %in% gaps_to_fill) { # if the bin below is empty...
-      alk[alk$length == gaps_to_fill[i], c(2:12)] <- alk[alk$length == gaps_to_fill[i] - 1, c(2:12)]
-    } else if (!(gaps_to_fill[i] + 1) %in% gaps_to_fill & (gaps_to_fill[i] - 1) %in% gaps_to_fill & sum(alk[alk$length == gaps_to_fill[i] + 1, c(2:12)]) > 0) { # if the bin above is empty and the bin below has non-0 values
-      alk[alk$length == gaps_to_fill[i], c(2:12)] <- alk[alk$length == gaps_to_fill[i] + 1, c(2:12)]
+    } else if (!(gaps[i] + 1) %in% gaps & !(gaps[i] - 1) %in% gaps) { ### any row "in the middle": if there are values on either side...
+      filler <- alk[alk$length == gaps[i] + 1, c(2:12)] + alk[alk$length == gaps[i] - 1, c(2:12)]
+    } else if ((gaps[i] + 1) %in% gaps & !(gaps[i] - 1) %in% gaps) { # if the bin below is empty...
+      filler <- alk[alk$length == gaps[i] - 1, c(2:12)]
+    } else if (!(gaps[i] + 1) %in% gaps & (gaps[i] - 1) %in% gaps & sum(alk[alk$length == gaps[i] + 1, c(2:12)]) > 0) { # if the bin above is empty and the bin below has non-0 values
+      filler <- alk[alk$length == gaps[i] + 1, c(2:12)]
     } else {
-      if (sum(lis[lis[, 1] == gaps_to_fill[i], c(2:12)]) == 0) { # if 0s on both sides, fill from adjacent region (LIS first)
-        alk[alk$length == gaps_to_fill[i], c(2:12)] <- dmv[dmv[, 1] == gaps_to_fill[i], c(2:12)]
+      if (sum(lis[lis[, 1] == gaps[i], c(2:12)]) == 0) { # if 0s on both sides, fill from adjacent region (LIS first)
+        filler <- dmv[dmv[, 1] == gaps[i], c(2:12)]
       } else {
-        alk[alk$length == gaps_to_fill[i], c(2:12)] <- lis[lis[, 1] == gaps_to_fill[i], c(2:12)]
+        filler <- lis[lis[, 1] == gaps[i], c(2:12)]
       }
     }
-  } # need 2024
-  alk$rowsum <- NULL
-  return(alk)
-}, oto_filled_alks, gaps_to_fill)
+    return(filler)}
+  )
+  
+  alk[alk$length %in% gaps,2:12] <- bind_rows(filled)
+  return(alk) # need 2024
+}, oto_filled_alks, gaps_to_fill, c(2021:2024))
 
-check_gaps(nearfill)
+check_gaps(near_filled_alks)
 
 # by this point, from the filling steps above, the next closest length bin to the end...
 # ...that had values was just 1 in age 12, so used that to fill down
-fill24 <- nearfill[[4]]
+fill24 <- near_filled_alks[[4]]
 fill24[fill24$length %in% 57:60, 12] <- 1
 #############
 
-nearfill <- list(nearfill[[1]], nearfill[[2]], nearfill[[3]], fill24)
+near_filled_alks <- list(near_filled_alks[[1]], near_filled_alks[[2]], near_filled_alks[[3]], fill24)
 
-write.csv(nearfill[[1]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2021_filled.csv"))
-write.csv(nearfill[[2]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2022_filled.csv"))
-write.csv(nearfill[[3]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2023_filled.csv"))
-write.csv(nearfill[[4]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2024_filled.csv"))
+write.csv(near_filled_alks[[1]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2021_filled.csv"), row.names = F)
+write.csv(near_filled_alks[[2]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2022_filled.csv"), row.names = F)
+write.csv(near_filled_alks[[3]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2023_filled.csv"), row.names = F)
+write.csv(near_filled_alks[[4]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2024_filled.csv"), row.names = F)
