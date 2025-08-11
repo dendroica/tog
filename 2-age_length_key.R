@@ -180,7 +180,7 @@ near_filled_alks <- Map(function(alk, gaps, yr) {
   dmv <- dmv_unfilled_alks[[as.character(yr)]]
   lis <- lis_unfilled_alks[[as.character(yr)]][, c(1, 3:13)]
   
-  filled <- lapply(1:length(gaps), function(i) { 
+  filled_alk <- lapply(1:length(gaps), function(i) { 
     if (gaps[i] == min(alk$length)) { ### if the gap to fill is the smallest bin in the ALK...
       if (gaps[i] + 1 != gaps[i + 1]) { # if the next greater length bin isn't empty...
         filler <- alk[alk$length == gaps[i] + 1, c(2:12)] # ...fill from below
@@ -222,7 +222,7 @@ near_filled_alks <- Map(function(alk, gaps, yr) {
     return(filler)}
   )
   
-  alk[alk$length %in% gaps,2:12] <- bind_rows(filled)
+  alk[alk$length %in% gaps,2:12] <- bind_rows(filled_alk)
   return(alk) # need 2024
 }, oto_filled_alks, gaps_to_fill, c(2021:2024))
 
@@ -230,12 +230,10 @@ check_gaps(near_filled_alks)
 
 # by this point, from the filling steps above, the next closest length bin to the end...
 # ...that had values was just 1 in age 12, so used that to fill down
-fill24 <- near_filled_alks[[4]]
-fill24[fill24$length %in% 57:60, 12] <- 1
+near_filled_alks[[4]][near_filled_alks[[4]]$length %in% 57:60, 12] <- 1
 #############
 
-near_filled_alks <- list(near_filled_alks[[1]], near_filled_alks[[2]], near_filled_alks[[3]], fill24)
-
+###########OUTPUTS
 write.csv(near_filled_alks[[1]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2021_filled.csv"), row.names = F)
 write.csv(near_filled_alks[[2]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2022_filled.csv"), row.names = F)
 write.csv(near_filled_alks[[3]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2023_filled.csv"), row.names = F)
