@@ -88,10 +88,6 @@ alks <- lapply(annual_al, function(dat) {
   colnames(df) <- c("length", as.character(2:12)) # If you switch to full age you'll need to change the 12
   return(df)
 })
-# write.csv(alks[[1]][,-1], "NJNYB-ALK_2021_unfilled.csv")
-# write.csv(alks[[2]][,-1], "NJNYB-ALK_2022_unfilled.csv")
-# write.csv(alks[[3]][,-1], "NJNYB-ALK_2023_unfilled.csv")
-# write.csv(alks[[4]][,-1], "NJNYB-ALK_2024_unfilled.csv")
 ##########################################################
 
 ############# FILLING THE ALK
@@ -234,6 +230,11 @@ near_filled_alks[[4]][near_filled_alks[[4]]$length %in% 57:60, 12] <- 1
 #############
 
 ###########OUTPUTS
+# write.csv(alks[[1]][,-1], "NJNYB-ALK_2021_unfilled.csv")
+# write.csv(alks[[2]][,-1], "NJNYB-ALK_2022_unfilled.csv")
+# write.csv(alks[[3]][,-1], "NJNYB-ALK_2023_unfilled.csv")
+# write.csv(alks[[4]][,-1], "NJNYB-ALK_2024_unfilled.csv")
+
 write.csv(near_filled_alks[[1]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2021_filled.csv"), row.names = F)
 write.csv(near_filled_alks[[2]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2022_filled.csv"), row.names = F)
 write.csv(near_filled_alks[[3]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2023_filled.csv"), row.names = F)
