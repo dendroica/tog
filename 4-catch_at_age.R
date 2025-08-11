@@ -4,33 +4,34 @@
 # and combines those with the filled-in ALKs to calculate catch-at-age...
 # then weight-at-age
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-setwd("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents")
-#setwd("/media/jess/9CE61C02E61BDB7A/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents")
+root <- "C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents"
+#root <- "/media/jess/9CE61C02E61BDB7A/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents"
 #on Ubuntu, you have to have this open in files/ssd to have it mounted...
 library(tidyverse)
 library(readxl)
 library(ggplot2)
 
 #INPUTS USED#############################
-life <- read_xlsx("data/tog/Tautog Data Template 2025_NJDEP.xlsx", sheet = "LifeHistory", skip = 6)  
-life24 <- read_xlsx("data/tog/Tautog Data Template 2025_NJDEP_2024-update.xlsx", sheet = "LifeHistory", skip = 6) 
+life <- read_xlsx(file.path(root, "data/tog/Tautog Data Template 2025_NJDEP.xlsx"), sheet = "LifeHistory", skip = 6)  
+life24 <- read_xlsx(file.path(root, "data/tog/Tautog Data Template 2025_NJDEP_2024-update.xlsx"), sheet = "LifeHistory", skip = 6) 
 
 #Load ALKs
-indir <- "./output/tog/alk/filled/allstr"
+indir <- "output/tog/alk/filled/allstr"
+indir <- file.path(root, indir)
 alk2021numnj <- read.csv(file.path(indir, "NJNYB-ALK_2021_filled.csv"))
 alk2022numnj <- read.csv(file.path(indir, "NJNYB-ALK_2022_filled.csv"))
 alk2023numnj <- read.csv(file.path(indir, "NJNYB-ALK_2023_filled.csv"))
 alk2024numnj <- read.csv(file.path(indir, "NJNYB-ALK_2024_filled.csv"))
 
 #Load recreational catch and discard
-totalcatchnj <- read.csv("data/tog/rec/Tautog_MRIP_TotalCatch_2021-2024_NJNYB.csv", header = TRUE)
+totalcatchnj <- read.csv(file.path(root, "data/tog/rec/Tautog_MRIP_TotalCatch_2021-2024_NJNYB.csv"), header = TRUE)
 
 #Load commercial catch data
-commcatchnj <- read_xlsx("data/tog/Regional_Comm_landings_MT_07.18.25.xlsx", sheet = "MT")[,c("Year","NYB-NJ")]
+commcatchnj <- read_xlsx(file.path(root, "data/tog/Regional_Comm_landings_MT_07.18.25.xlsx"), sheet = "MT")[,c("Year","NYB-NJ")]
 
 #Length Frequencies for Recreational Catch and Discard, modified from discard_LFnj.R from Samarah Nehemiah for LIS
-harvest_LFnj <- read.csv("./output/tog/harvest_LF.csv")
-discard_LFnj <- read.csv("./output/tog/discard_LF.csv")[,2:6]
+harvest_LFnj <- read.csv(file.path(root, "output/tog/harvest_LF.csv"))
+discard_LFnj <- read.csv(file.path(root, "output/tog/discard_LF.csv"))[,2:6]
 #########################################
 #Find weight of recreationally harvested fish.
 #There are small sample sizes for commercially harvested, so we'll use rec weights to infer comm weights.
