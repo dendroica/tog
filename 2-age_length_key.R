@@ -156,7 +156,7 @@ gaps_to_fill <- check_gaps(age12_filled_alks)
 #is the way to go, I’d support that. 
 
 #...here is my attempt at well-documenting! :)
-otofilled <- Map(function(gaps, yr, alk) {
+oto_filled_alks <- Map(function(gaps, yr, alk) {
   check <- oto[oto$Year == yr & oto$tl_cm %in% gaps, ]
   if (nrow(check) > 0) {
     oto_for_fill <- pivot_alk(check)
@@ -173,33 +173,33 @@ otofilled <- Map(function(gaps, yr, alk) {
 }, gaps_to_fill, names(gaps_to_fill), age12_filled_alks)
 
 #### STEP 3: fill with adjacent rows, or where you can't, neighboring state ALKs
-LIS_unfill <- list(lis21, lis22, lis23, lis24)
-names(LIS_unfill) <- c("2021", "2022", "2023", "2024")
+lis_unfilled_alksed_alks <- list(lis21, lis22, lis23, lis24)
+names(lis_unfilled_alks) <- c("2021", "2022", "2023", "2024")
 
-dmv_unfill <- list(dmv21, dmv22, dmv23, dmv24)
-names(dmv_unfill) <- c("2021", "2022", "2023", "2024")
+dmv_unfilled_alksed_alks <- list(dmv21, dmv22, dmv23, dmv24)
+names(dmv_unfilled_alks) <- c("2021", "2022", "2023", "2024")
 
 gaps_to_fill <- check_gaps(otofilled)
 
 nearfill <- Map(function(alk, gaps_to_fill) {
-  dmv <- dmv_unfill[[as.character(alk$year[1])]]
-  lis <- LIS_unfill[[as.character(alk$year[1])]][, c(1, 3:13)]
-  gaps <- which(diff(gaps_to_fill) > 1) + 1 # Identifalk the indegaps_to_fill of the element after the gap
+  dmv <- dmv_unfilled_alks[[as.character(alk$year[1])]]
+  lis <- lis_unfilled_alks[[as.character(alk$year[1])]][, c(1, 3:13)]
+  gaps <- which(diff(gaps_to_fill) > 1) + 1 # Identify the index of the element after the gap
   missing_numbers <- gaps_to_fill[gaps] - 1 # Find the missing number(s)
   lastrowfilled <- missing_numbers[length(missing_numbers)]
 
   for (i in 1:length(gaps_to_fill)) {
     if (gaps_to_fill[i] == min(alk$length)) { ### if the gap to fill is the smallest bin in the ALK...
-      if (gaps_to_fill[i] + 1 != gaps_to_fill[i + 1]) { # if the negaps_to_fillt greater length bin isn't emptalk...
+      if (gaps_to_fill[i] + 1 != gaps_to_fill[i + 1]) { # if the next greater length bin isn't empty...
         alk[alk$length == gaps_to_fill[i], c(2:12)] <- alk[alk$length == gaps_to_fill[i] + 1, c(2:12)] # ...fill from below
       } else if (sum(lis[lis[, 1] == gaps_to_fill[i], c(2:12)]) == 0) { # e.g. need to fill 29 for 2021, 2023
         # sum(dmv[dmv[,1]==gaps_to_fill[i],c(2:12)]) > 0 shows preference for DMV when it has values
-        alk[alk$length == gaps_to_fill[i], c(2:12)] <- dmv[dmv[, 1] == gaps_to_fill[i], c(2:12)] # if the negaps_to_fillt greatest length bin from the smallest is emptalk, and LIS is emptalk, fill from DMV
+        alk[alk$length == gaps_to_fill[i], c(2:12)] <- dmv[dmv[, 1] == gaps_to_fill[i], c(2:12)] # if the next greatest length bin from the smallest is empty, and LIS is empy, fill from DMV
       } else {
         alk[alk$length == gaps_to_fill[i], c(2:12)] <- lis[lis[, 1] == gaps_to_fill[i], c(2:12)] # prefer to fill with LIS
       }
     } else if (gaps_to_fill[i] == max(alk$length)) { ### if the gap to fill is the largest bin in the ALK...
-      if (gaps_to_fill[i] - 1 != gaps_to_fill[i - 1] & sum(alk[alk$length == gaps_to_fill[i] - 1, c(2:12)]) > 0) { # if the negaps_to_fillt smallest length bin doesn't need filling and has values...
+      if (gaps_to_fill[i] - 1 != gaps_to_fill[i - 1] & sum(alk[alk$length == gaps_to_fill[i] - 1, c(2:12)]) > 0) { # if the next smallest length bin doesn't need filling and has values...
         alk[alk$length == gaps_to_fill[i], c(2:12)] <- alk[alk$length == gaps_to_fill[i] - 1, c(2:12)] # ...fill from above
       } else {
         if (sum(lis[lis[, 1] == gaps_to_fill[i], c(2:12)]) == 0) { # preference for filling from LIS when it has data
@@ -208,17 +208,17 @@ nearfill <- Map(function(alk, gaps_to_fill) {
           alk[alk$length == gaps_to_fill[i], c(2:12)] <- lis[lis[, 1] == gaps_to_fill[i], c(2:12)]
         }
       }
-    } else if (i == length(gaps_to_fill)) { ### if it's the last bin to be filled (and it's not the largest length bin in the kealk...)
-      if (gaps_to_fill[i] - 1 == gaps_to_fill[i - 1]) { # if the bin above it is emptalk...
+    } else if (i == length(gaps_to_fill)) { ### if it's the last bin to be filled (and it's not the largest length bin in the ALK...)
+      if (gaps_to_fill[i] - 1 == gaps_to_fill[i - 1]) { # if the bin above it is empty...
         alk[alk$length == gaps_to_fill[i], c(2:12)] <- alk[alk$length == gaps_to_fill[i] + 1, c(2:12)] # ...fill with the bin below
       } else {
         alk[alk$length == gaps_to_fill[i], c(2:12)] <- alk[alk$length == gaps_to_fill[i] + 1, c(2:12)] + alk[alk$length == gaps_to_fill[i] - 1, c(2:12)]
       }
-    } else if (!(gaps_to_fill[i] + 1) %in% gaps_to_fill & !(gaps_to_fill[i] - 1) %in% gaps_to_fill) { ### analk row "in the middle": if there are values on either side...
+    } else if (!(gaps_to_fill[i] + 1) %in% gaps_to_fill & !(gaps_to_fill[i] - 1) %in% gaps_to_fill) { ### any row "in the middle": if there are values on either side...
       alk[alk$length == gaps_to_fill[i], c(2:12)] <- alk[alk$length == gaps_to_fill[i] + 1, c(2:12)] + alk[alk$length == gaps_to_fill[i] - 1, c(2:12)]
-    } else if ((gaps_to_fill[i] + 1) %in% gaps_to_fill & !(gaps_to_fill[i] - 1) %in% gaps_to_fill) { # if the bin below is emptalk...
+    } else if ((gaps_to_fill[i] + 1) %in% gaps_to_fill & !(gaps_to_fill[i] - 1) %in% gaps_to_fill) { # if the bin below is empty...
       alk[alk$length == gaps_to_fill[i], c(2:12)] <- alk[alk$length == gaps_to_fill[i] - 1, c(2:12)]
-    } else if (!(gaps_to_fill[i] + 1) %in% gaps_to_fill & (gaps_to_fill[i] - 1) %in% gaps_to_fill & sum(alk[alk$length == gaps_to_fill[i] + 1, c(2:12)]) > 0) { # if the bin above is emptalk and the bin below has non-0 values
+    } else if (!(gaps_to_fill[i] + 1) %in% gaps_to_fill & (gaps_to_fill[i] - 1) %in% gaps_to_fill & sum(alk[alk$length == gaps_to_fill[i] + 1, c(2:12)]) > 0) { # if the bin above is empty and the bin below has non-0 values
       alk[alk$length == gaps_to_fill[i], c(2:12)] <- alk[alk$length == gaps_to_fill[i] + 1, c(2:12)]
     } else {
       if (sum(lis[lis[, 1] == gaps_to_fill[i], c(2:12)]) == 0) { # if 0s on both sides, fill from adjacent region (LIS first)
@@ -230,7 +230,7 @@ nearfill <- Map(function(alk, gaps_to_fill) {
   } # need 2024
   alk$rowsum <- NULL
   return(alk)
-}, otofilled, gaps_to_fill)
+}, oto_filled_alks, gaps_to_fill)
 
 check_gaps(nearfill)
 
