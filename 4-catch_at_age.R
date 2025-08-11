@@ -16,7 +16,7 @@ life <- read_xlsx(file.path(root, "data/tog/Tautog Data Template 2025_NJDEP.xlsx
 life24 <- read_xlsx(file.path(root, "data/tog/Tautog Data Template 2025_NJDEP_2024-update.xlsx"), sheet = "LifeHistory", skip = 6) 
 
 #Load ALKs
-indir <- "output/tog/alk/filled/allstr"
+indir <- "output/tog/alk/filled/opercboth"
 indir <- file.path(root, indir)
 alk2021numnj <- read.csv(file.path(indir, "NJNYB-ALK_2021_filled.csv"))
 alk2022numnj <- read.csv(file.path(indir, "NJNYB-ALK_2022_filled.csv"))

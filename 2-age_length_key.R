@@ -57,7 +57,7 @@ njny$tl_cm <- floor(njny$Length)
 ## sort(unique(njny[njny$Region=="B" & njny$structure=="operc",]$tl_cm)) 29 is next largest length incl in rec data
 
 for_alk <- njny[njny$tl_cm >= 29 & njny$tl_cm < 61, ] %>%
-  mutate(alk, Age_plus = ifelse(Age >= 12, 12, Age)) %>%
+  mutate(Age_plus = ifelse(Age >= 12, 12, Age)) %>%
   filter(Region == "B")
 # The previous assessment bounds for NJ-NYB were 15-60cm and MA-RI uses 14-60cm
 # This final bounding was ad-hoc from filling the ALK. The gaps left to fill...
@@ -71,14 +71,13 @@ for_alk$Age_plus <- factor(for_alk$Age_plus, levels = 2:12)
 
 operc <- for_alk[for_alk$structure == "operc" | for_alk$structure == "both", ]
 oto <- for_alk[for_alk$structure == "oto", ]
-#alk_data <- operc
+alk_data <- operc
 
-#Originally, our region elected to use only operculum data...
-#but both after looking at the gaps left in the data and what was available for filling
-#and what the consequences were of filling various ways, it made for a more cohesive key
-#to use all data for the region. From a 6/13 email with Katie, she commented
-#that there does not appear to be strong evidence of bias between aging structures for NJ
-alk_data <- for_alk
+#Our region elected to use only operculum data...
+#From a 6/13 email with Katie, she commented that there does not appear to be strong evidence
+#of bias between aging structures for NJ. So I tested doing with the full data too
+#alk_data <- for_alk
+
 annual_al <- split(alk_data, alk_data$Year) #could try across all structures...
 
 pivot_alk <- function(dat) {
@@ -138,6 +137,7 @@ age12_filled_alks <- lapply(alks, function(alk) {
   if (alk[alk$length == max_len_aged, 12] == alk[alk$length == max_len_aged, "rowsum"] & max_len_aged < max(alk$length)) {
     alk[alk$length %in% (max_len_aged + 1):max(alk$length), 12] <- alk[alk$length == max_len_aged, 12]
   }
+  alk$rowsum <- NULL
   return(alk)
 })
 gaps_to_fill <- check_gaps(age12_filled_alks)
@@ -156,7 +156,7 @@ gaps_to_fill <- check_gaps(age12_filled_alks)
 #is the way to go, I’d support that. 
 
 #...here is my attempt at well-documenting! :)
-oto_fill_rows <- Map(function(gaps, yr) {
+otofilled <- Map(function(gaps, yr, alk) {
   check <- oto[oto$Year == yr & oto$tl_cm %in% gaps, ]
   if (nrow(check) > 0) {
     oto_for_fill <- pivot_alk(check)
@@ -164,24 +164,13 @@ oto_fill_rows <- Map(function(gaps, yr) {
   } else {
     oto_for_fill <- data.frame()
   }
-  return(oto_for_fill)
-}, gaps_to_fill, names(gaps_to_fill))
-
-otofilled <- Map(function(alk, otofill) {
-  if (nrow(otofill) > 0) {
-    alk[alk$length %in% otofill$length, ] <- otofill
+  
+  if (nrow(oto_for_fill) > 0) {
+    alk[alk$length %in% oto_for_fill$length, ] <- oto_for_fill
   }
+  alk$year <- yr
   return(alk)
-}, age12_filled_alks, oto_fill_rows)
-
-otofilled <- Map(
-  function(alk, yr) {
-    alk$year <- yr
-    return(alk)
-  },
-  otofilled, c(2021:2024)
-)
-# filled 31, 48 in 2024...
+}, gaps_to_fill, names(gaps_to_fill), age12_filled_alks)
 
 #### STEP 3: fill with adjacent rows, or where you can't, neighboring state ALKs
 LIS_unfill <- list(lis21, lis22, lis23, lis24)
@@ -253,7 +242,7 @@ fill24[fill24$length %in% 57:60, 12] <- 1
 
 nearfill <- list(nearfill[[1]], nearfill[[2]], nearfill[[3]], fill24)
 
-write.csv(nearfill[[1]], file.path(root, "output/tog/alk/filled/allstr/NJNYB-ALK_2021_filled.csv"))
-write.csv(nearfill[[2]], file.path(root, "output/tog/alk/filled/allstr/NJNYB-ALK_2022_filled.csv"))
-write.csv(nearfill[[3]], file.path(root, "output/tog/alk/filled/allstr/NJNYB-ALK_2023_filled.csv"))
-write.csv(nearfill[[4]], file.path(root, "output/tog/alk/filled/allstr/NJNYB-ALK_2024_filled.csv"))
+write.csv(nearfill[[1]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2021_filled.csv"))
+write.csv(nearfill[[2]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2022_filled.csv"))
+write.csv(nearfill[[3]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2023_filled.csv"))
+write.csv(nearfill[[4]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2024_filled.csv"))
