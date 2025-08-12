@@ -8,7 +8,7 @@ library(tidyverse)
 library(readxl)
 
 #INPUT####################################
-MRIP_har <- read.csv("C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/data/tog/rec/Tautog_MRIP_AB1_LFs_2021-2024_NJNYB.csv", header=TRUE)
+MRIP_har <- read.csv("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/data/tog/rec/Tautog_MRIP_AB1_LFs_2021-2024_NJNYB.csv", header=TRUE)
 ###################
 # check it
 head(MRIP_har)

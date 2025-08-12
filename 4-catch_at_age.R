@@ -53,19 +53,6 @@ life_history <- lapply(
   sheet = "LifeHistory", skip = 6
 )
 #########################################
-
-names(comm_catch)[names(comm_catch) == "NYB-NJ"] <- "Comm" # metric tons
-comm_catch$Comm <- comm_catch$Comm * 1000000
-commcatchyrsumnj <- comm_catch %>%
-  left_join(weights_means) %>%
-  mutate(CommCatchNumFish = Comm / MeanWeight)
-
-total_catch <- total_catch %>%
-  mutate(DiscardMortality = Released.B2 * 0.025) %>%
-  mutate(TotalRecCatch = Harvest.A.B1 + DiscardMortality)
-total_catch <- left_join(total_catch, commcatchyrsumnj) %>%
-  mutate(TotalCatch = TotalRecCatch + CommCatchNumFish)
-
 # convert to proportions
 # alks <- lapply(alks, function(y) {
 #  y <- y %>% select(2:13)
@@ -81,16 +68,10 @@ alkprops <- lapply(alks, function(y) {
 })
 
 names(harvest_lf) <- c("Length", "2021", "2022", "2023", "2024")
-names(discard_lf) <- c("Length", "2021", "2022", "2023", "2024")
-discard_lf_propnj <- discard_lf %>%
-  mutate(across(`2021`:`2024`, .fns = function(x) {
-    x / sum(x, na.rm = TRUE)
-  }))
-harvest_lf_propnj <- harvest_lf %>%
-  mutate(across(`2021`:`2024`, .fns = function(x) {
-    x / sum(x, na.rm = TRUE)
-  }))
-
+#harvest_lf_propnj <- harvest_lf %>%
+#  mutate(across(`2021`:`2024`, .fns = function(x) {
+#    x / sum(x, na.rm = TRUE)
+#  }))
 recharvestCAA <- Map(function(x, y) {
   rechar_year <- left_join(harvest_lf[, c(1, x + 1)], y) %>%
     rename(Number = as.character(2020 + x), Total.Count = rowsum) %>%
@@ -100,6 +81,15 @@ recharvestCAA <- Map(function(x, y) {
     replace(is.na(.), 0) %>%
     select(-c("Number", "Total.Count"))
 }, 1:4, alkprops)
+
+total_catch <- total_catch %>%
+  mutate(DiscardMortality = Released.B2 * 0.025)
+
+names(discard_lf) <- c("Length", "2021", "2022", "2023", "2024")
+discard_lf_propnj <- discard_lf %>%
+  mutate(across(`2021`:`2024`, .fns = function(x) {
+    x / sum(x, na.rm = TRUE)
+  }))
 
 ## Recreational Discard Catch-at-Age
 recdiscardCAA <- lapply(1:4, function(a) {
@@ -131,42 +121,6 @@ caa <- cbind(X1 = c(0, 0, 0, 0), rbind(
 
 waas <- list()
 
-# Find weight of recreational harvested fish.
-# There are small sample sizes for commercially harvested,
-# so we'll use rec weights to infer comm weights.
-
-names(life_history[[1]])[names(life_history[[1]]) == "Year"] <- "Date"
-life_history[[1]]$Year <- as.integer(format(life_history[[1]]$Date, "%Y"))
-# life_history24$`Weight (g)` <- life_history24$`Weight (g)` * 1000 #I was given data in the wrong format...
-# life_history24$Total.Length..cm. <- life_history24$Total.Length..cm. / 10
-# life_history24$`Total Length (cm)` <- life_history24$`Total Length (cm)` / 10
-
-life_history[[2]] <- life_history[[2]] %>%
-  rename("Total Length (cm)" = "cm", "Weight (g)" = "grams") %>%
-  select(-"Total Length (mm)", -"Weight (kg)")
-life_history[[1]] <- life_history[[1]][, names(life_history[[2]])]
-life_history <- bind_rows(life_history) %>%
-  # rename("Weight" = "Weight..g.") %>%
-  rename("Weight" = "Weight (g)") %>%
-  # mutate(Length = floor(Total.Length..cm.)) %>%
-  mutate(Length = floor(`Total Length (cm)`)) %>%
-  select(Year, Age, Weight, Region, Length)
-life_history <- life_history[!is.na(life_history$Weight), ]
-table(life_history$Year)
-
-ggplot(data = life_history, aes(x = Weight)) +
-  geom_histogram() +
-  facet_wrap(~Year) +
-  xlab("Recreational Fish Weight (g)")
-
-# We only need to use the recreational weights
-weights_means <- life_history %>%
-  group_by(Year) %>%
-  summarize(
-    MeanWeight = mean(Weight, na.rm = TRUE),
-    sdWeight = sd(Weight, na.rm = TRUE), .groups = "keep"
-  )
-
 # Length-weight relationships for recreational harvested fish
 ggplot(
   data = life_history,
@@ -192,9 +146,9 @@ lw_pars <- bind_rows(lapply(c(1:4), function(i) {
     a = summary(nlstmpnj)$parameters[1, 1],
     b = summary(nlstmpnj)$parameters[2, 1]
   )
-  preds.tmpnj <- data.frame(Length = min(life_history$Length, na.rm = TRUE):max(life_history$Length, na.rm = TRUE))
-  preds.tmpnj$Pred <- LWdftmpnj$a*((preds.tmpnj$Length)^LWdftmpnj$b)
-  ggplot(data = preds.tmpnj, aes(x = Length, y = Pred)) + geom_point() + ggtitle(paste(2020+i))
+  #preds.tmpnj <- data.frame(Length = min(life_history$Length, na.rm = TRUE):max(life_history$Length, na.rm = TRUE))
+  #preds.tmpnj$Pred <- LWdftmpnj$a*((preds.tmpnj$Length)^LWdftmpnj$b)
+  #ggplot(data = preds.tmpnj, aes(x = Length, y = Pred)) + geom_point() + ggtitle(paste(2020+i))
 }))
 
 alklist <- list(
@@ -203,6 +157,50 @@ alklist <- list(
   alkprops[[3]][, -13],
   alkprops[[4]][, -13]
 )
+
+# Find weight of recreational harvested fish.
+# There are small sample sizes for commercially harvested,
+# so we'll use rec weights to infer comm weights.
+names(life_history[[1]])[names(life_history[[1]]) == "Year"] <- "Date"
+life_history[[1]]$Year <- as.integer(format(life_history[[1]]$Date, "%Y"))
+# life_history24$`Weight (g)` <- life_history24$`Weight (g)` * 1000 #I was given data in the wrong format...
+# life_history24$Total.Length..cm. <- life_history24$Total.Length..cm. / 10
+# life_history24$`Total Length (cm)` <- life_history24$`Total Length (cm)` / 10
+life_history[[2]] <- life_history[[2]] %>%
+  rename("Total Length (cm)" = "cm", "Weight (g)" = "grams") %>%
+  select(-"Total Length (mm)", -"Weight (kg)")
+life_history[[1]] <- life_history[[1]][, names(life_history[[2]])]
+life_history <- bind_rows(life_history) %>%
+  # rename("Weight" = "Weight..g.") %>%
+  rename("Weight" = "Weight (g)") %>%
+  # mutate(Length = floor(Total.Length..cm.)) %>%
+  mutate(Length = floor(`Total Length (cm)`)) %>%
+  select(Year, Age, Weight, Region, Length)
+life_history <- life_history[!is.na(life_history$Weight), ]
+table(life_history$Year)
+
+ggplot(data = life_history, aes(x = Weight)) +
+  geom_histogram() +
+  facet_wrap(~Year) +
+  xlab("Recreational Fish Weight (g)")
+# We only need to use the recreational weights
+weights_means <- life_history %>%
+  group_by(Year) %>%
+  summarize(
+    MeanWeight = mean(Weight, na.rm = TRUE),
+    sdWeight = sd(Weight, na.rm = TRUE), .groups = "keep"
+  )
+
+names(comm_catch)[names(comm_catch) == "NYB-NJ"] <- "Comm" # metric tons
+comm_catch$Comm <- comm_catch$Comm * 1000000
+commcatchyrsumnj <- comm_catch %>%
+  left_join(weights_means) %>%
+  mutate(CommCatchNumFish = Comm / MeanWeight)
+
+total_catch <- total_catch %>%
+  mutate(TotalRecCatch = Harvest.A.B1 + DiscardMortality)
+total_catch <- left_join(total_catch, commcatchyrsumnj) %>%
+  mutate(TotalCatch = TotalRecCatch + CommCatchNumFish)
 
 for (y in 1:4) {
   alk.in <- as.data.frame(alklist[[y]])

@@ -8,9 +8,9 @@ library(readxl)
 library(ggplot2)
 
 #read in data for discard LF#########
-mrip9 <- read.csv("C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/data/tog/rec/Tautog_MRIP_Type9_lengths_2021-24.csv", header=TRUE)
+mrip9 <- read.csv("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/data/tog/rec/Tautog_MRIP_Type9_lengths_2021-24.csv", header=TRUE)
 #American Littoral Society 
-als <- read_excel("C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/data/tog/rec/ALS_Tautog_2021-2024.xlsx", col_names = TRUE)
+als <- read_excel("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/data/tog/rec/ALS_Tautog_2021-2024.xlsx", col_names = TRUE)
 ####################
 
 mrip9<-subset(mrip9, REGION=="NJNYB")
