@@ -313,7 +313,7 @@ near_filled_alks[[4]][near_filled_alks[[4]]$length %in% 57:60, 12] <- 1
 # write.csv(alks[[3]][,-1], "NJNYB-ALK_2023_unfilled.csv")
 # write.csv(alks[[4]][,-1], "NJNYB-ALK_2024_unfilled.csv")
 
-#write.csv(near_filled_alks[[1]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2021_filled.csv"), row.names = F)
-#write.csv(near_filled_alks[[2]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2022_filled.csv"), row.names = F)
-#write.csv(near_filled_alks[[3]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2023_filled.csv"), row.names = F)
-#write.csv(near_filled_alks[[4]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2024_filled.csv"), row.names = F)
+# write.csv(near_filled_alks[[1]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2021_filled.csv"), row.names = F)
+# write.csv(near_filled_alks[[2]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2022_filled.csv"), row.names = F)
+# write.csv(near_filled_alks[[3]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2023_filled.csv"), row.names = F)
+# write.csv(near_filled_alks[[4]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2024_filled.csv"), row.names = F)
