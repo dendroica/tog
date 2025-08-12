@@ -1,5 +1,5 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## This script calculates total catch in numbers of fish
+# This script calculates total catch in numbers of fish
 # the length frequencies of different components of catch
 # and combines those with the filled-in ALKs to calculate catch-at-age...
 # ...then weight-at-age
@@ -10,62 +10,68 @@ loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
 
 root <- file.path(root, usr, loc)
 # root <- "/media/jess/9CE61C02E61BDB7A/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents"
-# on Ubuntu, you have to have this open in files/ssd to have it mounted...
+# On Ubuntu, you have to have this open in files/ssd to have it mounted...
 library(tidyverse)
 library(readxl)
 library(ggplot2)
 
 # INPUTS USED#############################
-life_history <- read_xlsx(
-  file.path(root, "data/tog/Tautog Data Template 2025_NJDEP.xlsx"),
-  sheet = "LifeHistory",
-  skip = 6
-)
-life_history24 <- read_xlsx(
-  file.path(root, "data/tog/Tautog Data Template 2025_NJDEP_2024-update.xlsx"),
-  sheet = "LifeHistory",
-  skip = 6
+in_dir <- file.path(root, "data/tog")
+life_history <- lapply(
+  c(
+    file.path(in_dir, "Tautog Data Template 2025_NJDEP.xlsx"),
+    file.path(in_dir, "Tautog Data Template 2025_NJDEP_2024-update.xlsx")
+  ),
+  read_xlsx,
+  sheet = "LifeHistory", skip = 6
 )
 
 # Load ALKs
-in_dir <- file.path(root, "output/tog/alk/filled/opercboth")
-alk2021numnj <- read.csv(file.path(in_dir, "NJNYB-ALK_2021_filled.csv"))
-alk2022numnj <- read.csv(file.path(in_dir, "NJNYB-ALK_2022_filled.csv"))
-alk2023numnj <- read.csv(file.path(in_dir, "NJNYB-ALK_2023_filled.csv"))
-alk2024numnj <- read.csv(file.path(in_dir, "NJNYB-ALK_2024_filled.csv"))
+alks <- list.files(file.path(root, "output/tog/alk/filled/opercboth"),
+  full.names = TRUE
+) %>% map(read.csv)
+# Folder contains...
+# NJNYB-ALK_2021_filled.csv
+# NJNYB-ALK_2022_filled.csv
+# NJNYB-ALK_2023_filled.csv
+# NJNYB-ALK_2024_filled.csv
 
 # Load recreational catch and discard
-totalcatchnj <- read.csv(
+total_catch <- read.csv(
   file.path(root, "data/tog/rec/Tautog_MRIP_TotalCatch_2021-2024_NJNYB.csv"),
   header = TRUE
 )
 
 # Load commercial catch data
-commcatchnj <- read_xlsx(
+comm_catch <- read_xlsx(
   file.path(root, "data/tog/Regional_Comm_landings_MT_07.18.25.xlsx"),
   sheet = "MT"
 )[, c("Year", "NYB-NJ")]
 
-# Length Frequencies for Recreational Catch and Discard, modified from discard_LFnj.R from Samarah Nehemiah for LIS
-harvest_LFnj <- read.csv(file.path(root, "output/tog/harvest_LF.csv"))
-discard_LFnj <- read.csv(file.path(root, "output/tog/discard_LF.csv"))[, 2:6]
+# Length Frequencies for Recreational Catch and Discard
+# Modified from discard_LF.R from Samarah Nehemiah for LIS
+harvest_lf <- read.csv(file.path(root, "output/tog/harvest_LF.csv"))
+discard_lf <- read.csv(file.path(root, "output/tog/discard_LF.csv"))[, 2:6]
 #########################################
-# Find weight of recreationally harvested fish.
-# There are small sample sizes for commercially harvested, so we'll use rec weights to infer comm weights.
+# Find weight of recreational harvested fish.
+# There are small sample sizes for commercially harvested,
+# so we'll use rec weights to infer comm weights.
 
-names(life_history)[names(life_history) == "Year"] <- "Date"
-life_history$Year <- as.integer(format(life_history$Date, "%Y"))
-life_history24$`Weight (g)` <- life_history24$`Weight (g)` * 1000 #I was given data in the wrong format...
+names(life_history[[1]])[names(life_history[[1]]) == "Year"] <- "Date"
+life_history[[1]]$Year <- as.integer(format(life_history[[1]]$Date, "%Y"))
+# life_history24$`Weight (g)` <- life_history24$`Weight (g)` * 1000 #I was given data in the wrong format...
 # life_history24$Total.Length..cm. <- life_history24$Total.Length..cm. / 10
-life_history24$`Total Length (cm)` <- life_history24$`Total Length (cm)` / 10
-
-life_history <- rbind(life_history[, names(life_history24)], life_history24) %>%
+# life_history24$`Total Length (cm)` <- life_history24$`Total Length (cm)` / 10
+life_history[[2]] <- life_history[[2]] %>%
+  rename("Total Length (cm)" = "cm", "Weight (g)" = "grams") %>%
+  select(-"Total Length (mm)", -"Weight (kg)")
+life_history[[1]] <- life_history[[1]][, names(life_history[[2]])]
+life_history <- bind_rows(life_history) %>%
   # rename("Weight" = "Weight..g.") %>%
   rename("Weight" = "Weight (g)") %>%
   # mutate(Length = floor(Total.Length..cm.)) %>%
   mutate(Length = floor(`Total Length (cm)`)) %>%
   select(Year, Age, Weight, Region, Length)
-
 life_history <- life_history[!is.na(life_history$Weight), ]
 table(life_history$Year)
 
@@ -75,59 +81,56 @@ ggplot(data = life_history, aes(x = Weight)) +
   xlab("Recreational Fish Weight (g)")
 
 # We only need to use the recreational weights
-weights_meansnj <- life_history %>%
+weights_means <- life_history %>%
   group_by(Year) %>%
   summarize(
     MeanWeight = mean(Weight, na.rm = TRUE),
     sdWeight = sd(Weight, na.rm = TRUE), .groups = "keep"
   )
 
-# Length-weight relationships for recreation harvested fish
+# Length-weight relationships for recreational harvested fish
 ggplot(
   data = life_history,
   aes(x = Length, y = Weight, group = as.factor(Year), colour = as.factor(Year))
 ) +
   geom_point()
 
-LWallnj <- nls(
+lw_relationship_all <- nls(
   Weight ~ alpha * (Length^beta),
   data = life_history, start = c(alpha = 5e6, beta = 3)
 )
 
-LWpars <- bind_rows(lapply(c(1:4), function(i) {
+lw_pars <- bind_rows(lapply(c(1:4), function(i) {
   # if (i < 4) {
   nlstmpnj <- nls(
     Weight ~ alpha * (Length^beta),
     data = filter(life_history, Year == 2020 + i),
     start = c(alpha = 5e6, beta = 3)
   )
-  # } else {nls.tmpj <- LWallnj}
-  # LW.listnj[[i]]<- nls.tmpnj
+  # } else {nls.tmpj <- lw_relationship_all}
   LWdftmpnj <- data.frame(
     Year = 2020 + i,
     a = summary(nlstmpnj)$parameters[1, 1],
     b = summary(nlstmpnj)$parameters[2, 1]
   )
-  # preds.tmpnj <- data.frame(Length = min(weights_recnj_3$Length.CM, na.rm = TRUE):max(weights_recnj_3$Length.CM, na.rm = TRUE))
-  # preds.tmpnj$Pred <- LW.df.tmpnj$a*((preds.tmpnj$Length)^LW.df.tmpnj$b)
-  # preds.listnj[[i]] <- preds.tmpnj
-  # ggplot(data = preds.listnj[[i]], aes(x = Length, y = Pred)) + geom_point() + ggtitle(paste(2020+i))
+  preds.tmpnj <- data.frame(Length = min(life_history$Length, na.rm = TRUE):max(life_history$Length, na.rm = TRUE))
+  preds.tmpnj$Pred <- LWdftmpnj$a*((preds.tmpnj$Length)^LWdftmpnj$b)
+  ggplot(data = preds.tmpnj, aes(x = Length, y = Pred)) + geom_point() + ggtitle(paste(2020+i))
 }))
 
-names(commcatchnj)[names(commcatchnj) == "NYB-NJ"] <- "Comm" # metric tons
-commcatchnj$Comm <- commcatchnj$Comm * 1000000
-commcatchyrsumnj <- commcatchnj %>%
-  left_join(weights_meansnj) %>%
+names(comm_catch)[names(comm_catch) == "NYB-NJ"] <- "Comm" # metric tons
+comm_catch$Comm <- comm_catch$Comm * 1000000
+commcatchyrsumnj <- comm_catch %>%
+  left_join(weights_means) %>%
   mutate(CommCatchNumFish = Comm / MeanWeight)
 
-totalcatchnj <- totalcatchnj %>%
+total_catch <- total_catch %>%
   mutate(DiscardMortality = Released.B2 * 0.025) %>%
   mutate(TotalRecCatch = Harvest.A.B1 + DiscardMortality)
-totalcatchnj <- left_join(totalcatchnj, commcatchyrsumnj) %>%
+total_catch <- left_join(total_catch, commcatchyrsumnj) %>%
   mutate(TotalCatch = TotalRecCatch + CommCatchNumFish)
 
 # convert to proportions
-alks <- list(alk2021numnj, alk2022numnj, alk2023numnj, alk2024numnj)
 # alks <- lapply(alks, function(y) {
 #  y <- y %>% select(2:13)
 # })
@@ -141,19 +144,19 @@ alkprops <- lapply(alks, function(y) {
     rename("Length" = "length")
 })
 
-names(harvest_LFnj) <- c("Length", "2021", "2022", "2023", "2024")
-names(discard_LFnj) <- c("Length", "2021", "2022", "2023", "2024")
-discard_LF_propnj <- discard_LFnj %>%
+names(harvest_lf) <- c("Length", "2021", "2022", "2023", "2024")
+names(discard_lf) <- c("Length", "2021", "2022", "2023", "2024")
+discard_lf_propnj <- discard_lf %>%
   mutate(across(`2021`:`2024`, .fns = function(x) {
     x / sum(x, na.rm = TRUE)
   }))
-harvest_LF_propnj <- harvest_LFnj %>%
+harvest_lf_propnj <- harvest_lf %>%
   mutate(across(`2021`:`2024`, .fns = function(x) {
     x / sum(x, na.rm = TRUE)
   }))
 
 recharvestCAA <- Map(function(x, y) {
-  rechar_year <- left_join(harvest_LFnj[, c(1, x + 1)], y) %>%
+  rechar_year <- left_join(harvest_lf[, c(1, x + 1)], y) %>%
     rename(Number = as.character(2020 + x), Total.Count = rowsum) %>%
     mutate(across(paste0("X", 2:12), .fns = function(x) {
       x * Number
@@ -170,7 +173,7 @@ alklist <- list(
 )
 
 recharvestCAA <- Map(function(x, y) {
-  rechar_year <- left_join(harvest_LFnj[, c(1, x + 1)], y) %>%
+  rechar_year <- left_join(harvest_lf[, c(1, x + 1)], y) %>%
     rename(Number = as.character(2020 + x), Total.Count = rowsum) %>%
     mutate(across(paste0("X", 2:12), .fns = function(x) {
       x * Number
@@ -183,12 +186,12 @@ recharvestCAA <- Map(function(x, y) {
 recdiscardCAA <- lapply(1:4, function(a) {
   discardprops <- apply(
     alkprops[[a]][, 2:12], 2,
-    function(x) x * discard_LF_propnj[, a + 1]
+    function(x) x * discard_lf_propnj[, a + 1]
   )
   yr <- 2020 + a
-  totalcatch <- totalcatchnj$DiscardMortality[totalcatchnj$Year == yr]
+  totalcatch <- total_catch$DiscardMortality[total_catch$Year == yr]
   discardnums <- as.data.frame(discardprops * totalcatch)
-  discardnums$Length <- discard_LF_propnj[, 1]
+  discardnums$Length <- discard_lf_propnj[, 1]
   discardnums <- discardnums[discardnums$Length %in% 29:60, ]
   discardnums <- discardnums[, c(12, 1:11)]
 })
@@ -213,14 +216,14 @@ for (y in 1:4) {
   alk.in <- as.data.frame(alklist[[y]])
 
   # subset to the seasonal comm harvest
-  comm.in <- totalcatchnj$Comm[y] # this is in metric tons converted to g
+  comm.in <- total_catch$Comm[y] # this is in metric tons converted to g
 
   # Get your yearly L-W pars
-  a <- LWpars[y, 2]
-  b <- LWpars[y, 3]
+  a <- lw_pars[y, 2]
+  b <- lw_pars[y, 3]
 
   # subset your LF
-  LF.vec <- harvest_LFnj[, 1 + y]
+  LF.vec <- harvest_lf[, 1 + y]
 
   # Convert length bins to weights. Our length bins are floored, so we'll
   # add 0.5 to get to the center of the bin for the weight calculations.
