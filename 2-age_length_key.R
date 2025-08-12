@@ -3,7 +3,11 @@ library(dplyr)
 library(ggplot2)
 # can use origin::originize_file to overwrite in place qualifying namespaces
 
-root <- "C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents" # jgorzo
+root <- "C:/Users"
+usr <- "jgorzo"
+loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
+
+root <- file.path(root, usr, loc)
 # setwd("/media/jess/9CE61C02E61BDB7A/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents")
 # On Ubuntu, you have to have this open in files/ssd to have it mounted
 
