@@ -3,14 +3,17 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 library(tidyverse)
 library(dplyr)
-library(openxlsx)
 library(readxl)
 library(ggplot2)
+root <- "C:/Users"
+usr <- "galax"
+loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
+root <- file.path(root, usr, loc)
 
-#read in data for discard LF#########
-mrip9 <- read.csv("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/data/tog/rec/Tautog_MRIP_Type9_lengths_2021-24.csv", header=TRUE)
+#INPUTS: read in data for discard LF#########
+mrip9 <- read.csv(file.path(root, "data/tog/rec/Tautog_MRIP_Type9_lengths_2021-24.csv"), header=TRUE)
 #American Littoral Society 
-als <- read_excel("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/data/tog/rec/ALS_Tautog_2021-2024.xlsx", col_names = TRUE)
+als <- read_xlsx(file.path(root,"data/tog/rec/ALS_Tautog_2021-2024.xlsx"), col_names = TRUE)
 ####################
 
 mrip9<-subset(mrip9, REGION=="NJNYB")
@@ -109,7 +112,7 @@ discard<- bind_rows(ALS_LF, MRIP9_LF) %>%
 #write.csv(ALS_LF,"ALS_LF.csv")
 #write.csv(MRIP9_LF,"MRIP9_LF.csv")
 #write.csv(VAS_LF,"VAS_LF.csv")
-write.csv(discard,"C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/discard_LF.csv")
+write.csv(discard,file.path(root, "output/tog/discard_LF.csv"))
 
 
 
@@ -119,8 +122,8 @@ write.csv(discard,"C:/Users/galax/OneDrive - New Jersey Office of Information Te
 discardexpand<- pivot_longer(discard, cols = c('2021','2022','2023','2024'), names_to = "Year", values_to = "Count")
 discardexpand<-as.data.frame(discardexpand)
 
-jpeg("LF_ALST9VAS.jpeg",res=800, height = 6,width=8,units="in")
+#jpeg("LF_ALST9VAS.jpeg",res=800, height = 6,width=8,units="in")
 ggplot(discardexpand)+
   geom_col(aes(x=Length.CM,y=Count),col="black",fill="darkgrey")+
   facet_wrap(~Year)+theme_bw()
-dev.off()
+#dev.off()
