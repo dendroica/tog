@@ -7,13 +7,17 @@ options(scipen=999)
 library(tidyverse)
 library(readxl)
 
+root <- "C:/Users"
+usr <- "jgorzo"
+loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
+root <- file.path(root, usr, loc)
+
 #INPUT####################################
-MRIP_har <- read.csv("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/data/tog/rec/Tautog_MRIP_AB1_LFs_2021-2024_NJNYB.csv", header=TRUE)
+MRIP_har <- read.csv(file.path(root, "/data/tog/rec/Tautog_MRIP_AB1_LFs_2021-2024_NJNYB.csv"), header=TRUE)
 ###################
 # check it
 head(MRIP_har)
 str(MRIP_har)
-MRIP_har$Year <- as.factor(MRIP_har$Year)
 MRIP_har$Length <- as.numeric(MRIP_har$Length)
 
 # take a look at it
@@ -21,7 +25,7 @@ ggplot(MRIP_har, aes(x=Length, y=Number)) +
   geom_bar(stat="identity") +
   #geom_errorbar(aes(ymin=Number-(Number*(PSE/100)), ymax=Number+(Number*(PSE/100)))) +
   theme_classic() +
-  facet_wrap(~Year, ncol=2) +
+  facet_wrap(~as.factor(Year), ncol=2) +
   scale_x_continuous(breaks=c(15,20,25,30,35,40,45,50,55,60,65)) +
   ylab("Count of Fish") +
   xlab("Length (cm)") +
@@ -29,36 +33,16 @@ ggplot(MRIP_har, aes(x=Length, y=Number)) +
   theme(plot.title = element_text(size=16, face="bold", hjust=0.5))
 ggsave("MARI_Recreational_Harvest_LengthFreq.png")
 
+MRIP_har <- MRIP_har %>% select(Year, Length, Number)
+MRIPG60 <- MRIP_har %>% filter(Length >= 60) %>% #should I do this with smaller length bins??
+  group_by(Year) %>% summarise(Number = sum(Number)) %>% mutate(Length = 60) %>%
+  bind_rows(data.frame(Year = 2022, Number = 0, Length =60))
+MRIP_har <- MRIP_har %>% #bind_rows(MRIP_har, MRIPG60) %>% 
+  filter(Length >= 29 & Length <= 60) %>% pivot_wider(names_from=Year, values_from=Number) %>%
+  complete(Length=full_seq(Length, 1)) %>% replace(is.na(.), 0)
 
-#format into table.  Length in one column, data for each year in other columns.  
-max(MRIP_har$Length)
-# max length of 64, ALK goes to 60 so group all the 60+s together
-
-
-# make dataframe with all lengths represented, easier for putting into Excel sheet (if used)
-lengths <- seq(29, 60)
-MARI_har_lfs <- data.frame(lengths) 
-names(MARI_har_lfs) <- "Length"
-
-Yr_List <- unique(MRIP_har$Year)
-
- for (i in Yr_List) {
-   Yr_All <- MRIP_har[MRIP_har$Year == i,] #c(1,8,9)
-   Yr_L60 <- Yr_All[Yr_All$Length < 60,]
-   names(Yr_L60)[5] <- i
-   Yr_i <- Yr_L60[,c(4:5)]
-   MARI_har_lfs <- merge(MARI_har_lfs, Yr_i, all.x=TRUE)
-   
-   Yr_max <- max(Yr_All$Length)
-   if (Yr_max >= 60) {
-     Yr_G60 <- Yr_All[Yr_All$Length >= 60,]
-     Yr_60 <- sum(Yr_G60$Number)
-     MARI_har_lfs[MARI_har_lfs$Length==60,i] <- Yr_60
-   }
- }
-
-write.csv(MARI_har_lfs, "C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/harvest_LF.csv", row.names=FALSE)
-
-
-#####################################################################################
-#####################################################################################
+lastrow <- data.frame(c(29,60), c(0,0), c(0,0), c(0,0), c(0,0))
+names(lastrow) <- names(MRIP_har)
+MRIP_har <- bind_rows(MRIP_har, lastrow)
+MRIP_har <- MRIP_har[order(MRIP_har$Length),]
+write.csv(MRIP_har, file.path(root, "output/tog/harvest_LF.csv"), row.names=FALSE)
