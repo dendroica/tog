@@ -6,7 +6,7 @@ library(dplyr)
 library(readxl)
 library(ggplot2)
 root <- "C:/Users"
-usr <- "galax"
+usr <- "jgorzo"
 loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
 root <- file.path(root, usr, loc)
 
@@ -15,13 +15,8 @@ mrip9 <- read.csv(file.path(root, "data/tog/rec/Tautog_MRIP_Type9_lengths_2021-2
 #American Littoral Society 
 als <- read_xlsx(file.path(root,"data/tog/rec/ALS_Tautog_2021-2024.xlsx"), col_names = TRUE)
 ####################
-
-mrip9<-subset(mrip9, REGION=="NJNYB")
-head(als)  
-str(als)
-
-als<-subset(als,Region=="NJNYB")
-#View(als)
+mrip9<-subset(mrip9, REGION=="NJNYB") %>% rename("Length_cm" = "LENGTH.ROUNDED.DOWN.TO.NEAREST.CM")
+als<-subset(als,Region=="NJNYB") %>% rename("YEAR" = "Year") %>% mutate(Length_cm = floor(Length_IN*2.54))
 
 #length is reported by each 0.25 inch
 #look at distribution of 0.25 and 0.75
@@ -29,96 +24,28 @@ ggplot()+
   geom_histogram(aes(x=(als$Length_IN)),col="black",binwidth=0.25,position="identity")+
   theme_bw()+
   labs(x="Length IN")
-
 ## length bins seem even distributed across 0.25,0.5,0.75,inch bins so will just convert straight to CM
 
-als$Length_cm<-als$Length_IN*2.54 #conver inches to cm
-als$Length_cm<-floor(als$Length_cm)
+discards <- als %>% select(YEAR, Length_cm) %>% bind_rows(mrip9[,c("YEAR", "Length_cm")])
 
-
-lenfreqfun <- function(lendat,year) {
-  
-  lenrange <- data.frame(Length_cm = seq(trunc(min(na.omit(als$Length_cm))), trunc(max(na.omit(als$Length_cm))), by=1))
-  
-  lenfreq <- lendat %>% filter(year== year) %>%
+lenfreqfun <- function(lendat) {
+  yr <- lendat$YEAR[1]
+  lenfreq <- lendat %>%
     group_by(Length_cm) %>%
     dplyr::summarise(freq = n()) %>%
-    left_join(lenrange, .) %>%
-    replace_na(., list(freq = 0)) %>%
     dplyr::select(Length_cm,freq) %>%
-    arrange(Length_cm)
+    arrange(Length_cm) %>%
+    rename(!!(str_c(yr)) := "freq")
 }
 
-years<-as.numeric(unique(als$Year))
-years<-sort(years) #put in ascending order
-lengths <- seq(min(na.omit(als$Length_cm)), max(na.omit(als$Length_cm)), by=1) #CM
+discard <- discards %>% group_by(YEAR) %>% group_split %>% 
+  map(~lenfreqfun(.x)) %>% 
+  reduce(full_join) %>% complete(Length_cm=full_seq(Length_cm, 1)) %>%
+  replace(is.na(.), 0) %>% group_by(Length_cm) %>% summarise_all(sum)
 
-
-#create matrix for each year and length bin
-ALS_LF<-matrix(NA, nrow=length(lengths),ncol = (length(years)+1)) %>% data.frame()
-names(ALS_LF)[1]<- "Length.CM"
-ALS_LF$Length.CM <-lengths
-
-#fill in matrix with observed length frequences
-for(i in 1:length(years)){
-  ALS_LF[,i+1] <- lenfreqfun(lendat= subset(als, Year==years[i]), year=years[i]) %>% .$freq
-  names(ALS_LF)[i+1]<- paste0(years[i])
-}
-
-#do the same for MRIP discard (Type 9)
-
-mrip9<-rename(mrip9,c('Length_cm'='LENGTH.ROUNDED.DOWN.TO.NEAREST.CM'))
-colnames(mrip9)
-
-lenfreqfun <- function(lendat,year) {
-  
-  lenrange <- data.frame(Length_cm = seq(trunc(min(na.omit(mrip9$Length_cm))), trunc(max(na.omit(mrip9$Length_cm))), by=1))
-  
-  lenfreq <- lendat %>% filter(year== year) %>%
-    group_by(Length_cm) %>%
-    dplyr::summarise(freq = n()) %>%
-    left_join(lenrange, .) %>%
-    replace_na(., list(freq = 0)) %>%
-    dplyr::select(Length_cm,freq) %>%
-    arrange(Length_cm)
-}
-
-years<-as.numeric(unique(mrip9$YEAR))
-years<-sort(years) #put in ascending order
-lengths <- seq(min(na.omit(mrip9$Length_cm)), max(na.omit(mrip9$Length_cm)), by=1) #CM
-
-
-#create matrix for each year and length bin
-MRIP9_LF<-matrix(NA, nrow=length(lengths),ncol = (length(years)+1)) %>% data.frame()
-names(MRIP9_LF)[1]<- "Length.CM"
-MRIP9_LF$Length.CM <-lengths
-
-#fill in matrix with observed length frequences
-for(i in 1:length(years)){
-  MRIP9_LF[,i+1] <- lenfreqfun(lendat= subset(mrip9, YEAR==years[i]), year=years[i]) %>% .$freq
-  names(MRIP9_LF)[i+1]<- paste0(years[i])
-}
-
-discard<- bind_rows(ALS_LF, MRIP9_LF) %>% 
-  # evaluate following calls for each value in the rowname column
-  group_by(Length.CM) %>% 
-  # add all non-grouping variables
-  summarise_all(sum)
-
-#ALS_LF; MRIP9_LF; VAS_LF
-
-
-#save LF
-#write.csv(ALS_LF,"ALS_LF.csv")
-#write.csv(MRIP9_LF,"MRIP9_LF.csv")
-#write.csv(VAS_LF,"VAS_LF.csv")
 write.csv(discard,file.path(root, "output/tog/discard_LF.csv"))
 
-
-
-
 #plot out frequencies
-
 discardexpand<- pivot_longer(discard, cols = c('2021','2022','2023','2024'), names_to = "Year", values_to = "Count")
 discardexpand<-as.data.frame(discardexpand)
 
