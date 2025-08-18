@@ -206,7 +206,6 @@ mysum <- apply(caa_out, 1, sum)
 caa_prop <- apply(caa_out[, 1:12], 2, function(x) x / mysum)
 
 # final output: weight-at-age
-waa <- cbind(X1 = c(0, 0, 0, 0), bind_rows(waa)) / 1000
-# for the ASAP inputs, these appear to be scaled?
-write.csv(caa_out, file.path(root, "caa.csv"))
-write.csv(waa, file.path(root, "waa.csv"))
+waa <- cbind(X1 = c(0, 0, 0, 0), bind_rows(waa)) / 1000 # for the ASAP inputs, these appear to be scaled?
+write.csv(caa_out, file.path(root, "output/tog/caa.csv"))
+write.csv(waa, file.path(root, "output/tog/waa.csv"))

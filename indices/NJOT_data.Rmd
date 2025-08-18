@@ -1,0 +1,191 @@
+---
+title: "Bluefish index standardization - NJ Ocean trawl"
+author: "M Celestino"
+date: "`r Sys.time()`"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      cache = FALSE)
+```
+
+## Bluefish index standardization
+
+### Step 1: Data processing
+
+Load functions & libraries
+```{r}
+#source("f:/BF_WG/FIG/figFuns.R")
+source("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/data/tog/bootstrap_functions.R")
+
+library(car, quietly = FALSE)
+library(lmtest, quietly = FALSE)
+library(glmmTMB, quietly = FALSE)
+library(DHARMa, quietly = FALSE)
+library(bbmle, quietly = FALSE)
+library(ggeffects, quietly = FALSE)
+library(ggplot2, quietly = FALSE)
+require(readxl, quietly = FALSE)
+require(lattice, quietly = FALSE)
+require(emmeans, quietly = FALSE)
+require(rmarkdown, quietly = FALSE)
+require(knitr, quietly = FALSE)
+library(reshape2, quietly=TRUE, verbose=FALSE)
+library(doBy, quietly=TRUE, verbose=FALSE)
+library(dplyr, quietly=TRUE, verbose=FALSE,warn.conflicts=FALSE)
+
+geomean0 <- function(x) {
+  exp(mean(log(x + 1))) - 1
+}
+
+pctPos <- function(x) {
+  x <- ifelse(x > 0, 1, 0)
+  mean(x)
+}
+
+disp3 <- function(mod = NA) {
+  E <- residuals(mod, type = "pearson")
+  d <- sum(E^2) / summary(mod)$AICtab[5]
+  return(d)
+}
+```
+
+Read in data
+```{r}
+library(foreign)
+indata <- read.dbf("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/data/tog/TOABUN.DBF")
+#this is OC TRAWL DATA through 20244 (cruise 5 never happened for 2024)
+
+head(indata)
+str(indata)
+
+summary(indata)
+```
+
+### Some data exploration to determine which YEARs and covariates to keep; then remove missing values
+```{r}
+# limit to just yrs >1989 (1988 30 min tows; 1989 6 cruises; 1990 5 cruises (Dec+Feb combined into single January cruise))
+indata <- indata[indata$YEAR>1988,]
+
+# relabel strata:
+forMerge <- data.frame("STRATUM"=12:26,"stratum2"=rep(c("inner","middle","outer"),times=5))
+indata <- merge(indata,forMerge)                                                # YEAR order gets shuffled here
+indata <- indata[order(indata$YEAR),]
+indata$depth <- indata$MAXDEPTH
+
+keepVars <- c("ID","CRUCODE","STRATUM","YRMODA","MINOUT","TOWLENGTH","depth","TEMPBOT","SALBOT","DOBOT","stratum2")
+
+# how many records would we lose to NAs:
+apply(indata[,keepVars], 2, function(x) sum(is.na(x)))
+indata$Month <- substr(indata$YRMODA,5,6)
+indata$YOY <- as.numeric(indata$NUMBER)
+```
+
+```{r eval=FALSE}
+#matplot(1990:2019,with(indata, tapply(YOY,list(YEAR,substr(CRUCODE,5,5)),
+#   geomean,alpha=NULL,warn=FALSE)),type="o",ylab="Geo mean per tow by cruise",
+#   main="Geo mean per tow by cruise")
+
+# pct pos & geomean by cruise:
+op <- par(mfrow=c(1,2))
+round(with(indata, tapply(YOY,list(YEAR,substr(CRUCODE,5,5)),geomean)),2)#,alpha=NULL,warn=FALSE)),2) # geomean
+round(with(indata, tapply(YOY,list(YEAR,substr(CRUCODE,5,5)),pctPos)),2) # pct pos
+barplot(with(indata, tapply(YOY,list(substr(CRUCODE,5,5)),pctPos)),main="Pct positive by cruise")
+barplot(with(indata, tapply(YOY,list(substr(CRUCODE,5,5)),geomean)),main="Geometric mean by cruise") #,alpha=NULL,warn=FALSE
+
+# pct pos & geomean by stratum2:
+op <- par(mfrow=c(2,2))
+round(with(indata, tapply(YOY,list(YEAR,stratum2),pctPos)),2)
+barplot(with(indata, tapply(YOY,stratum2,mean)),main="Arith mean by strata")
+barplot(with(indata, tapply(YOY,stratum2,geomean)),main="Geomean by strata") #,alpha=NULL,warn=FALSE
+barplot(with(indata, tapply(YOY,stratum2,pctPos)),main="Pct positive by strata")
+barplot(with(indata, tapply(YOY,STRATUM,pctPos)),main="Pct positive by strata")
+
+# summary of pct pos by strata and cruise
+round(t(with(indata, tapply(YOY,list(stratum2,substr(CRUCODE,5,5)),pctPos))),2) # pct pos
+
+# and geomean summary:
+round(t(with(indata, tapply(YOY,list(stratum2,substr(CRUCODE,5,5)),geomean))),0) # geomean ,alpha=NULL,warn=FALSE
+
+# and again
+round(t(with(indata[is.element(indata$STRATUM,c(12,15,18,21,24)),], 
+   tapply(YOY,list(STRATUM,substr(CRUCODE,5,5)),pctPos))),2) # pct pos (inshore strata only)
+round(t(with(indata[is.element(indata$STRATUM,c(12,15,18,21,24)),], 
+   tapply(YOY,list(STRATUM,substr(CRUCODE,5,5)),geomean))),0) # geomean (inshore strata only) ,alpha=NULL,warn=FALSE
+```
+
+```{r}
+# Based on EDA, keeping just inshore stratum in October cruise - I explored cruises 4-5 and performance was worse than just cruise 5
+indata2 <- indata[as.numeric(substr(indata$CRUCODE,5,5)) %in% 4:6,]
+   table(indata2$Month) # check
+indata2 <- indata2[indata2$stratum2=="inner",]# | indata2$stratum2=="middle"]
+
+# how many records would we lose to NAs:
+apply(indata2[,keepVars], 2, function(x) sum(is.na(x)))
+
+
+indata2 <- indata2[complete.cases(indata2[,keepVars]),] # keep only complete cases
+summary(indata2)
+
+
+apply(indata2[,keepVars], 2, function(x) sum(is.na(x)))
+
+```
+
+
+Check for outliers
+```{r}
+# Check for outliers or weirdo values
+op <- par(mfrow=c(2,2))
+plot(indata2$SALBOT,main="SALBOT")
+indata2[indata2$SALBOT<24,]
+plot(indata2$DOBOT,main="DOBOT")
+indata2[indata2$DOBOT>9 | indata2$DOBOT<3,]
+plot(indata2$TEMPBOT,main="TEMPBOT")
+plot(indata2$depth,main="depth")
+pairs(indata2[,c("depth","TEMPBOT","SALBOT","DOBOT")])
+round(cor(indata2[,c("depth","TEMPBOT","SALBOT","DOBOT")],method="spearman"),2) # no strong correlations (numerically)
+```
+
+Plot distribtion of catches:
+```{r}
+op <- par(mfrow=c(1,2))
+hist(indata2$YOY,main="Bluefish",xlab="Observed Values",ylab="Frequency", breaks=seq(0,max(indata2$YOY),1))
+hist(indata2$YOY,main="Bluefish (truncated x-axis)",xlab="Observed Values",ylab="Frequency",
+   breaks=seq(0,max(indata2$YOY),1),xlim=c(0,50),ylim=c(0,100)) #edited to "zoom in" on tog distribution
+par(op)
+```
+
+Finally, check to see if there are any YEARs with zero catch that need to be removed:
+```{r}
+diff(as.numeric(names(xtabs(YOY~YEAR, indata2))))
+```
+
+
+Create a dataframe with all the factors we need (z-score all continuous variables; all others as.factors)
+```{r}
+dat = data.frame(CPUE = indata2$YOY,
+                 YEAR = as.factor(indata2$YEAR),
+                 MONTH = as.factor(indata2$Month),
+                 VESSEL=as.factor(indata2$VESSEL),
+                 STRATA=as.factor(indata2$STRATUM),
+                 STEMP = scale(indata2$TEMPSURF, center = TRUE, scale = TRUE), #Z.scr(indata2$TEMPSURF), 
+                 BTEMP = scale(indata2$TEMPBOT, center = TRUE, scale = TRUE), #Z.scr(indata2$TEMPBOT),
+                 SSAL = scale(indata2$SALSURF, center = TRUE, scale = TRUE), #Z.scr(indata2$SALSURF),
+                 BSAL = scale(indata2$SALBOT, center = TRUE, scale = TRUE), #Z.scr(indata2$SALBOT),
+                 SDO = scale(indata2$DOSURF, center = TRUE, scale = TRUE), #Z.scr(indata2$DOSURF),
+                 BDO = scale(indata2$DOBOT, center = TRUE, scale = TRUE), #Z.scr(indata2$DOBOT),
+                 DEPTH = scale(indata2$depth, center = TRUE, scale = TRUE), #Z.scr(indata2$depth),
+                 EFFORT = indata2$MINOUT)
+
+# Calculate the proportion of positive tows/sets/hauls
+dat$PosTow <- ifelse(dat$CPUE > 0, 1, 0)
+mean(dat$PosTow)
+
+# create offset for variable tow durations
+dat$lnEffort <- log(dat$EFFORT)
+
+head(dat)
+#save(dat, file = "NJOT.RData")
+```
