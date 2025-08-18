@@ -1,0 +1,77 @@
+---
+title: "Bluefish index standardization - NJ Ocean trawl"
+author: "M Celestino"
+date: "`r Sys.time()`"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      cache = FALSE)
+```
+
+## Bluefish index standardization
+
+### Step 1: Data processing
+
+Load functions & libraries
+```{r}
+#source("f:/BF_WG/FIG/figFuns.R")
+root <- "C:/Users"
+usr <- "jgorzo"
+loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
+root <- file.path(root, usr, loc)
+library(car, quietly = FALSE)
+library(lmtest, quietly = FALSE)
+library(glmmTMB, quietly = FALSE)
+library(DHARMa, quietly = FALSE)
+library(bbmle, quietly = FALSE)
+library(ggeffects, quietly = FALSE)
+library(ggplot2, quietly = FALSE)
+require(readxl, quietly = FALSE)
+require(lattice, quietly = FALSE)
+require(emmeans, quietly = FALSE)
+require(rmarkdown, quietly = FALSE)
+require(knitr, quietly = FALSE)
+library(reshape2, quietly=TRUE, verbose=FALSE)
+library(doBy, quietly=TRUE, verbose=FALSE)
+library(dplyr, quietly=TRUE, verbose=FALSE,warn.conflicts=FALSE)
+
+PctPos <- function(x) {
+  x <- ifelse(x > 0, 1, 0)
+  mean(x)
+}
+
+source(file.path(root, "data/tog/bootstrap_functions.R"))
+load(file.path(root, "output/tog/index/NJOT.RData"))
+```
+### Check collinearity
+```{r, error=TRUE}
+pairs(~YEAR+MONTH+VESSEL+STRATA+DEPTH+STEMP+BTEMP+SSAL+BSAL+SDO+BDO,data=dat)
+round(with(dat, cor(data.frame(
+  as.numeric(as.character(YEAR)),
+  as.numeric(as.character(MONTH)),
+  as.numeric(VESSEL),
+  as.numeric(as.character(STRATA)),
+  DEPTH,STEMP,BTEMP,SSAL,BSAL,SDO,BDO),method="pearson")),2)
+
+# Check the variance inflation factor for a more statistical check.
+mod = lm(CPUE ~ YEAR + MONTH + STRATA + DEPTH + BTEMP + BSAL + BDO, data = dat) #+ VESSEL
+#ld.vars <- attributes(alias(mod)$Complete)$dimnames[[1]]
+vif_values <- car::vif(mod)
+#barplot(vif_values, col = "skyblue", main = "Variance Inflation Factor (VIF)")
+#we need YEAR but the next highest is MONTH, and it's above 10 so should probably be removed
+```
+
+```{r}
+# look at PctPos by factor; drop MONTH (only 1 Dec sampling, a few Nov)
+with(dat, tapply(CPUE,list(YEAR,MONTH),PctPos))
+# vessel and YEAR highly correlated, so removing vessel
+#mod = lm(CPUE ~ YEAR + MONTH + STRATA + DEPTH + BTEMP + BSAL + BDO, data = dat)
+mod = lm(CPUE ~ YEAR + STRATA + DEPTH + BTEMP + BSAL + BDO, data = dat)
+vif(mod)
+pairs(~CPUE + YEAR + STRATA + DEPTH + BTEMP + BSAL + BDO,data=dat)
+round(with(dat, cor(data.frame(CPUE,as.numeric(as.character(YEAR)),as.numeric(as.character(STRATA)),DEPTH,BTEMP,BSAL,BDO),method="pearson")),2)
+mod <- as.formula("CPUE ~ YEAR + STRATA + DEPTH + BTEMP + BSAL + BDO")
+#save(dat, mod, file="NJOTmod.RData")
+```

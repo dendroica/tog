@@ -17,7 +17,11 @@ knitr::opts_chunk$set(echo = TRUE,
 Load functions & libraries
 ```{r}
 #source("f:/BF_WG/FIG/figFuns.R")
-source("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/data/tog/bootstrap_functions.R")
+root <- "C:/Users"
+usr <- "jgorzo"
+loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
+root <- file.path(root, usr, loc)
+source(file.path(root, "data/tog/bootstrap_functions.R"))
 
 library(car, quietly = FALSE)
 library(lmtest, quietly = FALSE)
@@ -34,6 +38,7 @@ require(knitr, quietly = FALSE)
 library(reshape2, quietly=TRUE, verbose=FALSE)
 library(doBy, quietly=TRUE, verbose=FALSE)
 library(dplyr, quietly=TRUE, verbose=FALSE,warn.conflicts=FALSE)
+library(foreign)
 
 geomean0 <- function(x) {
   exp(mean(log(x + 1))) - 1
@@ -49,17 +54,15 @@ disp3 <- function(mod = NA) {
   d <- sum(E^2) / summary(mod)$AICtab[5]
   return(d)
 }
+
+indata <- read.dbf(file.path(root, "data/tog/TOABUN.DBF"))
 ```
 
 Read in data
 ```{r}
-library(foreign)
-indata <- read.dbf("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/data/tog/TOABUN.DBF")
 #this is OC TRAWL DATA through 20244 (cruise 5 never happened for 2024)
-
 head(indata)
 str(indata)
-
 summary(indata)
 ```
 

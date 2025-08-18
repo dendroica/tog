@@ -17,7 +17,11 @@ knitr::opts_chunk$set(echo = TRUE,
 Load functions & libraries
 ```{r}
 #source("f:/BF_WG/FIG/figFuns.R")
-source("C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/data/tog/bootstrap_functions.R")
+root <- "C:/Users"
+usr <- "jgorzo"
+loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
+root <- file.path(root, usr, loc)
+source(file.path(root, "data/tog/bootstrap_functions.R"))
 
 library(car, quietly = FALSE)
 library(lmtest, quietly = FALSE)
@@ -49,42 +53,6 @@ disp3 <- function(mod = NA) {
   d <- sum(E^2) / summary(mod)$AICtab[5]
   return(d)
 }
-```
-### Check collinearity
-```{r, error=TRUE}
-pairs(~YEAR+MONTH+VESSEL+STRATA+DEPTH+STEMP+BTEMP+SSAL+BSAL+SDO+BDO,data=dat)
-round(with(dat, cor(data.frame(
-  as.numeric(as.character(YEAR)),
-  as.numeric(as.character(MONTH)),
-  as.numeric(VESSEL),
-  as.numeric(as.character(STRATA)),
-  DEPTH,STEMP,BTEMP,SSAL,BSAL,SDO,BDO),method="pearson")),2)
-
-# Check the variance inflation factor for a more statistical check.
-mod = lm(CPUE ~ YEAR + MONTH + STRATA + DEPTH + BTEMP + BSAL + BDO, data = dat) #+ VESSEL
-ld.vars <- attributes(alias(mod)$Complete)$dimnames[[1]]
-vif(mod)
-```
-
-```{r}
-# look at pctPos by factor; MONTH11==0, so drop MONTH: (only a few Nov samplings and never any BF collected)
-with(dat, tapply(CPUE,list(YEAR,MONTH),pctPos))
-# vessel and YEAR highly correlated, so removing vessel; also, since cruise=5, most records are month = 10, so removing month as a factor
-mod = lm(CPUE ~ YEAR + STRATA + DEPTH + BTEMP + BSAL + BDO, data = dat)
-vif(mod)
-pairs(~CPUE + YEAR + STRATA + DEPTH + BTEMP + BSAL + BDO,data=dat)
-round(with(dat, cor(data.frame(CPUE,as.numeric(as.character(YEAR)),as.numeric(as.character(STRATA)),DEPTH,BTEMP,BSAL,BDO),method="pearson")),2)
-```
-
-```{r}
-# drop BSAL (not strongly correlated with YEAR, but highest among avail factors, and weakly corr with temp)
-mod = lm(CPUE ~ YEAR + STRATA + DEPTH + BDO + BTEMP, data = dat)
-vif(mod)
-mod <- as.formula("CPUE ~ YEAR + STRATA + DEPTH + BDO + BTEMP")
-# You want GVIF to be less than ~3. YEAR >> 3 but need YEAR; drop BTEMP (corr with YEAR)
-#mod = lm(CPUE ~ YEAR + STRATA + DEPTH + BSAL + BDO, data = dat)
-#vif(mod)
-#round(with(dat, cor(data.frame(CPUE,as.numeric(YEAR),as.numeric(as.character(STRATA)),DEPTH,BSAL,BDO),method="pearson")),2)
 ```
 
 ### Step 2: Model selection 
@@ -519,106 +487,8 @@ ZINB00 <- glmmTMB(CPUE ~ 1 + YEAR + STRATA + BDO + BTEMP, offset=lnEffort, data 
                   family = nbinom2)
 #Zout00 <- boot.NB(ZINB00) #best yet...44.7%
 
-NB00 <- glmmTMB(CPUE ~ 1 + STRATA + YEAR + BTEMP, offset=lnEffort, data = dat, family = nbinom2)
-#NB01 <- glmmTMB(CPUE ~ STRATA + YEAR + BTEMP, offset=lnEffort, data = dat, family = nbinom2)
-out <- boot.NB(NB00) #"48.5% of bootstrap runs converged."
 ```
 
-```{r}
-# Stratified mean:
-# Standardize catch for 20 minute tow (the standard unit of effort of NJOT)
-dat$Fish <- round((dat$CPUE*20)/dat$EFFORT,0)
-
-
-# specify stratum weights (km2):
-w <- c(14.7,32.5,76.7,17.4,81.3,293,59.9,235.9,279.9,17.1,198.7,185.1,34,133.6,131.9)
-w <- w[c(1,4,7,10,13)] # just the isnhore strata
-# and scale them so they sum to 1:
-wts <- w/sum(w)
-
-
-   #mean (using only inshore strata):
-   M <- with(dat, tapply(Fish,list(STRATA,YEAR),mean,na.rm=TRUE))
-   #variance:
-   V <- with(dat, tapply(Fish,list(STRATA,YEAR),var,na.rm=TRUE))
-
-
-   # Possible workaround if a YEAR-stratum combination has NA variance (i.e., from n= 1), pool mean variance from entire YEAR:
-   needVar <- which(is.na(V))
-   if(length(needVar)>0) {
-      allYEARs <- as.numeric(as.character(sort(unique(dat$YEAR))))
-      # YEARs of interest:
-      yoi <- rep(allYEARs,each=5)[needVar] # just using the 5 inshore strata
-      lookupTable <- data.frame(YEAR=allYEARs,.var=apply(V,2,mean,na.rm=TRUE))
-         # The special case of all NAs in a given YEAR:
-         # If NaN, then pool timeseries mean variance
-         if(any(is.nan(lookupTable$.var))) {
-            mod <- which(is.nan(lookupTable$.var))
-            lookupTable$.var[mod] <- mean(lookupTable$.var[-mod])
-         }
-      ans <- merge(lookupTable,data.frame(YEAR=yoi,tmp=NA),by="YEAR",sort=FALSE)
-      V[which(is.na(V))] <- ans$.var
-   }
-   
-
-   N <- with(dat, tapply(Fish,list(STRATA,YEAR),length))
-
-   # UCL
-   UCL <-
-   apply(M*wts,2,sum,na.rm=TRUE)+
-      ((sqrt(apply(wts^2*V/N,2,sum,na.rm=TRUE)))*qnorm((1-0.95)/2,lower=FALSE))
-
-   # stratified mean:
-   .m <- apply(M*wts,2,sum,na.rm=TRUE)
-
-   # LCL
-   LCL <-
-   apply(M*wts,2,sum,na.rm=TRUE)-
-      ((sqrt(apply(wts^2*V/N,2,sum,na.rm=TRUE)))*qnorm((1-0.95)/2,lower=FALSE))
-
-   SE <- sqrt(apply(wts^2*V/N,2,sum,na.rm=TRUE))
-   CV <- SE/.m
-
-   nom <- data.frame("YEAR"=as.numeric(as.character(unique(dat$YEAR))),"Index"=.m,SE,
-      "LCI"=LCL,"UCI"=UCL,CV,"Method"="stratifiedMean")
-
-p.data <- expand.pred(NB00$frame)
-best <- NB00
-index.out <- data.frame(
-  YEAR = as.numeric(unique(as.character(dat$YEAR))), #PICK UP HERE JESS
-  #Station=as.character(unique(dat$Station)), #use unique rather than levels bc removed 3 YEARs
-                        Index= predict(best, newdata=p.data, type="response"))
-index.out <- cbind.data.frame(index.out, out)
-#gaps <- which(diff(x) > 1) + 1 # Identify the index of the element after the gap
-#missing_numbers <- x[gaps] - 1 # Find the missing number(s)
-index.out <- rbind(index.out, c(2020, -1, -1, -1, -1), c(2021, -1, -1, -1, -1))
-index.out$CV <- index.out$SE/index.out$Index
-
-index.out <- index.out[order(index.out$YEAR),]
-index.out$Method="NB"
-write.csv(index.out, "octrawl.csv")
-tmp <- rbind(index.out,nom)
-tmp
-   
-
-ggplot(tmp, aes(x=YEAR, y=Index, color=Method, shape=Method)) +
-  geom_ribbon(aes(x=YEAR, ymin=LCI, ymax=UCI, fill=Method), alpha=0.5) +
-  geom_line() + geom_point() +
-  xlab("YEAR") + theme_bw()
-  
-# scale indices to respective means:
-op <- par(mfrow=c(1,1))
-#matplot(unique(tmp$YEAR),sapply(split(tmp,tmp$Method), function(x) scaleToMean(x$Index)),
- #       type="o",xlab="YEAR",ylab="index scaled to mean")
-
-#plot(sapply(split(tmp,tmp$Method), function(x) scaleToMean(x$Index)))
-round(cor(sapply(split(tmp,tmp$Method), function(x) x$Index)),2)
-round(cor(sapply(split(tmp,tmp$Method), function(x) x$Index),method="spearman"),2)
-
-Sys.time()
-```
 Summary:
-
-ZANB5.2 (re-assign all catches > 95th pctl to the 95th pctl) had the lowest AIC, but diagnostics weren't much better than those from ZANB5, and the re-assignment seems like a pretty hefty change. ZANB5 diagnostics were perhaps the same to a tiny bit better than NB3 and ZINB5 (and recall that ZINB5 had no ZI model due to convergence and large SE issues). ZINB5 (and alikes) has low DHARMa residuals at high predictions; otherwise, residuals are ok. This could be good support for nominal index rather than model-based index.
-
-
+ZANB5.2 (re-assign all catches > 95th pctl to the 95th pctl) had the lowest AIC, but diagnostics weren't much better than those from ZANB5, and the re-assignment seems like a pretty hefty change. ZANB5 diagnostics were perhaps the same to a tiny bit better than NB3 and ZINB5 (and recall that ZINB5 had no ZI model due to convergence and large SE issues). ZINB5 
+  (and alikes) has low DHARMa residuals at high predictions; otherwise, residuals are ok. This could be good support for nominal index rather than model-based index.
