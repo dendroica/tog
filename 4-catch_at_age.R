@@ -184,8 +184,8 @@ waa <- Map(function(alk,yr,caal) {
   b <- lw_pars[lw_pars$Year==yr, "b"]
   WLBin <- a * ((alk[, 1] + 0.5)^b)
   WAAL <- apply(caal, 2, function(x) x * WLBin) #how much weight is in each AL bin
-  caa <- apply(caal, 2, sum) #catch-at-age
   weights <- apply(WAAL, 2, sum) #total weight in each age bin
+  caa <- apply(caal, 2, sum) #catch-at-age
   waa <- weights / caa #average weight per fish
   
   print(paste("total weight", yr))
