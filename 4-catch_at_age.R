@@ -186,12 +186,11 @@ waa <- Map(function(alk,yr,caal) {
   WAAL <- apply(caal, 2, function(x) x * WLBin) #how much weight is in each AL bin
   caa <- apply(caal, 2, sum) #catch-at-age
   weights <- apply(WAAL, 2, sum) #total weight in each age bin
+  waa <- weights / caa #average weight per fish
   
   print(paste("total weight", yr))
   comm.in <- total_catch[total_catch$Year==yr,]$comm # this is in metric tons converted to g
   print((sum(weights) + comm.in) / 1000000)
-  
-  waa <- weights / caa #average weight per fish
   # subset your LF
   #LF.vec <- harvest_lf[, as.character(yr)] don't need this anymore, right?
 
