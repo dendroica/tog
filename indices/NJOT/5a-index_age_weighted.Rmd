@@ -1,8 +1,8 @@
 ---
-title: "Bluefish stratified arithmetic mean index - NEFSC trawl (Bigelow)"
-author: "M Celestino"
+title: "Ageing the Tautog Index (Weighted by Strata)"
+author: "Jessica Gorzo"
 date: "`r Sys.time()`"
-output: word_document
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
@@ -23,6 +23,12 @@ library(readxl, quietly = TRUE, verbose = FALSE)
 library(rmarkdown, quietly = TRUE, verbose = FALSE)
 library(knitr, quietly = TRUE, verbose = FALSE)
 library(dplyr)
+library(tidyr)
+
+root <- "C:/Users"
+usr <- "galax"
+loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
+root <- file.path(root, usr, loc)
 ```
 
 ### Generate index from catch records first (so we can get SE & CV)
@@ -38,8 +44,8 @@ We need the code below to apportion the index into ages (should give the same st
 # Concatenation of Cruise6 [6 char], Stratum [leading zeros, 5 digits],
 #  Tow [leading zeros, 3 digits] and STA values [leading zeros 4 digits].
 library(foreign)
-len <- read.dbf("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/data/tog/TOLENG.DBF")
-catch <- read.dbf("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/data/tog/TOABUN.DBF") # Technology/Documents/data/tog/examples/NEFSC_Fall_Survey_Data_for_Std_V3.xlsx", #same as a in block above
+len <- read.dbf(file.path(root, "data/tog/TOLENG.DBF"))
+catch <- read.dbf(file.path(root, "data/tog/TOABUN.DBF")) # Technology/Documents/data/tog/examples/NEFSC_Fall_Survey_Data_for_Std_V3.xlsx", #same as a in block above
 #  sheet="BLUEFISH_FALL_BIG_SAW60_09_21",range="A63:AJ713",na="NA")) # from v2 of the catch query
 catch <- catch[catch$YEAR > 1988, ]
 len <- len[len$YEAR > 1988, ]
@@ -50,119 +56,64 @@ len <- len[len$YEAR > 1988, ]
 catch <- catch[as.numeric(substr(catch$CRUCODE, 5, 5)) %in% 4:6, ]
 # table(indata2$Month) # check
 
-forMerge <- data.frame("STRATUM" = 12:26, "stratum2" = rep(c("inner", "middle", "outer"), times = 5))
-w <- c(14.7, 32.5, 76.7, 17.4, 81.3, 293, 59.9, 235.9, 279.9, 17.1, 198.7, 185.1, 34, 133.6, 131.9)
-forMerge <- cbind(forMerge, "STRATUM_AREA" = w)
-indata <- merge(catch, forMerge) # YEAR order gets shuffled here
-indata2 <- indata[indata$stratum2 == "inner", ] # | indata2$stratum2=="middle"]
-A <- len[len$ID %in% indata2$ID, ]
-
-# Merge the catch records with length records
-oceanLen <- merge(indata2, A, all = TRUE)
+strata_weights <- data.frame("STRATUM" = 12:26,
+                     "zone" = rep(c("inner", "middle", "outer"), times = 5),
+                     "STRATUM_AREA"=c(14.7, 32.5, 76.7, 17.4, 81.3, 293, 59.9, 235.9, 279.9, 17.1, 198.7, 185.1, 34, 133.6, 131.9))
+total <- sum(strata_weights[strata_weights$zone == "inner",]$STRATUM_AREA)
+in_data <- merge(catch, strata_weights)
+in_data <- in_data[in_data$zone == "inner", ] # | indata2$zone=="middle"]
+#A <- len[len$ID %in% in_data$ID, ]
+ocean_len <- merge(in_data, len)
 ```
 
-```{r manual}
+```{r manual, eval=FALSE}
 # Verify that expanded len freq sums to expanded catch (i.e., the length
 #  records match the catch numbers):
 # Check first few by hand:
-oceanLen[1:25, c("ID", "NUMBER", "FREQUENCY")] # manually check a few
+ocean_len[1:25, c("ID", "NUMBER", "FREQUENCY")] # manually check a few
 
 # Check to see if there are any NAs:
-apply(apply(oceanLen[, c("LENGTH", "FREQUENCY")], 2, is.na), 2, any) # yes, so need to change:
+apply(apply(ocean_len[, c("LENGTH", "FREQUENCY")], 2, is.na), 2, any) # yes, so need to change:
 
 # Change missing lengths to 1cm:
-oceanLen[is.na(oceanLen$LENGTH), "LENGTH"] <- 1
+ocean_len[is.na(ocean_len$LENGTH), "LENGTH"] <- 1
 # Change missing frequencies to 0
-oceanLen[is.na(oceanLen$FREQUENCY), "FREQUENCY"] <- 0
+ocean_len[is.na(ocean_len$FREQUENCY), "FREQUENCY"] <- 0
 
 
 # Then automate to check all:
 summary(
-  tmp <- sapply(split(oceanLen, oceanLen$ID), function(z) {
+  tmp <- sapply(split(ocean_len, ocean_len$ID), function(z) {
     z$NUMBER[1] - sum(z$FREQUENCY)
   })
 ) # pretty good! (+/- ~1e-13)
 plot(tmp) # note that Bigelow catch records are expanded somewhat differently than length records
-oceanLen[is.element(oceanLen$ID, names(which(tmp > 0))), ]
-oceanLen[is.element(oceanLen$ID, names(which(tmp < 0))), ]
+ocean_len[is.element(ocean_len$ID, names(which(tmp > 0))), ]
+ocean_len[is.element(ocean_len$ID, names(which(tmp < 0))), ]
 rm(tmp)
 
 # double check zeros:
-oceanLen[oceanLen$NUMBER == 0, c("NUMBER", "FREQUENCY")]
+ocean_len[ocean_len$NUMBER == 0, c("NUMBER", "FREQUENCY")]
 ################################################################################
 ```
 
 ```{r}
-yrs <- c(2022:2024) # unique(oceanLen$YEAR)
-strata <- unique(oceanLen$STRATUM)
+yrs <- c(2022:2024) # unique(ocean_len$YEAR)
+strata <- unique(ocean_len$STRATUM)
 # use min/max below [vs length(yrs)] to account for missing years
 out <- matrix(NA, nrow = 100, ncol = length(min(yrs):max(yrs))) # nrow = lenghts = 1:100 cm         # output storage matrix
 colnames(out) <- paste0("x", min(yrs):max(yrs))
 
-for (i in yrs) {
-  # first, subset by individual year i:
-  tmp <- oceanLen[oceanLen$YEAR == i, c("YEAR", "STA", "STRATUM", "STRATUM_AREA", "LENGTH", "FREQUENCY")]
-  # tmp <- tmp[tmp$LENGTH >= 29 & tmp$LENGTH < 61,]
-  missingStrata <- (strata)[which(!(strata %in% tmp$STRATUM))] # account for strata in which no bluefish were collected
-  missingFLs <- which(!(1:100 %in% tmp$LENGTH)) # account for length bins in which no bluefish were collected
-  # missingFLs <- missingFLs[missingFLs >= 29 & missingFLs < 61]                                                               # these steps keep the output coherent across all strata
-
-
-  # First, calculate average number of BF collected per length bin in every STRATUM:
-  tmp2 <-
-    lapply(split(tmp, tmp$STRATUM), function(z) {
-      zz <- as.data.frame(tapply(z$FREQUENCY, list(z$LENGTH, z$STA), sum)) # table of length bin x STA
-      # you could also get this by just going back down to number in orig data?
-      n <- length(unique(z$STA)) # number of STAs sampled in stratum
-      zzz <- apply(zz, 1, sum, na.rm = TRUE) / n # mean number per length bin
-      # Bundle everything together:
-      data.frame(
-        "YEAR" = z[1, "YEAR"], "STRATUM_AREA" = z[1, "STRATUM_AREA"],
-        "STRATUM" = z[1, "STRATUM"],
-        "LENGTH" = as.numeric(names(zzz)), "meanFREQUENCY" = zzz
-      )
-    })
-  tmp2 <- do.call("rbind", tmp2)
-
-
-  # Fill in missing strata and/or length bins:
-  if (length(missingStrata) > 0) {
-    # frequency = 0 for strata and bins where no BF were collected:
-    tmp3 <- rbind(tmp2, data.frame(
-      "YEAR" = tmp2[1, "YEAR"],
-      "STRATUM_AREA" = NA, # catch = 0 for these strata, so STRATUM_AREA = NA is ok.
-      expand.grid("STRATUM" = missingStrata, "LENGTH" = missingFLs), "meanFREQUENCY" = 0
-    ))
-  } else {
-    # expand.grid above won't work if there are no strata in which no BF were collected
-    # so need this step in that case (appending the missingFLs to an arbitrary stratum)
-    tmp3 <- rbind(tmp2, data.frame(
-      "YEAR" = tmp2[1, "YEAR"],
-      "STRATUM_AREA" = tmp2[which(is.element(tmp2$STRATUM, strata[1]))[1], "STRATUM_AREA"],
-      "STRATUM" = strata[1],
-      "LENGTH" = missingFLs, "meanFREQUENCY" = 0
-    ))
-  }
-
-  # Create table of catch in each length bin across all strata (because of averaging above, there are no duplicate lengths within a single stratum, so summing below is ok)
-  tmp4 <- as.data.frame(tapply(tmp3$meanFREQUENCY, list(tmp3$LENGTH, tmp3$STRATUM), sum))
-  # Make sure strata are in the correct order for subsequent multiplication (note that AREA=NA for strata
-  #  that were not sampled):
-  lookup <- as.data.frame(t(sapply(split(tmp3, tmp3$STRATUM), function(z) {
-    z[1, c("STRATUM", "STRATUM_AREA")]
-  })))
-  if (!all(as.numeric(colnames(tmp4)) - unlist(lookup[, "STRATUM"]) == 0)) {
-    stop("strata misaligned")
-  }
-
-  # Calculate weighted mean across strata:
-  out[, i - (min(yrs) - 1)] <-
-    apply(
-      tmp4, 1, function(z) {
-        sum(z * unlist(lookup[, "STRATUM_AREA"]), na.rm = TRUE) #/ sum(unlist(lookup[, "STRATUM_AREA"]), na.rm = TRUE) I think in my case I take this out...
-      } # ^^^^^^^^^^ needed to deal with strata that weren't sampled in a year
-    )
-}
+tes <- ocean_len %>% filter(YEAR > 2021 & YEAR < 2025) %>% group_by(STRATUM, LENGTH, YEAR) %>% summarise(freq = sum(FREQUENCY))
+test <- ocean_len %>% group_by(STRATUM, YEAR) %>% summarise(nsta = n_distinct(STA))
+t2 <- merge(tes, test)
+t2$meanFREQUENCY <- t2$freq / t2$nsta
+t2 <- t2 %>% complete(YEAR, LENGTH=full_seq(29:60, 1), STRATUM, fill=list(meanFREQUENCY=0))
+t2 <- merge(t2, strata_weights)
+t2$weighted_count <- t2$meanFREQUENCY * t2$STRATUM_AREA
+out <- t2 %>% group_by(LENGTH, YEAR) %>% 
+  summarise(weight_count = sum(weighted_count) / total) %>% 
+  pivot_wider(names_from = "YEAR", values_from = "weight_count", values_fill=0)
 
 colSums(out) # should equal stratified mean (& does!)
 ```
@@ -170,11 +121,11 @@ colSums(out) # should equal stratified mean (& does!)
 ```{r}
 ################################################################################
 # Age the index (specify directory where ALKs are):
-indir <- "C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/alk/filled/opercboth"
-alk2021numnj <- read.csv(file.path(indir, "NJNYB-ALK_2021_filled.csv"))
-alk2022numnj <- read.csv(file.path(indir, "NJNYB-ALK_2022_filled.csv"))
-alk2023numnj <- read.csv(file.path(indir, "NJNYB-ALK_2023_filled.csv"))
-alk2024numnj <- read.csv(file.path(indir, "NJNYB-ALK_2024_filled.csv"))
+indir <- "output/tog/alk/filled/opercboth"
+alk2021numnj <- read.csv(file.path(root, indir, "NJNYB-ALK_2021_filled.csv"))
+alk2022numnj <- read.csv(file.path(root, indir, "NJNYB-ALK_2022_filled.csv"))
+alk2023numnj <- read.csv(file.path(root, indir, "NJNYB-ALK_2023_filled.csv"))
+alk2024numnj <- read.csv(file.path(root, indir, "NJNYB-ALK_2024_filled.csv"))
 
 alks <- list(alk2021numnj, alk2022numnj, alk2023numnj, alk2024numnj)
 
@@ -205,7 +156,7 @@ alks <- alkprops[, c(paste0("X", 2:12), "FL.cm", "Year")]
 # Multinomial, seasonal ALK:
 ################################################################################
 wtdLF <- out
-
+wtdLF <- wtdLF[wtdLF$LENGTH > 28 & wtdLF$LENGTH < 61,]
 # get length freq proportions
 # scaledWtdLF <- t(t(out)/colSums(out))
 
@@ -219,8 +170,10 @@ for (i in 1:length(yrs)) {
   .alk <- alks[alks$Year == yrs[i], 1:11] # & alk$Geo=="North"
   print(nrow(.alk))
 
-
-  NAA <- colSums(.alk * wtdLF[, is.element(as.numeric(gsub("x", "", colnames(wtdLF))), yrs[i])]) # numbers at age
+  wtdLF_annual <- wtdLF[, which(colnames(wtdLF)==as.character(yrs[i]))]
+  wtd <- do.call(cbind, apply(.alk, 2, function(x) x * wtdLF_annual))
+  names(wtd) <- 2:12
+  NAA <- colSums(wtd) # numbers at age
   NAAs[i, ] <- c(yrs[i], NAA)
   PAA <- NAA / sum(NAA) # proportions at age
   ACs[i, 1] <- yrs[i]
