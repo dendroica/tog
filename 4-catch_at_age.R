@@ -173,38 +173,37 @@ total_rec_catch <- total_rec_catch %>%
 total_catch <- left_join(total_rec_catch, comm_catch) %>%
   mutate(Total.Catch = TotalRecCatch + commCatchNumFish)
 
-caa_raw_nums <- Map(function(x,y) {
+caals <- Map(function(x,y) {
   x[,2:12] + y[2:12]
 }, rec_discard_caa, rec_harvest_caa)
 
 waa <- Map(function(alk,yr,caal) {
   # Get your yearly L-W pars
-  a <- lw_pars[lw_pars$Year==yr, "a"]
   b <- lw_pars[lw_pars$Year==yr, "b"]
-  WLBin <- a * ((alk[, 1] + 0.5)^b)
-  WAAL <- apply(caal, 2, function(x) x * WLBin) #how much weight is in each AL bin
-  weights <- apply(WAAL, 2, sum) #total weight in each age bin
+  lw <- lw_pars[lw_pars$Year==yr, "a"] * ((alk[, 1] + 0.5)^b)
+  waal <- apply(caal, 2, function(caal_annual) caal_annual * lw) #how much weight is in each AL bin
+  weights <- apply(waal, 2, sum) #total weight in each age bin
   caa <- apply(caal, 2, sum) #catch-at-age
   waa <- weights / caa #average weight per fish
   
   print(paste("total weight", yr))
-  comm.in <- total_catch[total_catch$Year==yr,]$comm # this is in metric tons converted to g
-  print((sum(weights) + comm.in) / 1000000)
+  comm <- total_catch[total_catch$Year==yr,]$comm # this is in metric tons converted to g
+  print((sum(weights) + comm) / 1000000)
   # subset your LF
   #LF.vec <- harvest_lf[, as.character(yr)] don't need this anymore, right?
 
   # Convert length bins to weights. Our length bins are floored, so we'll
   # add 0.5 to get to the center of the bin for the weight calculations.
   # If you rounded your lengths, you don't need to add anything.
-return(waa)}, alk_props, 2021:2024, caa_raw_nums)
+return(waa)}, alk_props, 2021:2024, caals)
 
 caa_out <- as.data.frame(cbind(X1 = c(0, 0, 0, 0), rbind(
-  t(sapply(caa_raw_nums, function(x) {apply(x, 2, sum) / 1000}))
+  t(sapply(caals, function(x) {apply(x, 2, sum) / 1000}))
 ))) # final output: catch-at-age
-mysum <- apply(caa_out, 1, sum)
-caa_prop <- apply(caa_out[, 1:12], 2, function(x) x / mysum)
+annual_sum <- apply(caa_out, 1, sum)
+caa_prop <- apply(caa_out[, 1:12], 2, function(x) x / annual_sum)
 
 # final output: weight-at-age
 waa <- cbind(X1 = c(0, 0, 0, 0), bind_rows(waa)) / 1000 # for the ASAP inputs, these appear to be scaled?
-write.csv(caa_out, file.path(root, "output/tog/caa.csv"))
-write.csv(waa, file.path(root, "output/tog/waa.csv"))
+#write.csv(caa_out, file.path(root, "output/tog/caa.csv"))
+#write.csv(waa, file.path(root, "output/tog/waa.csv"))
