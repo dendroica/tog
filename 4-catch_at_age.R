@@ -18,7 +18,7 @@ root <- file.path(root, usr, loc)
 # Load ALKs
 alks <- list.files(file.path(root, "output/tog/alk/filled/opercboth"),
   full.names = TRUE
-) %>% map(read.csv)
+) |> map(read.csv)
 # Folder contains...
 # NJNYB-ALK_2021_filled.csv
 # NJNYB-ALK_2022_filled.csv
@@ -54,38 +54,37 @@ life_history <- lapply(
 #########################################
 names(harvest_lf) <- c("Length", "2021", "2022", "2023", "2024")
 
-# convert to proportions
+# Convert to proportions
 alk_props <- lapply(alks, function(y) {
-  y <- y %>%
-    mutate(rowsum = rowSums(.[grep("X", names(.))], na.rm = TRUE)) %>% # add row sum
+  y <- y |> rowwise() |>
+    mutate(rowsum = sum(c_across(matches("\\d")), na.rm = TRUE)) |> ungroup() |>
     mutate(across(2:12, .fns = function(x) {
       x / rowsum
-    })) %>%
-    replace(is.na(.), 0) %>%
-    rename("Length" = "length") %>%
+    })) |> mutate(across(where(is.numeric), ~replace_na(., 0))) |>
+    rename("Length" = "length") |>
     select(-rowsum)
 })
 names(alk_props) <- c(2021:2024)
 
 rec_harvest_caa <- Map(function(x, y) {
-  annual_rec_har <- left_join(harvest_lf[, c("Length", as.character(x))], y) %>%
-    rename(Number = as.character(x)) %>%
+  annual_rec_har <- left_join(harvest_lf[, c("Length", as.character(x))], y) |>
+    rename(Number = as.character(x)) |>
     mutate(across(paste0("X", 2:12), .fns = function(x) {
       x * Number
-    })) %>%
-    replace(is.na(.), 0) %>%
+    })) |>
+    mutate(across(where(is.numeric), ~replace_na(., 0))) |>
     select(-c("Number"))
   return(annual_rec_har)
 }, 2021:2024, alk_props)
 
-total_rec_catch <- total_rec_catch %>%
+total_rec_catch <- total_rec_catch |>
   mutate(discard_mortality = Released.B2 * 0.025)
 
 names(discard_lf) <- c("Length", "2021", "2022", "2023", "2024")
-discard_prop <- discard_lf %>%
+discard_prop <- discard_lf |>
   mutate(across(`2021`:`2024`, .fns = function(x) {
     x / sum(x, na.rm = TRUE)
-  })) %>%
+  })) |>
   filter(Length >= 29 & Length <= 60)
 
 ## Recreational Discard Catch-at-Age
@@ -113,15 +112,15 @@ life_history[[1]]$Year <- as.integer(format(life_history[[1]]$Date, "%Y"))
 # life_history24$`Weight (g)` <- life_history24$`Weight (g)` * 1000 #I was given data in the wrong format...
 # life_history24$Total.Length..cm. <- life_history24$Total.Length..cm. / 10
 # life_history24$`Total Length (cm)` <- life_history24$`Total Length (cm)` / 10
-life_history[[2]] <- life_history[[2]] %>%
-  rename("Total Length (cm)" = "cm", "Weight (g)" = "grams") %>%
+life_history[[2]] <- life_history[[2]] |>
+  rename("Total Length (cm)" = "cm", "Weight (g)" = "grams") |>
   select(-"Total Length (mm)", -"Weight (kg)")
 life_history[[1]] <- life_history[[1]][, names(life_history[[2]])]
-life_history <- bind_rows(life_history) %>%
-  # rename("Weight" = "Weight..g.") %>%
-  rename("Weight" = "Weight (g)") %>%
-  # mutate(Length = floor(Total.Length..cm.)) %>%
-  mutate(Length = floor(`Total Length (cm)`)) %>%
+life_history <- bind_rows(life_history) |>
+  # rename("Weight" = "Weight..g.") |>
+  rename("Weight" = "Weight (g)") |>
+  # mutate(Length = floor(Total.Length..cm.)) |>
+  mutate(Length = floor(`Total Length (cm)`)) |>
   select(Year, Age, Weight, Region, Length)
 life_history <- life_history[!is.na(life_history$Weight), ]
 table(life_history$Year)
@@ -155,8 +154,8 @@ ggplot(data = life_history, aes(x = Weight)) +
   facet_wrap(~Year) +
   xlab("Recreational Fish Weight (g)")
 # We only need to use the recreational weights
-weights_means <- life_history %>%
-  group_by(Year) %>%
+weights_means <- life_history |>
+  group_by(Year) |>
   summarize(
     MeanWeight = mean(Weight, na.rm = TRUE),
     sdWeight = sd(Weight, na.rm = TRUE), .groups = "keep"
@@ -164,13 +163,13 @@ weights_means <- life_history %>%
 
 names(comm_catch)[names(comm_catch) == "NYB-NJ"] <- "comm" # metric tons
 comm_catch$comm <- comm_catch$comm * 1000000
-comm_catch <- comm_catch %>%
-  left_join(weights_means) %>%
+comm_catch <- comm_catch |>
+  left_join(weights_means) |>
   mutate(commCatchNumFish = comm / MeanWeight)
 
-total_rec_catch <- total_rec_catch %>%
+total_rec_catch <- total_rec_catch |>
   mutate(TotalRecCatch = Harvest.A.B1 + discard_mortality)
-total_catch <- left_join(total_rec_catch, comm_catch) %>%
+total_catch <- left_join(total_rec_catch, comm_catch) |>
   mutate(Total.Catch = TotalRecCatch + commCatchNumFish)
 
 caals <- Map(function(x, y) {
@@ -186,8 +185,9 @@ waa <- Map(function(alk, yr, caal) {
   # Convert length bins to weights. Our length bins are floored, so we'll
   # add 0.5 to get to the center of the bin for the weight calculations.
   # If you rounded your lengths, you don't need to add anything.
-  lw <- lw_pars[lw_pars$Year == yr, "a"] * ((alk[, 1] + 0.5)^b)
-  waal <- apply(caal, 2, function(caal_annual) caal_annual * lw) # how much weight is in each AL bin
+  wl <- lw_pars[lw_pars$Year == yr, "a"] * ((alk[, 1] + 0.5)^b)
+  waal <- do.call(cbind, apply(caal, 2, function(caal_annual) caal_annual * wl)) # how much weight is in each AL bin
+  names(waal) <- paste0("X",2:12)
   weights <- apply(waal, 2, sum) # total weight in each age bin
   caa <- apply(caal, 2, sum) # catch-at-age
   waa <- weights / caa # average weight per fish
@@ -202,7 +202,7 @@ caa_out <- as.data.frame(cbind(X1 = c(0, 0, 0, 0), rbind(
   t(sapply(caals, function(x) {
     apply(x, 2, sum) / 1000
   }))
-))) # final output: catch-at-age
+))) # Final output: catch-at-age
 annual_sum <- apply(caa_out, 1, sum)
 caa_prop <- apply(caa_out[, 1:12], 2, function(x) x / annual_sum)
 

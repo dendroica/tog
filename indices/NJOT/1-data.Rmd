@@ -1,8 +1,8 @@
 ---
-title: "Bluefish index standardization - NJ Ocean trawl"
-author: "M Celestino"
+title: "Tautog data prep for index - NJ Ocean trawl"
+author: "Jess Gorzo"
 date: "`r Sys.time()`"
-output: word_document
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
@@ -21,7 +21,7 @@ root <- "C:/Users"
 usr <- "jgorzo"
 loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
 root <- file.path(root, usr, loc)
-source(file.path(root, "data/tog/bootstrap_functions.R"))
+source(file.path(root, "./indices/bootstrap_functions.R"))
 
 library(car, quietly = FALSE)
 library(lmtest, quietly = FALSE)
