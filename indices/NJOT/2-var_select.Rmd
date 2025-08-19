@@ -42,8 +42,8 @@ PctPos <- function(x) {
   mean(x)
 }
 
-source(file.path(root, "data/tog/bootstrap_functions.R"))
-load(file.path(root, "output/tog/index/NJOT.RData"))
+source("../bootstrap_functions.R")
+load(file.path(root, "output/tog/index/NJOT2.RData"))
 ```
 ### Check collinearity
 ```{r, error=TRUE}

@@ -6,39 +6,30 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
+library(car)
+library(lmtest)
+library(glmmTMB)
+library(DHARMa)
+library(bbmle)
+library(ggeffects)
+library(ggplot2)
+require(readxl)
+require(lattice)
+require(emmeans)
+require(rmarkdown)
+require(knitr)
+library(reshape2)
+library(doBy)
+library(dplyr)
+library(foreign)
+
 knitr::opts_chunk$set(echo = TRUE,
                       cache = FALSE)
-```
-
-## Bluefish index standardization
-
-### Step 1: Data processing
-
-Load functions & libraries
-```{r}
-#source("f:/BF_WG/FIG/figFuns.R")
 root <- "C:/Users"
 usr <- "jgorzo"
 loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
 root <- file.path(root, usr, loc)
-source(file.path(root, "./indices/bootstrap_functions.R"))
-
-library(car, quietly = FALSE)
-library(lmtest, quietly = FALSE)
-library(glmmTMB, quietly = FALSE)
-library(DHARMa, quietly = FALSE)
-library(bbmle, quietly = FALSE)
-library(ggeffects, quietly = FALSE)
-library(ggplot2, quietly = FALSE)
-require(readxl, quietly = FALSE)
-require(lattice, quietly = FALSE)
-require(emmeans, quietly = FALSE)
-require(rmarkdown, quietly = FALSE)
-require(knitr, quietly = FALSE)
-library(reshape2, quietly=TRUE, verbose=FALSE)
-library(doBy, quietly=TRUE, verbose=FALSE)
-library(dplyr, quietly=TRUE, verbose=FALSE,warn.conflicts=FALSE)
-library(foreign)
+source("../bootstrap_functions.R")
 
 geomean0 <- function(x) {
   exp(mean(log(x + 1))) - 1
@@ -58,7 +49,10 @@ disp3 <- function(mod = NA) {
 indata <- read.dbf(file.path(root, "data/tog/TOABUN.DBF"))
 ```
 
+### Step 1: Data processing
+
 Read in data
+
 ```{r}
 #this is OC TRAWL DATA through 20244 (cruise 5 never happened for 2024)
 head(indata)
@@ -119,7 +113,7 @@ round(t(with(indata[is.element(indata$STRATUM,c(12,15,18,21,24)),],
 ```
 
 ```{r}
-# Based on EDA, keeping just inshore stratum in October cruise - I explored cruises 4-5 and performance was worse than just cruise 5
+# Based on EDA, keeping just inshore stratum and later cruises
 indata2 <- indata[as.numeric(substr(indata$CRUCODE,5,5)) %in% 4:6,]
    table(indata2$Month) # check
 indata2 <- indata2[indata2$stratum2=="inner",]# | indata2$stratum2=="middle"]
@@ -131,9 +125,7 @@ apply(indata2[,keepVars], 2, function(x) sum(is.na(x)))
 indata2 <- indata2[complete.cases(indata2[,keepVars]),] # keep only complete cases
 summary(indata2)
 
-
 apply(indata2[,keepVars], 2, function(x) sum(is.na(x)))
-
 ```
 
 

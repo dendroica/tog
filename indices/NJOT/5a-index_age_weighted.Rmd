@@ -6,18 +6,6 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(
-  echo = TRUE,
-  cache = FALSE
-)
-```
-
-## Bluefish index standardization
-
-### Step 1: Data processing
-
-Load functions & libraries
-```{r}
 library(ggplot2, quietly = TRUE, verbose = FALSE)
 library(readxl, quietly = TRUE, verbose = FALSE)
 library(rmarkdown, quietly = TRUE, verbose = FALSE)
@@ -25,13 +13,17 @@ library(knitr, quietly = TRUE, verbose = FALSE)
 library(dplyr)
 library(tidyr)
 
+knitr::opts_chunk$set(
+  echo = TRUE,
+  cache = FALSE
+)
 root <- "C:/Users"
 usr <- "galax"
 loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
 root <- file.path(root, usr, loc)
 ```
 
-### Generate index from catch records first (so we can get SE & CV)
+### Step 1: Data processing
 
 Note that we need to get index from catch records so we can get SE and CV of index; we'll generate the same index from the length records to apportion the index into 
 

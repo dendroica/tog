@@ -5,14 +5,14 @@ root <- "C:/Users"
 usr <- "jgorzo"
 loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
 root <- file.path(root, usr, loc)
-load(file.path(root, "output/tog/index/NJOTmod.RData"))
+load(file.path(root, "output/tog/index/NJOTmod2.RData"))
 source("./indices/bootstrap_functions.R")
 #library(mgcv)
 bmc <- buildmerControl(include= ~offset(lnEffort) + YEAR)
 #mod <- as.formula("CPUE ~ YEAR + STRATA + DEPTH + BTEMP + BSAL + BDO")
 nb <- buildglmmTMB(mod, dat, family = nbinom2, buildmerControl = bmc)
 NB00 <- glmmTMB(formula(nb), offset=lnEffort, data = dat, family = nbinom2)
-out <- boot.NB(NB00) #best yet...94.4%!
+#out <- boot.NB(NB00) #best yet...94.4%!
 #...though from a recent effort not including cruise 6 I think I got even higher
 #...and with BTEMP included? and BSAL not in the model for consideration
 #better selected via AIC
