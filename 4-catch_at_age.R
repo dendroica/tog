@@ -4,17 +4,17 @@
 # and combines those with the filled-in ALKs to calculate catch-at-age...
 # ...then weight-at-age
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+library(tidyverse)
+library(readxl)
+library(ggplot2)
+
+# INPUTS USED#############################
 root <- "C:/Users"
 usr <- "jgorzo"
 loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
 root <- file.path(root, usr, loc)
 # root <- "/media/jess/9CE61C02E61BDB7A/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents"
 # On Ubuntu, you have to have this open in files/ssd to have it mounted...
-library(tidyverse)
-library(readxl)
-library(ggplot2)
-
-# INPUTS USED#############################
 # Load ALKs
 alks <- list.files(file.path(root, "output/tog/alk/filled/opercboth"),
   full.names = TRUE
@@ -38,7 +38,6 @@ comm_catch <- read_xlsx(
 )[, c("Year", "NYB-NJ")]
 
 # Length Frequencies for Recreational Catch and Discard
-# harvest groups all lengths > ALK max into largest length bin, and discards does not...adjust?
 harvest_lf <- read.csv(file.path(root, "output/tog/harvest_LF.csv"))
 # Modified from discard_LF.R from Samarah Nehemiah for LIS
 discard_lf <- read.csv(file.path(root, "output/tog/discard_LF.csv"))[, 2:6]
@@ -53,9 +52,9 @@ life_history <- lapply(
   sheet = "LifeHistory", skip = 6
 )
 #########################################
-# convert to proportions
 names(harvest_lf) <- c("Length", "2021", "2022", "2023", "2024")
 
+# convert to proportions
 alk_props <- lapply(alks, function(y) {
   y <- y %>%
     mutate(rowsum = rowSums(.[grep("X", names(.))], na.rm = TRUE)) %>% # add row sum
@@ -86,12 +85,15 @@ names(discard_lf) <- c("Length", "2021", "2022", "2023", "2024")
 discard_prop <- discard_lf %>%
   mutate(across(`2021`:`2024`, .fns = function(x) {
     x / sum(x, na.rm = TRUE)
-  })) %>% filter(Length >= 29 & Length <= 60)
+  })) %>%
+  filter(Length >= 29 & Length <= 60)
 
 ## Recreational Discard Catch-at-Age
 rec_discard_caa <- Map(function(yr, alk_prop) {
   aged_discard_props <- apply(
-    alk_prop[, 2:12], 2, function(x) {x * discard_prop[, as.character(yr)]}
+    alk_prop[, 2:12], 2, function(x) {
+      x * discard_prop[, as.character(yr)]
+    }
   )
   discards <- total_rec_catch$discard_mortality[total_rec_catch$Year == yr]
   aged_discards <- as.data.frame(aged_discard_props * discards)
@@ -106,9 +108,6 @@ rec_discard_caa <- Map(function(yr, alk_prop) {
 # ) +
 #  geom_point()
 
-# Find weight of recreational harvested fish.
-# There are small sample sizes for commercially harvested,
-# so we'll use rec weights to infer comm weights.
 names(life_history[[1]])[names(life_history[[1]]) == "Year"] <- "Date"
 life_history[[1]]$Year <- as.integer(format(life_history[[1]]$Date, "%Y"))
 # life_history24$`Weight (g)` <- life_history24$`Weight (g)` * 1000 #I was given data in the wrong format...
@@ -148,7 +147,8 @@ lw_pars <- bind_rows(lapply(2021:2024, function(i) {
   # preds.tmpnj <- data.frame(Length = min(life_history$Length, na.rm = TRUE):max(life_history$Length, na.rm = TRUE))
   # preds.tmpnj$Pred <- params$a*((preds.tmpnj$Length)^params$b)
   # ggplot(data = preds.tmpnj, aes(x = Length, y = Pred)) + geom_point() + ggtitle(paste(2020+i))
-return(params)}))
+  return(params)
+}))
 
 ggplot(data = life_history, aes(x = Weight)) +
   geom_histogram() +
@@ -173,38 +173,41 @@ total_rec_catch <- total_rec_catch %>%
 total_catch <- left_join(total_rec_catch, comm_catch) %>%
   mutate(Total.Catch = TotalRecCatch + commCatchNumFish)
 
-caals <- Map(function(x,y) {
-  x[,2:12] + y[2:12]
+caals <- Map(function(x, y) {
+  x[, 2:12] + y[2:12]
 }, rec_discard_caa, rec_harvest_caa)
 
-waa <- Map(function(alk,yr,caal) {
+# Find weight of recreational harvested fish.
+# There are small sample sizes for commercially harvested,
+# so we'll use rec weights to infer comm weights.
+waa <- Map(function(alk, yr, caal) {
   # Get your yearly L-W pars
-  b <- lw_pars[lw_pars$Year==yr, "b"]
-  lw <- lw_pars[lw_pars$Year==yr, "a"] * ((alk[, 1] + 0.5)^b)
-  waal <- apply(caal, 2, function(caal_annual) caal_annual * lw) #how much weight is in each AL bin
-  weights <- apply(waal, 2, sum) #total weight in each age bin
-  caa <- apply(caal, 2, sum) #catch-at-age
-  waa <- weights / caa #average weight per fish
-  
-  print(paste("total weight", yr))
-  comm <- total_catch[total_catch$Year==yr,]$comm # this is in metric tons converted to g
-  print((sum(weights) + comm) / 1000000)
-  # subset your LF
-  #LF.vec <- harvest_lf[, as.character(yr)] don't need this anymore, right?
-
+  b <- lw_pars[lw_pars$Year == yr, "b"]
   # Convert length bins to weights. Our length bins are floored, so we'll
   # add 0.5 to get to the center of the bin for the weight calculations.
   # If you rounded your lengths, you don't need to add anything.
-return(waa)}, alk_props, 2021:2024, caals)
+  lw <- lw_pars[lw_pars$Year == yr, "a"] * ((alk[, 1] + 0.5)^b)
+  waal <- apply(caal, 2, function(caal_annual) caal_annual * lw) # how much weight is in each AL bin
+  weights <- apply(waal, 2, sum) # total weight in each age bin
+  caa <- apply(caal, 2, sum) # catch-at-age
+  waa <- weights / caa # average weight per fish
+
+  print(paste("total weight", yr))
+  comm <- total_catch[total_catch$Year == yr, ]$comm # this is in metric tons converted to g
+  print((sum(weights) + comm) / 1000000)
+  return(waa)
+}, alk_props, 2021:2024, caals)
 
 caa_out <- as.data.frame(cbind(X1 = c(0, 0, 0, 0), rbind(
-  t(sapply(caals, function(x) {apply(x, 2, sum) / 1000}))
+  t(sapply(caals, function(x) {
+    apply(x, 2, sum) / 1000
+  }))
 ))) # final output: catch-at-age
 annual_sum <- apply(caa_out, 1, sum)
 caa_prop <- apply(caa_out[, 1:12], 2, function(x) x / annual_sum)
 
 # final output: weight-at-age
 waa <- cbind(X1 = c(0, 0, 0, 0), bind_rows(waa)) / 1000 # for the ASAP inputs, these appear to be scaled?
-#OUTPUTS#############
-#write.csv(caa_out, file.path(root, "output/tog/caa.csv"))
-#write.csv(waa, file.path(root, "output/tog/waa.csv"))
+# OUTPUTS#############
+# write.csv(caa_out, file.path(root, "output/tog/caa.csv"))
+# write.csv(waa, file.path(root, "output/tog/waa.csv"))

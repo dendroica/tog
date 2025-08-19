@@ -3,9 +3,9 @@
 
 # packages
 library(ggplot2)
-options(scipen=999)
 library(tidyverse)
 library(readxl)
+options(scipen=999)
 
 root <- "C:/Users"
 usr <- "jgorzo"
