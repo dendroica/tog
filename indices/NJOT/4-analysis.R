@@ -4,7 +4,7 @@ loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
 root <- file.path(root, usr, loc)
 load(file.path(root, "output/tog/index/NJOTmodel.RData"))
 library(ggplot2)
-source(file.path(root, "data/tog/bootstrap_functions.R"))
+source("./indices/bootstrap_functions.R")
 # Stratified mean:
 # Standardize catch for 20 minute tow (the standard unit of effort of NJOT)
 dat$Fish <- round((dat$CPUE*20)/dat$EFFORT,0)

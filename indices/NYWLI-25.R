@@ -22,7 +22,7 @@ library(readxl)
 setwd("C:\\Users\\galax\\OneDrive - New Jersey Office of Information Technology\\Documents\\data\\tog") #jgorzo
 wlidata <- read_excel("2025_SA_NY_Tautog_Survey_Data_1984-2024.xlsx", sheet="WLIS Seine")
 # Source helper functions for bootstrapping
-source("bootstrap_functions.r")
+source("C:\\Users\\jgorzo/Documents/tog/indices/bootstrap_functions.r")
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
