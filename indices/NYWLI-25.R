@@ -19,10 +19,15 @@ library(bbmle)
 library(mgcv)
 library(mgcViz)
 library(readxl)
-setwd("C:\\Users\\galax\\OneDrive - New Jersey Office of Information Technology\\Documents\\data\\tog") #jgorzo
-wlidata <- read_excel("2025_SA_NY_Tautog_Survey_Data_1984-2024.xlsx", sheet="WLIS Seine")
+
+root <- "C:/Users"
+usr <- "galax"
+loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
+root <- file.path(root, usr, loc)
+
+wlidata <- read_excel(file.path(root, "data/tog", "2025_SA_NY_Tautog_Survey_Data_1984-2024.xlsx"), sheet="WLIS Seine")
 # Source helper functions for bootstrapping
-source("C:\\Users\\jgorzo/Documents/tog/indices/bootstrap_functions.r")
+source("./indices/bootstrap_functions.r")
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -610,17 +615,17 @@ write.csv(index.out, "NYWLI_index.csv", row.names=F)
 # compare to previous index
 index.out$scale<-index.out$Index/mean(index.out$Index)
 index.out$newYear<-index.out$Year+1
-update<-read.csv("NYWLIindexfromlastupdate.csv",header=TRUE)
-update<-update[-c(1,3,12,27),]
-plot(update$Index)
-update$scale<-update$Index/mean(update$Index)
+#update<-read.csv("NYWLIindexfromlastupdate.csv",header=TRUE)
+#update<-update[-c(1,3,12,27),]
+#plot(update$Index)
+#update$scale<-update$Index/mean(update$Index)
 
 jpeg("NYWLI_compare.jpeg", width=8, height=5, units="in",res=600)
 ggplot(index.out) + 
   geom_point(aes(x=newYear,y=scale),shape=16)+
   geom_line(aes(x=newYear, y=scale),linetype = 1) + 
-  geom_point(data=update,aes(x=Year,y=scale),shape=16,col="blue")+
-  geom_line(data=update,aes(x=Year, y=scale),linetype = 1,col="blue") +
+  #geom_point(data=update,aes(x=Year,y=scale),shape=16,col="blue")+
+  #geom_line(data=update,aes(x=Year, y=scale),linetype = 1,col="blue") +
   #geom_path(linejoin = "mitre")+
   ylim(c(0,NA)) + theme_bw()#+ ggtitle("scaled to mean")
 dev.off()
