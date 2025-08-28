@@ -9,7 +9,7 @@
 #install.packages('DHARMa')
 #install.packages('bbmle')
 #install.packages('mgcViz')
-
+options(scipen = 999)
 library(car)
 library(tidyverse)
 library(lmtest)
@@ -29,7 +29,6 @@ wlidata <- read_excel(file.path(root, "data/tog", "2025_SA_NY_Tautog_Survey_Data
 # Source helper functions for bootstrapping
 source("./indices/bootstrap_functions.r")
 
-
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
 # -- Start NY WLI sein survey -----
@@ -37,12 +36,7 @@ source("./indices/bootstrap_functions.r")
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #### Clean and prep data ####
-
-# Read in the data: set-by-set data from a stratified
-# gillnet survey.
-#wlidata <- read.csv("NY-wli-1984.csv", header = TRUE)
 head(wlidata)
-
 
 ## Variables ##
 # Year
@@ -56,17 +50,13 @@ head(wlidata)
 # Tautog--Number of Taugtoh observed in sample
 # Region-- LIS (long island sound) or NYB (new york bight)
 
-
 # subset to just LIS
 wlidata <- subset(wlidata, Region=="NYB")
-
 summary(wlidata)
 
 #typo in Body of water Manhasset Bay and Manhassett Bay (one t is corect)
 wlidata$Body.of.water<-ifelse(wlidata$`Body of water`=="Manhassett Bay", "Manhasset Bay",wlidata$`Body of water`)
 unique(wlidata$Body.of.water)
-
-
 
 # First, create a new dataframe with only the variables you're interested
 # in exploring. For this dataset, we're not interested in day of month or
@@ -91,7 +81,7 @@ xtabs(Tautog~Year, wlidata2)
 #1985, 1994, and 2009 have 0 catch so want to drop those years
 str(wlidata2)
 
-rmyrs<-c('1985','1994','2009')
+rmyrs<-c('1984','2010')
 
 wlidata3<-subset(wlidata2, ! Year %in% rmyrs)
 # xtabs(Tautog~Year, wlidata3)
@@ -264,308 +254,32 @@ for(i in colnames(dat)){
 # We don't want to include covariates that are correlated with each other
 pairs(~Month+Station+Body.of.water+SurfaceTemp+Salinity+DO,data=dat)
 
-# None of these look super correlated
-
-# Check the variance inflation factor for a more statistical check.
-mod = lm(Tautog ~ Year + Month + Station + SurfaceTemp+Salinity+DO, data = dat)
-vif(mod)
-
-# You want GVIF to be less than ~3. Year, Month, and Surface temp are > 3 
-# Drop one (whichever you think is less informative) and test again. 
-# will drop month
-mod = lm(Tautog ~ Year + SurfaceTemp+Salinity+DO, data = dat)
-vif(mod)
-
-#mod = lm(Tautog ~ Station +  SurfaceTemp+Salinity+DO, data = dat)
-#vif(mod)
-
-# removed month and all are <3 now
-
-#=========================#
-##### Model Selection ####
-#=========================#
-
-# We're modeling count data, so we want to use a model that expects
-# that, like a Poisson or a negative binomial. Survey data generally
-# don't follow a Poisson distribution: zeros are overrepresented in the
-# data and the variance is much greater than the mean. 
-
-mean(dat$PosTow)
-
-# This dataset has 11.67086% positive sets which is below
-# of what is considered zero-inflated (~60% zero records).
-# So we'll start with a negative binomial and then look
-# at some zero-inflated options.
-#### Negative Binomial ####
-NB2 <- glmmTMB(Tautog ~ Year + SurfaceTemp+Salinity+DO, #when just year and surface temp, super high STD ERROR
-               data = dat,
-               family = nbinom2)
-
-# Check the Std. Error of the estimates; high SEs (1-2 orders of magnitude
-# or more greater than the estimate indicate problems with the fit.
-summary(NB2)
-
-# Next we'll check the dispersion
-disp3 <- function(mod = NA) {
-  E <- residuals(mod, type = "pearson")
-  d <- sum(E^2) / summary(mod)$AICtab[5]
-  return(d)
-}
-
-disp3(NB2)
-
-# You want dispersion to be ~1. This model is at 1.014251  
-# Next We'll still look at some zero-inflated models to cover our bases.
-
-#========================================================================#
-#### Zero-inflated models ####
-#========================================================================#
-
-#========================================================================#
-# Zero-inflated models actually fit two models: the probability of
-# catching a fish (a binomial model based whether the count is zero
-# or greater than zero) and the catch rate of fish (if you caught fish,
-# how many did you catch?). You can use the same factors in both parts
-# of the model, or different ones for each component.
-#========================================================================#
-
-#### Zero-inflated negative binomial ####
-# We'll start with the same factors in each half of the model.
-
-ZINB <- glmmTMB(Tautog ~ Year + SurfaceTemp+Salinity+DO ,
-                ziformula = ~.,
-                data = dat,
-                family = nbinom2)
-
-# Model convergence problem!
-summary(ZINB)
-
-#dropping year from zi formula
-ZINB.2 <- glmmTMB(Tautog ~ Year + SurfaceTemp ,
-                ziformula = ~ SurfaceTemp+Salinity+DO,
-                data = dat,
-                family = nbinom2)
-
-summary(ZINB.2)
-
-# We need a slightly different function to get the residuals to 
-# calculate dispersion from a zero-inflated model
-
-TMB.ZI.resids = function(mod,y.dat)
-{
-  v = family(mod)$variance
-  p = predict(mod, type = 'zprob') #zi probability
-  mu = predict(mod, type='conditional') #mean of the conditional distribution
-  pred = predict(mod, type='response') #(1-p)*mu
-  k = sigma(mod) #sigma gives the overdispersion parameter = theta = k
-  pvar = (1-p)*v(mu,k)+mu^2*(p^2+p)
-  pearson.resid = (y.dat - pred)/sqrt(pvar)
-  return(pearson.resid)
-}
-
-E = TMB.ZI.resids(ZINB.2, y.dat=dat$Tautog)
-
-#now check overdispersion
-(d = sum(E^2)/summary(ZINB.2)$AICtab[5])
-
-# dispersion = 0.9508786  
-# no improvement on the dispersion.
-
-
-#### Zero-altered negative binomial ####
-# AKA a hurdle model
-
-#ZANB <- glmmTMB(Tautog ~ Station + SurfaceTemp+Salinity+DO,
-#                ziformula = ~.,
-#                data = dat,
-#                family = truncated_nbinom2(link = "log"))
-#summary(ZANB)
-
-#convergence problems, will remove year
-# ZANB.2 <- glmmTMB(Tautog ~  SurfaceTemp,
-#                 ziformula = ~ Year +  SurfaceTemp,
-#                 data = dat,
-#                 family = truncated_nbinom2(link = "log"))
-# summary(ZANB.2)
-# 
-
-# Check overdispersion
-#E = TMB.ZI.resids(ZANB, y.dat=dat$Tautog)
-#(d = sum(E^2)/summary(ZANB)$AICtab[5])
-
-#dispersion: 0.9661554 
-
-
-# Use AIC to compare across models
-AICtab(NB2, ZINB.2)
-
-# NB2 is best but ZINB.2 is close second
-
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#### Fixed effects for fixed stations ####
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# For fixed station surveys, you can treat station as a fixed effect.
-
-# ZINB.2.re <- glmmTMB(Tautog ~ Year + (1|Station) +  SurfaceTemp,
-#                      ziformula = ~Station +  SurfaceTemp,
-#                      data = dat,
-#                      family = nbinom2)
-# 
-# AICtab(ZINB.2.re, ZINB.2)
-
-#not an improvement from zero inflated model
-
-#===================================================================#
-#### General additive models (GAMs) ####
-# Sometimes the relationship between environmental predictors
-# and CPUE is not linear -- e.g., there is a range of preferred
-# temps for a species where CPUE peaks
-# GAMs can capture this relationship
-#===================================================================#
-
-GAM.NB <- gam(Tautog~ Year + s(SurfaceTemp)+s(Salinity)+s(DO),
-              data = dat, family = 'nb')
-summary(GAM.NB) #has big errors because can't do zero inflated
-AICtab(GAM.NB, NB2, ZINB.2)
-
-#NB.2 still prefered model, but GAM and ZINB are close 2nd and 3rd
-
-
-
-#==============================================#
-#### Use the DHARMa package to examine fit ####
-#==============================================#
-
-# See the vignette at https://cran.r-project.org/web/packages/DHARMa/vignettes/DHARMa.html
-# for examples of what good and bad diagnostics look like with this package
-
-sim.NB2 <- simulateResiduals(NB2)
-sim.ZINB <- simulateResiduals(ZINB.2)
-#sim.ZANB <- simulateResiduals(ZANB)
-sim.GAM <- simulateResiduals(GAM.NB)
-
-plot(sim.NB2, quantreg=T) 
-plot(sim.ZINB, quantreg=T)
-#plot(sim.ZANB, quantreg=T) #didn't work/shows bad stuff
-plot(sim.GAM, quantreg=T) 
-
 dat <- as.data.frame(dat)
-
-### this below code is not working?
-
-# Compare residuals vs. factors NBI
-vars <- names(NB2$frame)
-vars <- vars[vars!="Tautog"]
-for(v in vars){ #not working
-  plotResiduals(sim.NB2, form=dat[,v], sub=v, quantreg=T)
-}
-
-# Compare residuals vs. factors ZINB
-vars <- names(ZINB$frame)
-vars <- vars[vars!="Tautog"]
-for(v in vars){ #not working
-  plotResiduals(sim.ZINB, form=dat[,v], sub=v, quantreg=T)
-}
-
-# Compare residuals vs. factors
-#vars <- names(ZANB$frame)
-#vars <- vars[vars!="Tautog" ]
-#for(v in vars){
-#  plotResiduals(sim.ZANB, form=dat[,v], sub=v, quantreg=T)
-#}
-
-# Note that gam() output doesn't have "frame" but it does have "model"
-vars <- names(GAM.NB$model)
-vars <- vars[vars!="Tautog"]
-for(v in vars){
-  plotResiduals(sim.GAM, form=dat[,v], sub=v, quantreg=T)
-}
-
-
-##end not working
-
-
-#==============================================#
-#### Select factors for inclusion in model ####
-#==============================================#
-
-# AIC and the DHARMa diagnostics indicate the zero-inflated
-# negative binomial is the better choice compared to the NB and ZANB
-
-# Explore what factors to include in the model
-# There are a number of different ways to do this. Here we will use both
-# AIC and the summary statistics to decide. We need YEAR in the model
-# no matter what, so we will always keep that.
-
-
-# summary(ZINB.2)
-# 
-# #try to drop surfact temp or station
-# #first station
-# ZINB.S <- glmmTMB(Tautog ~ Year  +  SurfaceTemp ,
-#                   ziformula = ~ SurfaceTemp ,
-#                   data = dat,
-#                   family = nbinom2)
-# summary(ZINB.S)
-# 
-# # try removing surface temp
-# ZINB.T <- glmmTMB(Tautog ~ Year + Station  ,
-#                   ziformula = ~ Station ,
-#                   data = dat,
-#                   family = nbinom2)
-# summary(ZINB.T)
-# 
-# #dropping year from zi formula
-# ZINB.M <- glmmTMB(Tautog ~ Year + Month + Station +  SurfaceTemp ,
-#                   ziformula = ~ Month+ Station +  SurfaceTemp ,
-#                   data = dat,
-#                   family = nbinom2)
-# 
-# 
-# AICtab(ZINB.2, ZINB.M,ZINB.S,ZINB.T)
-# 
-# #month is an improvement over ZINB.2
-# #check the residuals
-# sim.ZINB.M <- simulateResiduals(ZINB.M)
-# 
-# plot(sim.ZINB, quantreg=T)
-# plot(sim.ZINB.M, quantreg=T)
-# #residuals are good for model with month 
-# # but bc of VIF we'll stick with month left out of the model
-# 
-# 
-# summary(ZINB.2)
-# #all parameters are significant other than some years and station
-# # can't drop years
-# # and don't want to drop any more stations
-# # so will leave as final model
-# 
-
 
 #=============================#
 #### Calculate the Index ####
 #=============================#
-
+ZINB <- glmmTMB(Tautog ~ 1 + Year + SurfaceTemp + Salinity ,
+                ziformula = ~ SurfaceTemp + Salinity,
+                data = dat,
+                family = nbinom2)
 #best <-NB2
-best <- GAM.NB
+best <- ZINB
 # We will calculate the index by predicting the mean CPUE in each year while
 # holding the other factors constant at one level and holding continuous values
 # constant at their mean values. 
 
 # What factors did ZINB.2
-#NB2$call
-GAM.NB$call
+
 p.data <- data.frame(Year=levels(dat$Year), 
                      #Station=levels(dat$Station)[1],
                      SurfaceTemp=mean(dat$SurfaceTemp),
-                     DO=mean(dat$DO),
+                     #DO=mean(dat$DO),
                      Salinity=mean(dat$Salinity))
 
 # The bootstrap_functions.R script also has a function to do this.
 #p.data <- expand.pred(best$frame)
-p.data <- expand.pred(GAM.NB$model)
+p.data <- expand.pred(best$frame, re=best$modelInfo$grpVar)
 
 # We may also calculate the marginal mean by expanding the data to get every
 # combination of factor in the model and then calculating the mean CPUE
@@ -583,17 +297,18 @@ index.out <- data.frame(
 # "bootstrap_functions.r" file.
 
 #SE <- boot.ZI(best, nboots=1000)
-SE <- boot.GAM(best, nboots=1000) #100% convergence! JESS
+SE <- boot.ZI(best, nboots=1000) #100% convergence! JESS
 #only 94.9% of bootstraps converged..
 # If you have a low percent (<50%) of converged runs, it's a sign that the model
 # may not be robust. 
 
 index.out <- cbind.data.frame(index.out, SE)
 
-
-index.out$Year <- as.integer(levels(unique(dat$YEAR)))
-index.out <- index.out[index.out$Year > 1988,]
-index.out <- rbind(index.out, c(1994, -1, -1, -1, -1), c(2009, -1, -1, -1, -1))
+index.out$Year <- as.integer(levels(p.data$Year))
+allyrs <- 1989:2024
+missing <- allyrs[!allyrs %in% p.data$Year]
+index.out <- index.out[index.out$Year > 1987,]
+index.out <- rbind(index.out, c(1997, -1, -1, -1, -1), c(2010, -1, -1, -1, -1))
 index.out <- index.out[order(index.out$Year),]
 index.out$CV <- index.out$SE/index.out$Index
 

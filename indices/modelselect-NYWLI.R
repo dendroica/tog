@@ -44,4 +44,4 @@ bmc4 <- buildmerControl(include= ~ Year)
 
 GAM.NB <- gam(Tautog~ Year + s(SurfaceTemp)+s(Salinity)+s(DO),
               data = dat, family = 'nb') #still wins
-AICtab(GAM.NB, NB, ZINB)
+AICtab(NB, ZINB)
