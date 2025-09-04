@@ -263,6 +263,9 @@ ZINB <- glmmTMB(Tautog ~ 1 + Year + SurfaceTemp + Salinity ,
                 ziformula = ~ SurfaceTemp + Salinity,
                 data = dat,
                 family = nbinom2)
+GAM.NB <- gam(Tautog~ Year + s(SurfaceTemp)+s(Salinity)+s(DO),
+              data = dat, family = 'nb')
+SE2 <- boot.GAM(GAM.NB, nboots=1000)
 #best <-NB2
 best <- ZINB
 # We will calculate the index by predicting the mean CPUE in each year while
@@ -295,10 +298,7 @@ index.out <- data.frame(
 # Use boot.NB() for non-zero-inflated models and boot.GAM() for
 # GAMs. boot.ZI(), boot.NB(), and boot.GAM() are custom functions included in the 
 # "bootstrap_functions.r" file.
-
-#SE <- boot.ZI(best, nboots=1000)
-SE <- boot.ZI(best, nboots=1000) #100% convergence! JESS
-#only 94.9% of bootstraps converged..
+SE <- boot.ZI(best, nboots=1000) 
 # If you have a low percent (<50%) of converged runs, it's a sign that the model
 # may not be robust. 
 

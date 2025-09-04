@@ -4,7 +4,7 @@
 # July 1, 2025              #
 #---------------------------#
 root <- "C:/Users"
-usr <- "jgorzo"
+usr <- "galax" #"jgorzo"
 loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
 root <- file.path(root, usr, loc)
 setwd(file.path(root, "output/tog"))
@@ -21,8 +21,8 @@ library(dplyr)
 # Give it the name of the directory where your ASAP run is saved
 # and the name of the ASAP file for the run you want to plot
 
-pwd <- "retro"
-fn <- "AUG19UPDATE"
+pwd <- "base"
+fn <- "AUG29_JG-RAW"
 
 # By default, PlotASAP will provide the plots as individual .png files and
 # as a compiled pdf with all the plots. For initial exploration of results,
