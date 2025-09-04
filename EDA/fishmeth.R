@@ -17,8 +17,6 @@ pmat <- read_xlsx(
 
 P_MAT <- c(0, 0, 0.8, rep(1, 9))
 
-data(haddock)
-# Generate SSBPR versus F, and F for MSP reference point
 sbpr(
   age = 1:12,
   ssbwgt = unname(unlist(as.vector(as.data.frame(ssb[1, 2:13])))),
