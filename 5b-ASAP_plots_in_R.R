@@ -4,10 +4,10 @@
 # July 1, 2025              #
 #---------------------------#
 root <- "C:/Users"
-usr <- "galax" #"jgorzo"
+usr <- "jgorzo" #"galax"
 loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
 root <- file.path(root, usr, loc)
-setwd(file.path(root, "output/tog"))
+setwd(file.path(root, "output/tog/asap/Sept3_noadjust"))
 #---- ASAPplots library ----
 
 # Load the ASAPplots library, which will do a bunch of plots
@@ -22,7 +22,7 @@ library(dplyr)
 # and the name of the ASAP file for the run you want to plot
 
 pwd <- "base"
-fn <- "AUG29_JG-RAW"
+fn <- "AUG29_KD_RAW"
 
 # By default, PlotASAP will provide the plots as individual .png files and
 # as a compiled pdf with all the plots. For initial exploration of results,
@@ -41,13 +41,13 @@ PlotASAP(pwd, asap.name=fn, save.plots=F)
 # may be a little different.
 
 # We can read in the retrospective run to see those results as well
-pwd <- "MARI\\Retro"
-fn <- "MARI_BASE_RUN_2021_Retro"
+pwd <- "retro"
+#fn <- "MARI_BASE_RUN_2021_Retro"
 PlotASAP(pwd, asap.name=fn, save.plots=F)
 
 # We can look at the MCMC run so we can see the MCMC diagnostics as well
-pwd <- "MARI\\MCMC"
-fn <- "MARI_BASE_RUN_2021_MCMC"
+pwd <- "mcmc"
+#fn <- "MARI_BASE_RUN_2021_MCMC"
 PlotASAP(pwd, asap.name=fn, save.plots=F)
 
 # If you don't like the look of the PlotASAP output, you can read the ASAP
