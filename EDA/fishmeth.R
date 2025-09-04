@@ -1,3 +1,4 @@
+library(fishmethods)
 library(readxl)
 
 root <- "C:/Users"
@@ -27,12 +28,15 @@ sbpr(
   ),
   pmat = P_MAT,
   M = 0.15,
-  pF = 0.2, # change - Lindy's AGEPRO FILE
-  pM = 0.1667, # change (same)
+  pF = 0.42, # change - Lindy's AGEPRO FILE biological tab
+  pM = 0.42, # change (same, fraction mortality)
   plus = TRUE,
   maxF = 2,
   incrF = 0.001,
-  MSP = 40,
-  options = c(1, 3),
+  MSP = 30,
+  options = c(3),
   oldest = 100
 )
+
+#30% = 0.3318533
+#40% = 0.201155
