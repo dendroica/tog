@@ -14,6 +14,7 @@ root <- file.path(root, usr, loc)
 mrip9 <- read.csv(file.path(root, "data/tog/rec/Tautog_MRIP_Type9_lengths_2021-24.csv"), header=TRUE)
 #American Littoral Society 
 als <- read_xlsx(file.path(root,"data/tog/rec/ALS_Tautog_2021-2024.xlsx"), col_names = TRUE)
+##DO YOU NEED NJ VAS??
 ####################
 mrip9<-subset(mrip9, REGION=="NJNYB") %>% rename("Length_cm" = "LENGTH.ROUNDED.DOWN.TO.NEAREST.CM")
 als<-subset(als,Region=="NJNYB") %>% rename("YEAR" = "Year") %>% mutate(Length_cm = floor(Length_IN*2.54))
