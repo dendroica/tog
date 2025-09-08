@@ -10,7 +10,7 @@ library(ggplot2)
 
 # INPUTS USED#############################
 root <- "C:/Users"
-usr <- "jgorzo"
+usr <- "galax" #"jgorzo"
 loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
 root <- file.path(root, usr, loc)
 # root <- "/media/jess/9CE61C02E61BDB7A/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents"

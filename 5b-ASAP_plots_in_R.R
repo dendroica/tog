@@ -4,7 +4,7 @@
 # July 1, 2025              #
 #---------------------------#
 root <- "C:/Users"
-usr <- "jgorzo" #"galax"
+usr <- "galax" #"jgorzo" #
 loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
 root <- file.path(root, usr, loc)
 setwd(file.path(root, "output/tog/asap/Sept3_noadjust"))
@@ -116,6 +116,18 @@ ggplot(i.plot, aes(x=Year, y=CPUE, color=Type, shape=Type, linetype=Type)) +
   facet_wrap(~Index, scales="free_y") +
   theme_bw()
 
+i.plot2 <- i.plot[i.plot$Type=="Observed",]
+i.plot2[i.plot2$Index=="Index 1",]$Index <- "NY Seine"
+i.plot2[i.plot2$Index=="Index 2",]$Index <- "NJOT"
+i.plot2[i.plot2$Index=="Index 3",]$Index <- "MRIP"
+ggplot(i.plot2, aes(x=Year, y=CPUE)) +
+  geom_line() +
+  #scale_color_manual(values=c("black", "blue")) +
+  #scale_linetype_manual(values=c(0, 1)) +
+  #scale_shape_manual(values=c(16, NA)) +
+  facet_wrap(~Index, scales="free_y") +
+  theme_bw()
+
 ggplot(i.res) +
   geom_col(aes(x=Year, y=Resids)) +
   facet_wrap(~Index) +
@@ -155,14 +167,15 @@ ggplot(frep) + geom_line(aes(x=Year, y=F_rep)) +
 # the working directory and which all have the same file name
 # structure so I will just loop over the regional abbreviations
 
-runs <- c("MARI", "LIS", "NJ-NYB", "DMV")
+setwd(file.path(root, "output/tog/asap/sensitivity"))
+runs <- c("base", "base_noadjust", "no_mrip", "no_njot", "no_ny")
 
 ssb <- data.frame()
 F.out <- data.frame()
 recr <- data.frame()
 
 for(r in runs){
-  asap <- dget(paste0(r, "\\", r, "_BASE_RUN_2021.rdat"))
+  asap <- dget(paste0(r, "/", "AUG29_KD_RAW.rdat"))
   ssb <- rbind(ssb, data.frame(Year=seq(asap$parms$styr, asap$parms$endyr, 1), 
                                SSB=asap$SSB,
                                Run=r))
