@@ -23,7 +23,7 @@ asap <- file.path(root, "output/tog/asap/Sept3_noadjust")
 #---- Reference points for stock status ----
 
 # We are using the full F for the 3-year average, 
-# so use the F30% and F40% from the SPR.Target.Table output
+# so use the F30% and F40% from the SPR.Target.Table output (this is in ASAP plots output)
 #30% = 0.3318533
 #40% = 0.201155
 F_ref <- data.frame(BRP=c("Target", "Threshold"), value=c(0.201155, 0.3318533))
