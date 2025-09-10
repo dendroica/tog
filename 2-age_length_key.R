@@ -122,24 +122,32 @@ als$Length_cm <- floor(als$Length_cm)
 # min(unique(c(als$Length_cm, mrip_har$Length))) = 17
 # max(unique(c(als$Length_cm, mrip_har$Length))) = 83
 # sort(unique(c(als$Length_cm, mrip_har$Length)))
-# 29 is next largest length incl in rec data
-for_alk <- njny[njny$tl_cm >= 29 & njny$tl_cm < 61, ] |>
-  mutate(Age_plus = ifelse(Age >= 12, 12, Age)) |>
+# There is data for otoliths 17-27cm, also the only age 1 data
+#lengths <- c(17:60)
+# min_age <- 1
+# Since we are only using operc/both data, the next smallest bin is 29cm
+lengths <- c(29:60)
+min_age <- 2
+max_age <- 12
+for_alk <- njny[njny$tl_cm %in% lengths, ] |>
+  mutate(Age_plus = ifelse(Age >= max_age, max_age, Age)) |>
   filter(Region == "B")
 
 # The previous assessment bounds for NJ-NYB were 15-60cm and MA-RI uses 14-60cm.
-# This final bounding was post hoc from filling the ALK. The gaps left to fill
-# by the end of this script when trying to use the full range of data (to 83cm)
-# were 63cm onward, and 63cm does not occur in any annual raw (unfilled) data
-# for NJ-NYB. Given that the region's last limit was 60cm and MA-RI also only
-# goes to 60cm, that felt like a reasonable cutoff, and the highest the rec data
-# goes below 63cm is 60cm
-for_alk$TL_cm <- factor(for_alk$tl_cm, levels = 29:60)
-for_alk$Age_plus <- factor(for_alk$Age_plus, levels = 2:12)
+# The final bounding chosen here was post hoc from filling the ALK. The gaps
+# that would have been left to fill by the end of this script when trying to use
+# the full range of rec data (to 83cm) were 63cm onward, and 63cm does not occur
+# in any annual raw (unfilled) data for NJ-NYB. Given that the region's last
+# limit was 60cm and MA-RI also only goes to 60cm, that felt like a reasonable
+# cutoff, and the highest the rec data goes below 63cm is 60cm
+# in hindsight...should I be incorporating VAS here too...?
+for_alk$TL_cm <- factor(for_alk$tl_cm, levels = lengths)
+for_alk$Age_plus <- factor(for_alk$Age_plus, levels = min_age:max_age)
 
 operc <- for_alk[for_alk$structure == "operc" | for_alk$structure == "both", ]
 oto <- for_alk[for_alk$structure == "oto", ]
-alk_data <- operc
+# alk_data <- operc
+alk_data <- for_alk
 
 # Our region elected to use only operculum data
 # From a 6/13 email with Katie, she commented that there does not appear to be
@@ -150,10 +158,10 @@ annual_al <- split(alk_data, alk_data$Year)
 
 PivotALK <- function(dat) {
   tab <- table(dat$`TL_cm`, dat$Age_plus) # if you switch to full age you'll need to change Age_plus to Age
-  tab1 <- matrix(tab, ncol = 11, dimnames = dimnames(tab)) # if you switch to full age you'll need to change the 11
+  tab1 <- matrix(tab, ncol = length(min_age:max_age), dimnames = dimnames(tab))
   tab2 <- data.frame(tab1)
   df <- data.frame(names = row.names(tab2), tab2)
-  colnames(df) <- c("length", as.character(2:12)) # if you switch to full age you'll need to change the 12
+  colnames(df) <- c("length", as.character(min_age:max_age)) # if you switch to full age you'll need to change the 12
   return(df)
 }
 
@@ -170,7 +178,7 @@ alks <- lapply(annual_al, PivotALK)
 CheckGaps <- function(alks) {
   gaps <- lapply(alks,
     FUN = function(alk) {
-      as.integer(alk$length[which(rowSums(alk[, 2:12]) == 0)])
+      as.integer(alk$length[which(rowSums(alk[, 2:ncol(alk)]) == 0)])
     }
   ) # these are all of the gaps that exist
   names(gaps) <- c(2021:2024)
@@ -202,9 +210,9 @@ age12_filled_alks <- lapply(alks, function(alk) {
     ungroup()
   max_len_aged <- max(alk$length[alk$rowsum > 0]) # last row with values
   row_i <- which(alk$length == max_len_aged)
-  if (alk[row_i, 12] == alk[row_i, "rowsum"] && max_len_aged < max(alk$length)) {
+  if (alk[row_i, max_age] == alk[row_i, "rowsum"] && max_len_aged < max(alk$length)) {
     last_rows <- (max_len_aged + 1):max(alk$length)
-    alk[alk$length %in% last_rows, 12] <- alk[row_i, 12]
+    alk[alk$length %in% last_rows, max_age] <- alk[row_i, max_age]
   }
   alk$rowsum <- NULL
   return(alk)
@@ -235,7 +243,7 @@ oto_filled_alks <- Map(function(gaps, yr, alk) {
   }
 
   if (nrow(oto_for_fill) > 0) {
-    alk[alk$length %in% oto_for_fill$length, 2:12] <- oto_for_fill[, 2:12]
+    alk[alk$length %in% oto_for_fill$length, min_age:max_age] <- oto_for_fill[, min_age:max_age]
   }
   return(alk)
 }, gaps_to_fill, names(gaps_to_fill), age12_filled_alks)
@@ -251,27 +259,27 @@ names(dmv_unfilled_alks) <- c("2021", "2022", "2023", "2024")
 FillGaps <- function(i, gaps, alk, dmv, lis) {
   next_len <- gaps[i] + 1
   prev_len <- gaps[i] - 1
-  next_row <- alk[alk$length == next_len, 2:12]
-  prev_row <- alk[alk$length == prev_len, 2:12]
+  next_row <- alk[alk$length == next_len, min_age:max_age]
+  prev_row <- alk[alk$length == prev_len, min_age:max_age]
   num_fish_smaller <- sum(prev_row)
   num_fish_bigger <- sum(next_row)
   if (gaps[i] == min(alk$length)) { ### if the gap to fill is the smallest bin in the ALK...
     if (next_len != gaps[i + 1]) { # if the next greater length bin isn't empty...
       filler <- next_row # ...fill from below
-    } else if (sum(lis[lis[, 1] == gaps[i], 2:12]) == 0) { # if not, use LIS if it has values for that bin
-      # sum(dmv[dmv[,1]==gaps[i],2:12]) > 0 shows preference for DMV when it has values
-      filler <- dmv[dmv[, 1] == gaps[i], 2:12] # else fill from DMV
+    } else if (sum(lis[lis[, 1] == gaps[i], 2:ncol(lis)]) == 0) { # if not, use LIS if it has values for that bin
+      # sum(dmv[dmv[,1]==gaps[i],min_age:max_age]) > 0 shows preference for DMV when it has values
+      filler <- dmv[dmv[, 1] == gaps[i], 2:ncol(dmv)] # else fill from DMV
     } else {
-      filler <- lis[lis[, 1] == gaps[i], 2:12]
+      filler <- lis[lis[, 1] == gaps[i], 2:ncol(lis)]
     }
   } else if (gaps[i] == max(alk$length)) { ### if the gap to fill is the largest bin in the ALK...
     if (prev_len != gaps[i - 1] && num_fish_smaller > 0) { # if the next smallest length bin doesn't need filling and has values...
       filler <- prev_row # ...fill from above
     } else {
-      if (sum(lis[lis[, 1] == gaps[i], 2:12]) == 0) { # preference for filling from LIS when it has data
-        filler <- dmv[dmv[, 1] == gaps[i], 2:12]
+      if (sum(lis[lis[, 1] == gaps[i], 2:ncol(lis)]) == 0) { # preference for filling from LIS when it has data
+        filler <- dmv[dmv[, 1] == gaps[i], 2:ncol(dmv)]
       } else {
-        filler <- lis[lis[, 1] == gaps[i], 2:12]
+        filler <- lis[lis[, 1] == gaps[i], 2:ncol(lis)]
       }
     }
   } else if (i == length(gaps)) { ### if it's the last bin to be filled (and it's not the largest length bin in the ALK...)
@@ -287,20 +295,32 @@ FillGaps <- function(i, gaps, alk, dmv, lis) {
   } else if (!(next_len) %in% gaps && (prev_len) %in% gaps && num_fish_bigger > 0) { # if the bin above is empty and the bin below has non-0 values
     filler <- next_row
   } else {
-    if (sum(lis[lis[, 1] == gaps[i], 2:12]) == 0) { # if 0s on both sides, fill from adjacent region (LIS first)
-      filler <- dmv[dmv[, 1] == gaps[i], 2:12]
+    if (sum(lis[lis[, 1] == gaps[i], min_age:max_age]) == 0) { # if 0s on both sides, fill from adjacent region (LIS first)
+      filler <- dmv[dmv[, 1] == gaps[i], min_age:max_age]
     } else {
-      filler <- lis[lis[, 1] == gaps[i], 2:12]
+      filler <- lis[lis[, 1] == gaps[i], min_age:max_age]
     }
+  }
+  ages <- names(alk)[2:ncol(alk)]
+  if (any(!ages %in% names(filler))) {
+    missing_age <- ages[!ages %in% names(filler)]
+    zero_matrix <- matrix(0, nrow = 1, ncol = length(missing_age),
+                          dimnames = list(NULL, missing_age))
+    zero_df <- as.data.frame(zero_matrix)
+    filler <- cbind(filler, zero_df)
+    filler <- filler[,ages]
   }
   return(filler)
 }
 
 near_filled_alks <- Map(function(alk, gaps, yr) {
   dmv <- dmv_unfilled_alks[[as.character(yr)]]
-  lis <- lis_unfilled_alks[[as.character(yr)]][, c(1, 3:13)]
-  filled_alk <- lapply(1:length(gaps), FillGaps, gaps = gaps, alk = alk, dmv = dmv, lis = lis)
-  alk[alk$length %in% gaps, 2:12] <- bind_rows(filled_alk)
+  lis <- lis_unfilled_alks[[as.character(yr)]]
+  names(lis)[names(lis) == "LengthCM"] <- "length"
+  lis <- lis[, names(lis)[names(alk) %in% names(lis)]]
+  filled_alk <- lapply(1:length(gaps),
+                       FillGaps, gaps = gaps, alk = alk, dmv = dmv, lis = lis)
+  alk[alk$length %in% gaps, 2:ncol(alk)] <- bind_rows(filled_alk)
   return(alk)
 }, oto_filled_alks, gaps_to_fill, c(2021:2024))
 
@@ -308,7 +328,8 @@ CheckGaps(near_filled_alks)
 
 # By this point, from the filling steps above, the next closest length bin to
 # the end that had values was just 1 in age 12, so used that to fill down
-near_filled_alks[[4]][near_filled_alks[[4]]$length %in% 57:60, 12] <- 1
+near_filled_alks[[2]][near_filled_alks[[2]]$length %in% 56:60, max_age] <- 1
+near_filled_alks[[4]][near_filled_alks[[4]]$length %in% 57:60, max_age] <- 1
 #############
 
 ########### OUTPUTS
@@ -317,7 +338,7 @@ near_filled_alks[[4]][near_filled_alks[[4]]$length %in% 57:60, 12] <- 1
 # write.csv(alks[[3]][,-1], "NJNYB-ALK_2023_unfilled.csv")
 # write.csv(alks[[4]][,-1], "NJNYB-ALK_2024_unfilled.csv")
 
-# write.csv(near_filled_alks[[1]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2021_filled.csv"), row.names = F)
-# write.csv(near_filled_alks[[2]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2022_filled.csv"), row.names = F)
-# write.csv(near_filled_alks[[3]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2023_filled.csv"), row.names = F)
-# write.csv(near_filled_alks[[4]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2024_filled.csv"), row.names = F)
+#write.csv(near_filled_alks[[1]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2021_filled.csv"), row.names = F)
+#write.csv(near_filled_alks[[2]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2022_filled.csv"), row.names = F)
+#write.csv(near_filled_alks[[3]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2023_filled.csv"), row.names = F)
+#write.csv(near_filled_alks[[4]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2024_filled.csv"), row.names = F)

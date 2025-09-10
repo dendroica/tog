@@ -14,10 +14,12 @@ root <- file.path(root, usr, loc)
 mrip9 <- read.csv(file.path(root, "data/tog/rec/Tautog_MRIP_Type9_lengths_2021-24.csv"), header=TRUE)
 #American Littoral Society 
 als <- read_xlsx(file.path(root,"data/tog/rec/ALS_Tautog_2021-2024.xlsx"), col_names = TRUE)
-##DO YOU NEED NJ VAS?? togVAS length is in inches
+vas <- read_xlsx(file.path(root, "data/tog/togVAS.xlsx"))
 ####################
 mrip9<-subset(mrip9, REGION=="NJNYB") %>% rename("Length_cm" = "LENGTH.ROUNDED.DOWN.TO.NEAREST.CM")
 als<-subset(als,Region=="NJNYB") %>% rename("YEAR" = "Year") %>% mutate(Length_cm = floor(Length_IN*2.54))
+vas<- subset(vas, Dispo=="Rel") %>% rename("YEAR" = "Fish.year") %>% mutate(Length_cm = floor(Length*2.54))
+vas <- vas[vas$YEAR >= 2021,]
 
 #length is reported by each 0.25 inch
 #look at distribution of 0.25 and 0.75
@@ -27,7 +29,7 @@ ggplot()+
   labs(x="Length IN")
 ## length bins seem even distributed across 0.25,0.5,0.75,inch bins so will just convert straight to CM
 
-discards <- als %>% select(YEAR, Length_cm) %>% bind_rows(mrip9[,c("YEAR", "Length_cm")])
+discards <- als %>% select(YEAR, Length_cm) %>% bind_rows(mrip9[,c("YEAR", "Length_cm")], vas[,c("YEAR", "Length_cm")])
 
 lenfreqfun <- function(lendat) {
   yr <- lendat$YEAR[1]

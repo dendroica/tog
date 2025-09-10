@@ -5,7 +5,7 @@ root <- "C:/Users"
 usr <- "jgorzo"
 loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
 root <- file.path(root, usr, loc)
-load(file.path(root, "output/tog/index/NJOTmod2.RData"))
+load(file.path(root, "output/tog/index/NJOTmod.RData"))
 source("./indices/bootstrap_functions.R")
 #library(mgcv)
 bmc <- buildmerControl(include= ~offset(lnEffort) + YEAR)

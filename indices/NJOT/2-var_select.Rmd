@@ -43,7 +43,7 @@ PctPos <- function(x) {
 }
 
 source("../bootstrap_functions.R")
-load(file.path(root, "output/tog/index/NJOT2.RData"))
+load(file.path(root, "output/tog/index/NJOT.RData"))
 ```
 ### Check collinearity
 ```{r, error=TRUE}

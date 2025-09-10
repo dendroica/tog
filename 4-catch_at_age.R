@@ -10,7 +10,7 @@ library(ggplot2)
 
 # INPUTS USED#############################
 root <- "C:/Users"
-usr <- "galax" #"jgorzo"
+usr <- "jgorzo" #"galax" #"jgorzo"
 loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
 root <- file.path(root, usr, loc)
 # root <- "/media/jess/9CE61C02E61BDB7A/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents"
@@ -76,9 +76,10 @@ rec_harvest_caa <- Map(function(x, y) {
     select(-c("Number"))
   return(annual_rec_har)
 }, 2021:2024, alk_props)
-
-total_rec_catch <- total_rec_catch |>
-  mutate(discard_mortality = Released.B2 * 0.025)
+rec_harvest_caa_annual <- bind_rows(lapply(rec_harvest_caa, function(x) {
+  apply(x, 2, sum)
+})) %>% select(-Length)
+rec_harvest_caa_annual <- cbind(X1=c(0,0,0,0), rec_harvest_caa_annual)
 
 names(discard_lf) <- c("Length", "2021", "2022", "2023", "2024")
 discard_prop <- discard_lf |>
@@ -87,6 +88,8 @@ discard_prop <- discard_lf |>
   })) |>
   filter(Length >= 29 & Length <= 60)
 
+total_rec_catch <- total_rec_catch |> # number of fish
+  mutate(discard_mortality = Released.B2 * 0.025)
 ## Recreational Discard Catch-at-Age
 rec_discard_caa <- Map(function(yr, alk_prop) {
   aged_discard_props <- apply(
@@ -99,7 +102,10 @@ rec_discard_caa <- Map(function(yr, alk_prop) {
   aged_discards$Length <- 29:60
   aged_discards <- aged_discards[, c(12, 1:11)]
 }, 2021:2024, alk_props)
-
+rec_discard_caa_annual <- bind_rows(lapply(rec_discard_caa, function(x) {
+  apply(x, 2, sum)
+})) %>% select(-Length)
+rec_discard_caa_annual <- cbind(X1=c(0,0,0,0), rec_discard_caa_annual)
 # Length-weight relationships for recreational harvested fish
 # ggplot(
 #  data = life_history,
@@ -109,17 +115,12 @@ rec_discard_caa <- Map(function(yr, alk_prop) {
 
 names(life_history[[1]])[names(life_history[[1]]) == "Year"] <- "Date"
 life_history[[1]]$Year <- as.integer(format(life_history[[1]]$Date, "%Y"))
-# life_history24$`Weight (g)` <- life_history24$`Weight (g)` * 1000 #I was given data in the wrong format...
-# life_history24$Total.Length..cm. <- life_history24$Total.Length..cm. / 10
-# life_history24$`Total Length (cm)` <- life_history24$`Total Length (cm)` / 10
 life_history[[2]] <- life_history[[2]] |>
   rename("Total Length (cm)" = "cm", "Weight (g)" = "grams") |>
   select(-"Total Length (mm)", -"Weight (kg)")
 life_history[[1]] <- life_history[[1]][, names(life_history[[2]])]
 life_history <- bind_rows(life_history) |>
-  # rename("Weight" = "Weight..g.") |>
   rename("Weight" = "Weight (g)") |>
-  # mutate(Length = floor(Total.Length..cm.)) |>
   mutate(Length = floor(`Total Length (cm)`)) |>
   select(Year, Age, Weight, Region, Length)
 life_history <- life_history[!is.na(life_history$Weight), ]
@@ -161,14 +162,15 @@ weights_means <- life_history |>
     sdWeight = sd(Weight, na.rm = TRUE), .groups = "keep"
   )
 
+total_rec_catch <- total_rec_catch |> # numbers of fish
+  mutate(TotalRecCatch = Harvest.A.B1 + discard_mortality)
+
 names(comm_catch)[names(comm_catch) == "NYB-NJ"] <- "comm" # metric tons
 comm_catch$comm <- comm_catch$comm * 1000000
 comm_catch <- comm_catch |>
   left_join(weights_means) |>
   mutate(commCatchNumFish = comm / MeanWeight)
 
-total_rec_catch <- total_rec_catch |>
-  mutate(TotalRecCatch = Harvest.A.B1 + discard_mortality)
 total_catch <- left_join(total_rec_catch, comm_catch) |>
   mutate(Total.Catch = TotalRecCatch + commCatchNumFish)
 
@@ -211,3 +213,7 @@ waa <- cbind(X1 = c(0, 0, 0, 0), bind_rows(waa)) / 1000 # for the ASAP inputs, t
 # OUTPUTS#############
 # write.csv(caa_out, file.path(root, "output/tog/caa.csv"))
 # write.csv(waa, file.path(root, "output/tog/waa.csv"))
+waa0 <- waa
+waa0[is.na(waa0)] <- 0
+discard_weights <- apply(waa0 * rec_discard_caa_annual, 1, sum) * .001
+harvest_weights <- apply(waa0 * rec_harvest_caa_annual, 1, sum) * .001

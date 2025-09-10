@@ -52,7 +52,7 @@ indata$Month <- substr(indata$YRMODA,5,6)
 indata$YOY <- as.numeric(indata$NUMBER)
 
 # Based on EDA, keeping just inshore stratum and later cruises
-indata2 <- indata[as.numeric(substr(indata$CRUCODE,5,5)) %in% c(2,4:6),]
+indata2 <- indata[as.numeric(substr(indata$CRUCODE,5,5)) %in% c(4:6),]
 indata2 <- indata2[indata2$stratum2=="inner",]# | indata2$stratum2=="middle"]
 indata2 <- indata2[complete.cases(indata2[,keepVars]),] # keep only complete cases
 # Check for outliers or weirdo values
@@ -75,4 +75,4 @@ dat$PosTow <- ifelse(dat$CPUE > 0, 1, 0)
 
 # create offset for variable tow durations
 dat$lnEffort <- log(dat$EFFORT)
-save(dat, file = "NJOT2.RData")
+save(dat, file = "NJOT.RData")
