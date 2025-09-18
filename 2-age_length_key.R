@@ -317,11 +317,11 @@ alk23[alk23$length==19,2:ncol(alk23)] <-  c(0,0,2,1,rep(0, 8))
 alk23[alk23$length==22,2:ncol(alk23)] <- c(0,0,0,4,rep(0,8))
 alk23[alk23$length==24,2:ncol(alk23)] <- c(0,0,0,3,3,rep(0,7))
 alk23[alk23$length==25,2:ncol(alk23)] <- c(0,0,0,1,5,1,1,rep(0,5))
-alk23[alk23$length==29,2:ncol(alk23)] <- c(0,0,0,2,7,2,0,2,1,0,0)
+alk23[alk23$length==29,2:ncol(alk23)] <- c(0,0,0,2,7,2,0,2,1,0,0,0)
 
 alk24 <- as.data.frame(near_filled_alks[[4]]) 
 alk23[alk23$length==59,2:ncol(alk23)] <- alk24[alk24$length==59,2:ncol(alk24)]
-alk24[alk24$length==53,2:ncol(alk24)] <- c(rep(0, 8), 1, c(0,3))
+alk24[alk24$length==53,2:ncol(alk24)] <- c(rep(0, 8), 1, rep(0,3))
 alk24[alk24$length==56,] <- alk23[alk23$length==56,]
 alk24[alk24$length==57,] <- alk23[alk23$length==57,]
 
