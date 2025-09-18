@@ -123,11 +123,12 @@ als$Length_cm <- floor(als$Length_cm)
 # max(unique(c(als$Length_cm, mrip_har$Length))) = 83
 # sort(unique(c(als$Length_cm, mrip_har$Length)))
 # There is data for otoliths 17-27cm, also the only age 1 data
-#lengths <- c(17:60)
-# min_age <- 1
+lengths <- c(17:60)
+min_age <- 1
+
 # Since we are only using operc/both data, the next smallest bin is 29cm
-lengths <- c(29:60)
-min_age <- 2
+#lengths <- c(29:60)
+#min_age <- 2
 max_age <- 12
 for_alk <- njny[njny$tl_cm %in% lengths, ] |>
   mutate(Age_plus = ifelse(Age >= max_age, max_age, Age)) |>
