@@ -16,7 +16,7 @@ root <- file.path(root, usr, loc)
 # root <- "/media/jess/9CE61C02E61BDB7A/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents"
 # On Ubuntu, you have to have this open in files/ssd to have it mounted...
 # Load ALKs
-alks <- list.files(file.path(root, "output/tog/alk/filled/opercboth"),
+alks <- list.files(file.path(root, "output/tog/alk/filled/allstr"),
   full.names = TRUE
 ) |> map(read.csv)
 # Folder contains...

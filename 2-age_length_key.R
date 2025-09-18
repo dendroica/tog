@@ -297,10 +297,33 @@ near_filled_alks <- Map(function(alk, gaps, yr) {
 
 CheckGaps(near_filled_alks)
 
-# By this point, from the filling steps above, the next closest length bin to
-# the end that had values was just 1 in age 12, so used that to fill down
-near_filled_alks[[4]][near_filled_alks[[4]]$length %in% 57:60, max_age] <- 1
-#############
+#By this point it was time to borrow from MARI, and the automated file read-in
+#to programmatically fill was not possible because they denoted borrowed values
+#manually and not separately in the Excel sheet with highlights. Thus,
+#it required manual interpretation.
+alk21 <- as.data.frame(near_filled_alks[[1]])
+alk21[alk21$length==20,2:ncol(alk21)] <- c(0,1,1, rep(0, 9))
+alk21[alk21$length==24,2:ncol(alk21)] <- c(rep(0, 5), 2, 4, rep(0, 5))
+alk21[alk21$length==29,2:ncol(alk21)] <- c(0,1,1,1,3,2,1,2,6,1,1,0)
+
+alk22 <- as.data.frame(near_filled_alks[[2]])
+alk22[alk22$length==17,2:ncol(alk22)] <-  c(0,3,rep(0, 10))
+alk22[alk22$length==20,2:ncol(alk22)] <- c(0,1,3,1,rep(0,8))
+alk22[alk22$length==22,2:ncol(alk22)] <- c(0,0,4,3,1,rep(0,7))
+alk22[alk22$length==24,2:ncol(alk22)] <- c(0,0,5,0,3,rep(0,7))
+
+alk23 <- as.data.frame(near_filled_alks[[3]])
+alk23[alk23$length==19,2:ncol(alk23)] <-  c(0,0,2,1,rep(0, 8))
+alk23[alk23$length==22,2:ncol(alk23)] <- c(0,0,0,4,rep(0,8))
+alk23[alk23$length==24,2:ncol(alk23)] <- c(0,0,0,3,3,rep(0,7))
+alk23[alk23$length==25,2:ncol(alk23)] <- c(0,0,0,1,5,1,1,rep(0,5))
+alk23[alk23$length==29,2:ncol(alk23)] <- c(0,0,0,2,7,2,0,2,1,0,0)
+
+alk24 <- as.data.frame(near_filled_alks[[4]]) 
+alk23[alk23$length==59,2:ncol(alk23)] <- alk24[alk24$length==59,2:ncol(alk24)]
+alk24[alk24$length==53,2:ncol(alk24)] <- c(rep(0, 8), 1, c(0,3))
+alk24[alk24$length==56,] <- alk23[alk23$length==56,]
+alk24[alk24$length==57,] <- alk23[alk23$length==57,]
 
 ########### OUTPUTS
 # write.csv(alks[[1]][,-1], "NJNYB-ALK_2021_unfilled.csv")
@@ -308,7 +331,7 @@ near_filled_alks[[4]][near_filled_alks[[4]]$length %in% 57:60, max_age] <- 1
 # write.csv(alks[[3]][,-1], "NJNYB-ALK_2023_unfilled.csv")
 # write.csv(alks[[4]][,-1], "NJNYB-ALK_2024_unfilled.csv")
 
-#write.csv(near_filled_alks[[1]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2021_filled.csv"), row.names = F)
-#write.csv(near_filled_alks[[2]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2022_filled.csv"), row.names = F)
-#write.csv(near_filled_alks[[3]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2023_filled.csv"), row.names = F)
-#write.csv(near_filled_alks[[4]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2024_filled.csv"), row.names = F)
+write.csv(alk21, file.path(root, "output/tog/alk/filled/allstr/NJNYB-ALK_2021_filled.csv"), row.names = F)
+write.csv(alk22, file.path(root, "output/tog/alk/filled/allstr/NJNYB-ALK_2022_filled.csv"), row.names = F)
+write.csv(alk23, file.path(root, "output/tog/alk/filled/allstr/NJNYB-ALK_2023_filled.csv"), row.names = F)
+write.csv(alk24, file.path(root, "output/tog/alk/filled/allstr/NJNYB-ALK_2024_filled.csv"), row.names = F)
