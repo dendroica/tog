@@ -210,7 +210,7 @@ age12_filled_alks <- lapply(alks, function(alk) {
     ungroup()
   max_len_aged <- max(alk$length[alk$rowsum > 0]) # last row with values
   row_i <- which(alk$length == max_len_aged)
-  if (alk[row_i, max_age] == alk[row_i, "rowsum"] && max_len_aged < max(alk$length)) {
+  if (alk[row_i, as.character(max_age)] == alk[row_i, "rowsum"] && max_len_aged < max(alk$length)) {
     last_rows <- (max_len_aged + 1):max(alk$length)
     alk[alk$length %in% last_rows, max_age] <- alk[row_i, max_age]
   }
