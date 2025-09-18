@@ -147,7 +147,7 @@ for_alk$Age_plus <- factor(for_alk$Age_plus, levels = min_age:max_age)
 operc <- for_alk[for_alk$structure == "operc" | for_alk$structure == "both", ]
 oto <- for_alk[for_alk$structure == "oto", ]
 # alk_data <- operc
-alk_data <- for_alk
+alk_data <- operc
 
 # Our region elected to use only operculum data
 # From a 6/13 email with Katie, she commented that there does not appear to be
