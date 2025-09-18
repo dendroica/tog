@@ -175,7 +175,7 @@ total_catch <- left_join(total_rec_catch, comm_catch) |>
   mutate(Total.Catch = TotalRecCatch + commCatchNumFish)
 
 caals <- Map(function(x, y) {
-  x[, 2:12] + y[2:12]
+  x[, 2:12] + y[, 2:12]
 }, rec_discard_caa, rec_harvest_caa)
 
 # Find weight of recreational harvested fish.
