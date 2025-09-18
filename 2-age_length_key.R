@@ -124,7 +124,8 @@ als$Length_cm <- floor(als$Length_cm)
 # sort(unique(c(als$Length_cm, mrip_har$Length)))
 # There is data for otoliths 17-27cm, also the only age 1 data
 #lengths <- c(17:60)
-# min_age <- 1
+#min_age <- 1
+
 # Since we are only using operc/both data, the next smallest bin is 29cm
 lengths <- c(29:60)
 min_age <- 2
@@ -147,7 +148,7 @@ for_alk$Age_plus <- factor(for_alk$Age_plus, levels = min_age:max_age)
 operc <- for_alk[for_alk$structure == "operc" | for_alk$structure == "both", ]
 oto <- for_alk[for_alk$structure == "oto", ]
 # alk_data <- operc
-alk_data <- operc
+alk_data <- for_alk
 
 # Our region elected to use only operculum data
 # From a 6/13 email with Katie, she commented that there does not appear to be
@@ -212,42 +213,12 @@ age12_filled_alks <- lapply(alks, function(alk) {
   row_i <- which(alk$length == max_len_aged)
   if (alk[row_i, as.character(max_age)] == alk[row_i, "rowsum"] && max_len_aged < max(alk$length)) {
     last_rows <- (max_len_aged + 1):max(alk$length)
-    alk[alk$length %in% last_rows, as.character(max_age)] <- alk[row_i, as.character(max_age)]
+    alk[alk$length %in% last_rows, 2:ncol(alk)] <- alk[row_i, 2:ncol(alk)]
   }
   alk$rowsum <- NULL
   return(alk)
 })
 gaps_to_fill <- CheckGaps(age12_filled_alks)
-
-#### STEP 2: fill with otolith data from my own region (NJNYB)
-# From Katie's 6/13 email:
-# "Given that (1) there is no clear evidence of bias between the structures from
-# the data we have and (2) this is probably for length bins with overall small
-# sample sizes whether you are borrowing from NJ otoliths or other
-# years/regions, I think either option is justifiable. There’s going to be
-# uncertainty either way – does the benefit of using the NJ otoliths outweigh
-# the fact that we’re creating a different gap-filling protocol for NJ-NYB than
-# for other regions? We let the regions determine their own gap-filling
-# procedures last time, so I don’t think it’s a big deal if there are
-# differences from region to region this time, especially if it’s
-# well-documented, but I don’t know how the full SAS feels. If, after working
-# with the data, you feel using the NJ otoliths before looking to another
-# region or year,is the way to go, I’d support that."
-oto_filled_alks <- Map(function(gaps, yr, alk) {
-  check <- oto[oto$Year == yr & oto$tl_cm %in% gaps, ]
-  if (nrow(check) > 0) {
-    oto_for_fill <- PivotALK(check)
-    oto_for_fill <- oto_for_fill[oto_for_fill$length %in% check$tl_cm, ]
-  } else {
-    oto_for_fill <- data.frame()
-  }
-
-  if (nrow(oto_for_fill) > 0) {
-    alk[alk$length %in% oto_for_fill$length, min_age:max_age] <- oto_for_fill[, min_age:max_age]
-  }
-  return(alk)
-}, gaps_to_fill, names(gaps_to_fill), age12_filled_alks)
-gaps_to_fill <- CheckGaps(oto_filled_alks)
 
 #### STEP 3: fill with adjacent rows, or where you can't, neighboring state ALKs
 lis_unfilled_alks <- list(lis21, lis22, lis23, lis24)
@@ -259,8 +230,8 @@ names(dmv_unfilled_alks) <- c("2021", "2022", "2023", "2024")
 FillGaps <- function(i, gaps, alk, dmv, lis) {
   next_len <- gaps[i] + 1
   prev_len <- gaps[i] - 1
-  next_row <- alk[alk$length == next_len, min_age:max_age]
-  prev_row <- alk[alk$length == prev_len, min_age:max_age]
+  next_row <- alk[alk$length == next_len, 2:ncol(alk)]
+  prev_row <- alk[alk$length == prev_len, 2:ncol(alk)]
   num_fish_smaller <- sum(prev_row)
   num_fish_bigger <- sum(next_row)
   if (gaps[i] == min(alk$length)) { ### if the gap to fill is the smallest bin in the ALK...
@@ -322,13 +293,12 @@ near_filled_alks <- Map(function(alk, gaps, yr) {
                        FillGaps, gaps = gaps, alk = alk, dmv = dmv, lis = lis)
   alk[alk$length %in% gaps, 2:ncol(alk)] <- bind_rows(filled_alk)
   return(alk)
-}, oto_filled_alks, gaps_to_fill, c(2021:2024))
+}, age12_filled_alks, gaps_to_fill, c(2021:2024))
 
 CheckGaps(near_filled_alks)
 
 # By this point, from the filling steps above, the next closest length bin to
 # the end that had values was just 1 in age 12, so used that to fill down
-near_filled_alks[[2]][near_filled_alks[[2]]$length %in% 56:60, max_age] <- 1
 near_filled_alks[[4]][near_filled_alks[[4]]$length %in% 57:60, max_age] <- 1
 #############
 
