@@ -53,12 +53,14 @@ life_history <- lapply(
 )
 #########################################
 names(harvest_lf) <- c("Length", "2021", "2022", "2023", "2024")
-
+min_age <- 1
+max_age <- 12
+min_length <- 17
 # Convert to proportions
 alk_props <- lapply(alks, function(y) {
   y <- y |> rowwise() |>
     mutate(rowsum = sum(c_across(matches("\\d")), na.rm = TRUE)) |> ungroup() |>
-    mutate(across(2:12, .fns = function(x) {
+    mutate(across(2:ncol(y), .fns = function(x) {
       x / rowsum
     })) |> mutate(across(where(is.numeric), ~replace_na(., 0))) |>
     rename("Length" = "length") |>
@@ -69,7 +71,7 @@ names(alk_props) <- c(2021:2024)
 rec_harvest_caa <- Map(function(x, y) {
   annual_rec_har <- left_join(harvest_lf[, c("Length", as.character(x))], y) |>
     rename(Number = as.character(x)) |>
-    mutate(across(paste0("X", 2:12), .fns = function(x) {
+    mutate(across(paste0("X", min_age:max_age), .fns = function(x) {
       x * Number
     })) |>
     mutate(across(where(is.numeric), ~replace_na(., 0))) |>
@@ -86,20 +88,20 @@ discard_prop <- discard_lf |>
   mutate(across(`2021`:`2024`, .fns = function(x) {
     x / sum(x, na.rm = TRUE)
   })) |>
-  filter(Length >= 29 & Length <= 60)
+  filter(Length >= min_length & Length <= 60)
 
 total_rec_catch <- total_rec_catch |> # number of fish
   mutate(discard_mortality = Released.B2 * 0.025)
 ## Recreational Discard Catch-at-Age
 rec_discard_caa <- Map(function(yr, alk_prop) {
   aged_discard_props <- apply(
-    alk_prop[, 2:12], 2, function(x) {
+    alk_prop[, 2:ncol(alk_prop)], 2, function(x) {
       x * discard_prop[, as.character(yr)]
     }
   )
   discards <- total_rec_catch$discard_mortality[total_rec_catch$Year == yr]
   aged_discards <- as.data.frame(aged_discard_props * discards)
-  aged_discards$Length <- 29:60
+  aged_discards$Length <- min_length:60
   aged_discards <- aged_discards[, c(12, 1:11)]
 }, 2021:2024, alk_props)
 rec_discard_caa_annual <- bind_rows(lapply(rec_discard_caa, function(x) {
@@ -175,7 +177,7 @@ total_catch <- left_join(total_rec_catch, comm_catch) |>
   mutate(Total.Catch = TotalRecCatch + commCatchNumFish)
 
 caals <- Map(function(x, y) {
-  x[, 2:12] + y[2:12]
+  x[, 2:ncol(x)] + y[, 2:ncol(y)]
 }, rec_discard_caa, rec_harvest_caa)
 
 # Find weight of recreational harvested fish.
@@ -189,7 +191,7 @@ waa <- Map(function(alk, yr, caal) {
   # If you rounded your lengths, you don't need to add anything.
   wl <- lw_pars[lw_pars$Year == yr, "a"] * ((alk[, 1] + 0.5)^b)
   waal <- do.call(cbind, apply(caal, 2, function(caal_annual) caal_annual * wl)) # how much weight is in each AL bin
-  names(waal) <- paste0("X",2:12)
+  names(waal) <- paste0("X",min_age:max_age)
   weights <- apply(waal, 2, sum) # total weight in each age bin
   caa <- apply(caal, 2, sum) # catch-at-age
   waa <- weights / caa # average weight per fish
