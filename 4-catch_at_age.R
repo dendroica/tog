@@ -38,7 +38,7 @@ comm_catch <- read_xlsx(
 )[, c("Year", "NYB-NJ")]
 
 # Length Frequencies for Recreational Catch and Discard
-harvest_lf <- read.csv(file.path(root, "output/tog/harvest_LF.csv"))
+harvest_lf <- read.csv(file.path(root, "output/tog/all/harvest_LF.csv"))
 # Modified from discard_LF.R from Samarah Nehemiah for LIS
 discard_lf <- read.csv(file.path(root, "output/tog/discard_LF.csv"))[, 2:6]
 
@@ -75,7 +75,8 @@ rec_harvest_caa <- Map(function(x, y) {
       x * Number
     })) |>
     mutate(across(where(is.numeric), ~replace_na(., 0))) |>
-    select(-c("Number"))
+    select(-c("Number")) |> complete(Length=full_seq(Length, period=1)) %>%
+    replace(is.na(.), 0)
   return(annual_rec_har)
 }, 2021:2024, alk_props)
 rec_harvest_caa_annual <- bind_rows(lapply(rec_harvest_caa, function(x) {
@@ -102,7 +103,7 @@ rec_discard_caa <- Map(function(yr, alk_prop) {
   discards <- total_rec_catch$discard_mortality[total_rec_catch$Year == yr]
   aged_discards <- as.data.frame(aged_discard_props * discards)
   aged_discards$Length <- min_length:60
-  aged_discards <- aged_discards[, c(12, 1:11)]
+  aged_discards <- aged_discards[, c("Length", paste0("X", min_age:max_age))]
 }, 2021:2024, alk_props)
 rec_discard_caa_annual <- bind_rows(lapply(rec_discard_caa, function(x) {
   apply(x, 2, sum)

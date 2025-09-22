@@ -20,6 +20,8 @@ head(MRIP_har)
 str(MRIP_har)
 MRIP_har$Length <- as.numeric(MRIP_har$Length)
 
+min_len <- 17
+
 # take a look at it
 ggplot(MRIP_har, aes(x=Length, y=Number)) +
   geom_bar(stat="identity") +
@@ -38,11 +40,11 @@ MRIPG60 <- MRIP_har %>% filter(Length >= 60) %>% #should I do this with smaller 
   group_by(Year) %>% summarise(Number = sum(Number)) %>% mutate(Length = 60) %>%
   bind_rows(data.frame(Year = 2022, Number = 0, Length =60))
 MRIP_har <- MRIP_har %>% #bind_rows(MRIP_har, MRIPG60) %>% 
-  filter(Length >= 29 & Length <= 60) %>% pivot_wider(names_from=Year, values_from=Number) %>%
+  filter(Length >= min_len & Length <= 60) %>% pivot_wider(names_from=Year, values_from=Number) %>%
   complete(Length=full_seq(Length, 1)) %>% replace(is.na(.), 0)
 
-lastrow <- data.frame(c(29,60), c(0,0), c(0,0), c(0,0), c(0,0))
+lastrow <- data.frame(c(min_len,60), c(0,0), c(0,0), c(0,0), c(0,0))
 names(lastrow) <- names(MRIP_har)
 MRIP_har <- bind_rows(MRIP_har, lastrow)
 MRIP_har <- MRIP_har[order(MRIP_har$Length),]
-write.csv(MRIP_har, file.path(root, "output/tog/harvest_LF.csv"), row.names=FALSE)
+write.csv(MRIP_har, file.path(root, "output/tog/all/harvest_LF.csv"), row.names=FALSE)
