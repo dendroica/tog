@@ -53,12 +53,14 @@ life_history <- lapply(
 )
 #########################################
 names(harvest_lf) <- c("Length", "2021", "2022", "2023", "2024")
-
+min_age <- 1
+max_age <- 12
+min_len <- 17
 # Convert to proportions
 alk_props <- lapply(alks, function(y) {
   y <- y |> rowwise() |>
     mutate(rowsum = sum(c_across(matches("\\d")), na.rm = TRUE)) |> ungroup() |>
-    mutate(across(2:12, .fns = function(x) {
+    mutate(across(2:ncol(y), .fns = function(x) {
       x / rowsum
     })) |> mutate(across(where(is.numeric), ~replace_na(., 0))) |>
     rename("Length" = "length") |>
@@ -69,11 +71,12 @@ names(alk_props) <- c(2021:2024)
 rec_harvest_caa <- Map(function(x, y) {
   annual_rec_har <- left_join(harvest_lf[, c("Length", as.character(x))], y) |>
     rename(Number = as.character(x)) |>
-    mutate(across(paste0("X", 2:12), .fns = function(x) {
+    mutate(across(paste0("X", min_age:max_age), .fns = function(x) {
       x * Number
     })) |>
     mutate(across(where(is.numeric), ~replace_na(., 0))) |>
-    select(-c("Number"))
+    select(-c("Number")) |> complete(Length=full_seq(Length, period=1)) %>%
+    replace(is.na(.), 0)
   return(annual_rec_har)
 }, 2021:2024, alk_props)
 rec_harvest_caa_annual <- bind_rows(lapply(rec_harvest_caa, function(x) {
@@ -86,21 +89,21 @@ discard_prop <- discard_lf |>
   mutate(across(`2021`:`2024`, .fns = function(x) {
     x / sum(x, na.rm = TRUE)
   })) |>
-  filter(Length >= 29 & Length <= 60)
+  filter(Length >= min_len & Length <= 60)
 
 total_rec_catch <- total_rec_catch |> # number of fish
   mutate(discard_mortality = Released.B2 * 0.025)
 ## Recreational Discard Catch-at-Age
 rec_discard_caa <- Map(function(yr, alk_prop) {
   aged_discard_props <- apply(
-    alk_prop[, 2:12], 2, function(x) {
+    alk_prop[, 2:ncol(alk_prop)], 2, function(x) {
       x * discard_prop[, as.character(yr)]
     }
   )
   discards <- total_rec_catch$discard_mortality[total_rec_catch$Year == yr]
   aged_discards <- as.data.frame(aged_discard_props * discards)
-  aged_discards$Length <- 29:60
-  aged_discards <- aged_discards[, c(12, 1:11)]
+  aged_discards$Length <- min_len:60
+  aged_discards <- aged_discards[, c("Length", paste0("X", min_age:max_age))]
 }, 2021:2024, alk_props)
 rec_discard_caa_annual <- bind_rows(lapply(rec_discard_caa, function(x) {
   apply(x, 2, sum)
