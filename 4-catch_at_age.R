@@ -53,9 +53,9 @@ life_history <- lapply(
 )
 #########################################
 names(harvest_lf) <- c("Length", "2021", "2022", "2023", "2024")
-min_age <- 1
+min_age <- 2
 max_age <- 12
-min_len <- 17
+min_len <- 29
 # Convert to proportions
 alk_props <- lapply(alks, function(y) {
   y <- y |> rowwise() |>
