@@ -1,6 +1,6 @@
 # Tautock Stock Assessment
 # Length Freq for MRIP harvest
-
+# discard script does all lengths- mod here to match?
 # packages
 library(ggplot2)
 library(tidyverse)
