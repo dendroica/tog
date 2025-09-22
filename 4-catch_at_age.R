@@ -82,7 +82,7 @@ rec_harvest_caa <- Map(function(x, y) {
 rec_harvest_caa_annual <- bind_rows(lapply(rec_harvest_caa, function(x) {
   apply(x, 2, sum)
 })) %>% select(-Length)
-rec_harvest_caa_annual <- cbind(X1=c(0,0,0,0), rec_harvest_caa_annual)
+#rec_harvest_caa_annual <- cbind(X1=c(0,0,0,0), rec_harvest_caa_annual)
 
 names(discard_lf) <- c("Length", "2021", "2022", "2023", "2024")
 discard_prop <- discard_lf |>
