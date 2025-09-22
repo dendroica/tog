@@ -178,7 +178,7 @@ total_catch <- left_join(total_rec_catch, comm_catch) |>
   mutate(Total.Catch = TotalRecCatch + commCatchNumFish)
 
 caals <- Map(function(x, y) {
-  x[, 2:12] + y[, 2:12]
+  x[, 2:ncol(x)] + y[, 2:ncol(y)]
 }, rec_discard_caa, rec_harvest_caa)
 
 # Find weight of recreational harvested fish.
@@ -192,7 +192,7 @@ waa <- Map(function(alk, yr, caal) {
   # If you rounded your lengths, you don't need to add anything.
   wl <- lw_pars[lw_pars$Year == yr, "a"] * ((alk[, 1] + 0.5)^b)
   waal <- do.call(cbind, apply(caal, 2, function(caal_annual) caal_annual * wl)) # how much weight is in each AL bin
-  names(waal) <- paste0("X",2:12)
+  names(waal) <- paste0("X",min_age:max_age)
   weights <- apply(waal, 2, sum) # total weight in each age bin
   caa <- apply(caal, 2, sum) # catch-at-age
   waa <- weights / caa # average weight per fish
