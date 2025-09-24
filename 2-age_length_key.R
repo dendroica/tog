@@ -227,6 +227,8 @@ names(lis_unfilled_alks) <- c("2021", "2022", "2023", "2024")
 dmv_unfilled_alks <- list(dmv21, dmv22, dmv23, dmv24)
 names(dmv_unfilled_alks) <- c("2021", "2022", "2023", "2024")
 
+#need to change indexing to account for different ages available in other keys
+#i.e. explicitly match col names
 FillGaps <- function(i, gaps, alk, dmv, lis) {
   next_len <- gaps[i] + 1
   prev_len <- gaps[i] - 1
