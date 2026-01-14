@@ -109,12 +109,6 @@ rec_discard_caa_annual <- bind_rows(lapply(rec_discard_caa, function(x) {
   apply(x, 2, sum)
 })) %>% select(-Length)
 rec_discard_caa_annual <- cbind(X1=c(0,0,0,0), rec_discard_caa_annual)
-# Length-weight relationships for recreational harvested fish
-# ggplot(
-#  data = life_history,
-#  aes(x = Length, y = Weight, group = as.factor(Year), colour = as.factor(Year))
-# ) +
-#  geom_point()
 
 names(life_history[[1]])[names(life_history[[1]]) == "Year"] <- "Date"
 life_history[[1]]$Year <- as.integer(format(life_history[[1]]$Date, "%Y"))
@@ -128,6 +122,13 @@ life_history <- bind_rows(life_history) |>
   select(Year, Age, Weight, Region, Length)
 life_history <- life_history[!is.na(life_history$Weight), ]
 table(life_history$Year)
+
+# Length-weight relationships for recreational harvested fish
+# ggplot(
+#  data = life_history,
+#  aes(x = Length, y = Weight, group = as.factor(Year), colour = as.factor(Year))
+# ) +
+#  geom_point()
 
 lw_relationship_all <- nls(
   Weight ~ alpha * (Length^beta),
