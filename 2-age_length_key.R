@@ -218,6 +218,55 @@ age12_filled_alks <- lapply(alks, function(alk) {
 })
 gaps_to_fill <- CheckGaps(age12_filled_alks)
 
+tabyr <- function(dat) {
+  tab <- table(dat$`TL_cm`, dat$Age_plus) #if you switch to full age you'll need to change Age_plus to Age
+  tab1 <- matrix(tab, ncol = 11, dimnames= dimnames(tab)) #if you switch to full age you'll need to change the 11
+  #tab1 <- matrix(tab, ncol = 12, dimnames= dimnames(tab))
+  tab2 <- data.frame(tab1)
+  df <- data.frame(names = row.names(tab2), tab2)
+  colnames(df) <- c("length", as.character(2:12)) #If you switch to full age you'll need to change the 12
+  return(df)
+}
+
+otofill <- Map(function(x,y) {
+  check <- both[both$Year==y & both$Length %in% x,]
+  if (nrow(check) > 0) {
+    otofill <- tabyr(check)
+    otofill <- otofill[otofill$length %in% check$Length,]
+    #otofill$year <- y
+  } else {otofill <- data.frame()}
+  return(otofill)
+}, gaps_to_fill, names(gaps_to_fill))
+
+otofilled <- Map(function(x,y) {
+  if(nrow(y) > 0) {
+    y$length <- as.integer(y$length)
+    x[x$length %in% y$length,] <- y
+  }
+  return(x)
+}, age12_filled_alks, otofill)
+
+gaps_to_fill <- CheckGaps(otofilled)
+
+otofill <- Map(function(x,y) {
+  check <- oto[oto$Year==y & oto$Length %in% x,]
+  if (nrow(check) > 0) {
+    otofill <- tabyr(check)
+    otofill <- otofill[otofill$length %in% check$Length,]
+    #otofill$year <- y
+  } else {otofill <- data.frame()}
+  return(otofill)
+}, gaps_to_fill, names(gaps_to_fill))
+
+age12_filled_alks <- Map(function(x,y) {
+  if(nrow(y) > 0) {
+    y$length <- as.integer(y$length)
+    x[x$length %in% y$length,] <- y
+  }
+  return(x)
+}, otofilled, otofill)
+gaps_to_fill <- CheckGaps(age12_filled_alks)
+
 #### STEP 3: fill with adjacent rows, or where you can't, neighboring state ALKs
 lis_unfilled_alks <- list(lis21, lis22, lis23, lis24)
 names(lis_unfilled_alks) <- c("2021", "2022", "2023", "2024")
@@ -306,7 +355,7 @@ near_filled_alks[[4]][near_filled_alks[[4]]$length %in% 57:60, max_age] <- 1
 # write.csv(alks[[3]][,-1], "NJNYB-ALK_2023_unfilled.csv")
 # write.csv(alks[[4]][,-1], "NJNYB-ALK_2024_unfilled.csv")
 
-write.csv(near_filled_alks[[1]], file.path(root, "output/tog/alk/filled/operc/NJNYB-ALK_2021_filled.csv"), row.names = F)
-write.csv(near_filled_alks[[2]], file.path(root, "output/tog/alk/filled/operc/NJNYB-ALK_2022_filled.csv"), row.names = F)
-write.csv(near_filled_alks[[3]], file.path(root, "output/tog/alk/filled/operc/NJNYB-ALK_2023_filled.csv"), row.names = F)
-write.csv(near_filled_alks[[4]], file.path(root, "output/tog/alk/filled/operc/NJNYB-ALK_2024_filled.csv"), row.names = F)
+write.csv(near_filled_alks[[1]], file.path(root, "output/tog/alk/filled/test/NJNYB-ALK_2021_filled.csv"), row.names = F)
+write.csv(near_filled_alks[[2]], file.path(root, "output/tog/alk/filled/test/NJNYB-ALK_2022_filled.csv"), row.names = F)
+write.csv(near_filled_alks[[3]], file.path(root, "output/tog/alk/filled/test/NJNYB-ALK_2023_filled.csv"), row.names = F)
+write.csv(near_filled_alks[[4]], file.path(root, "output/tog/alk/filled/test/NJNYB-ALK_2024_filled.csv"), row.names = F)
