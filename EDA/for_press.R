@@ -194,7 +194,15 @@ nj_comm$`Total Length (cm)` <- NULL
 nj_comm <- nj_comm[!is.na(nj_comm$Age) & !is.na(nj_comm$Length) & nj_comm$Age < 23, ]
 sv0 <- vbStarts(Length~Age,data=nj_comm) 
 
-ggplot(data=nj_comm,aes(x=Age,y=Length,color=Region)) +
+nj_comm$region <- "S"
+nj_comm[nj_comm$Region %in% c("394 - NJ (0-3 nm) NJ/NY Boundary to 40 N Lat",
+                              "395 - NJ ( 0 - 3 nm ) 40 N to 39 30 8.43 N)",
+                              "612 - Cholera Bank",
+                              "615 - Barnegat Ridge",
+                              "178 - Sandy Hook Bay and Raritan Bay"),]$region <- "N"
+nj_comm <- nj_comm[nj_comm$Region != "614 - New Jersey Shore East of NJ Ocean Waters",]
+
+ggplot(data=nj_comm,aes(x=Age,y=Length,color=region)) +
   geom_point(size=2,alpha=0.3) +
   scale_y_continuous(name="Total Length (cm)") + #,limits=c(0,700)
   scale_x_continuous(name="Age (years)") + #,breaks=0:1
