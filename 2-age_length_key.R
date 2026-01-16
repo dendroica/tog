@@ -143,8 +143,8 @@ for_alk$TL_cm <- factor(for_alk$tl_cm, levels = lengths)
 for_alk$Age_plus <- factor(for_alk$Age_plus, levels = min_age:max_age)
 
 operc <- for_alk[for_alk$structure == "operc", ]
-both <- for_alk[for_alk$structure == "both", ] # for_alk$structure == "both"
-oto <- for_alk[for_alk$structure == "oto", ]
+#both <- for_alk[for_alk$structure == "both", ] # for_alk$structure == "both"
+oto <- for_alk[for_alk$structure %in% c("both", "oto"), ] #, "oto"
 # alk_data <- operc
 alk_data <- operc
 
@@ -229,26 +229,6 @@ tabyr <- function(dat) {
 }
 
 otofill <- Map(function(x,y) {
-  check <- both[both$Year==y & both$Length %in% x,]
-  if (nrow(check) > 0) {
-    otofill <- tabyr(check)
-    otofill <- otofill[otofill$length %in% check$Length,]
-    #otofill$year <- y
-  } else {otofill <- data.frame()}
-  return(otofill)
-}, gaps_to_fill, names(gaps_to_fill))
-
-otofilled <- Map(function(x,y) {
-  if(nrow(y) > 0) {
-    y$length <- as.integer(y$length)
-    x[x$length %in% y$length,] <- y
-  }
-  return(x)
-}, age12_filled_alks, otofill)
-
-gaps_to_fill <- CheckGaps(otofilled)
-
-otofill <- Map(function(x,y) {
   check <- oto[oto$Year==y & oto$Length %in% x,]
   if (nrow(check) > 0) {
     otofill <- tabyr(check)
@@ -264,7 +244,7 @@ age12_filled_alks <- Map(function(x,y) {
     x[x$length %in% y$length,] <- y
   }
   return(x)
-}, otofilled, otofill)
+}, age12_filled_alks, otofill)
 gaps_to_fill <- CheckGaps(age12_filled_alks)
 
 #### STEP 3: fill with adjacent rows, or where you can't, neighboring state ALKs
