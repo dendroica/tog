@@ -239,20 +239,20 @@ FillGaps <- function(i, gaps, alk, dmv, lis) {
   if (gaps[i] == min(alk$length)) { ### if the gap to fill is the smallest bin in the ALK...
     if (next_len != gaps[i + 1]) { # if the next greater length bin isn't empty...
       filler <- next_row # ...fill from below
-    } else if (sum(lis[lis[, 1] == gaps[i], 2:ncol(lis)]) == 0) { # if not, use LIS if it has values for that bin
+    } else if (sum(lis[lis[, 1] == gaps[i], names(alk)[2:ncol(alk)]]) == 0) { # if not, use LIS if it has values for that bin
       # sum(dmv[dmv[,1]==gaps[i],min_age:max_age]) > 0 shows preference for DMV when it has values
-      filler <- dmv[dmv[, 1] == gaps[i], 2:ncol(dmv)] # else fill from DMV
+      filler <- dmv[dmv[, 1] == gaps[i], names(alk)[2:ncol(alk)]] # else fill from DMV
     } else {
-      filler <- lis[lis[, 1] == gaps[i], 2:ncol(lis)]
+      filler <- lis[lis[, 1] == gaps[i], names(alk)[2:ncol(alk)]]
     }
   } else if (gaps[i] == max(alk$length)) { ### if the gap to fill is the largest bin in the ALK...
     if (prev_len != gaps[i - 1] && num_fish_smaller > 0) { # if the next smallest length bin doesn't need filling and has values...
       filler <- prev_row # ...fill from above
     } else {
-      if (sum(lis[lis[, 1] == gaps[i], 2:ncol(lis)]) == 0) { # preference for filling from LIS when it has data
-        filler <- dmv[dmv[, 1] == gaps[i], 2:ncol(dmv)]
+      if (sum(lis[lis[, 1] == gaps[i], names(alk)[2:ncol(alk)]]) == 0) { # preference for filling from LIS when it has data
+        filler <- dmv[dmv[, 1] == gaps[i], names(alk)[2:ncol(alk)]]
       } else {
-        filler <- lis[lis[, 1] == gaps[i], 2:ncol(lis)]
+        filler <- lis[lis[, 1] == gaps[i], names(alk)[2:ncol(alk)]]
       }
     }
   } else if (i == length(gaps)) { ### if it's the last bin to be filled (and it's not the largest length bin in the ALK...)
@@ -268,10 +268,10 @@ FillGaps <- function(i, gaps, alk, dmv, lis) {
   } else if (!(next_len) %in% gaps && (prev_len) %in% gaps && num_fish_bigger > 0) { # if the bin above is empty and the bin below has non-0 values
     filler <- next_row
   } else {
-    if (sum(lis[lis[, 1] == gaps[i], min_age:max_age]) == 0) { # if 0s on both sides, fill from adjacent region (LIS first)
-      filler <- dmv[dmv[, 1] == gaps[i], min_age:max_age]
+    if (sum(lis[lis[, 1] == gaps[i], names(alk)[2:ncol(alk)]]) == 0) { # if 0s on both sides, fill from adjacent region (LIS first)
+      filler <- dmv[dmv[, 1] == gaps[i], names(alk)[2:ncol(alk)]]
     } else {
-      filler <- lis[lis[, 1] == gaps[i], min_age:max_age]
+      filler <- lis[lis[, 1] == gaps[i], names(alk)[2:ncol(alk)]]
     }
   }
   ages <- names(alk)[2:ncol(alk)]
