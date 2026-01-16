@@ -142,7 +142,8 @@ for_alk <- njny[njny$tl_cm %in% lengths, ] |>
 for_alk$TL_cm <- factor(for_alk$tl_cm, levels = lengths)
 for_alk$Age_plus <- factor(for_alk$Age_plus, levels = min_age:max_age)
 
-operc <- for_alk[for_alk$structure == "operc" | for_alk$structure == "both", ]
+operc <- for_alk[for_alk$structure == "operc", ]
+both <- for_alk[for_alk$structure == "both", ] # for_alk$structure == "both"
 oto <- for_alk[for_alk$structure == "oto", ]
 # alk_data <- operc
 alk_data <- operc
@@ -305,7 +306,7 @@ near_filled_alks[[4]][near_filled_alks[[4]]$length %in% 57:60, max_age] <- 1
 # write.csv(alks[[3]][,-1], "NJNYB-ALK_2023_unfilled.csv")
 # write.csv(alks[[4]][,-1], "NJNYB-ALK_2024_unfilled.csv")
 
-#write.csv(near_filled_alks[[1]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2021_filled.csv"), row.names = F)
-#write.csv(near_filled_alks[[2]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2022_filled.csv"), row.names = F)
-#write.csv(near_filled_alks[[3]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2023_filled.csv"), row.names = F)
-#write.csv(near_filled_alks[[4]], file.path(root, "output/tog/alk/filled/opercboth/NJNYB-ALK_2024_filled.csv"), row.names = F)
+write.csv(near_filled_alks[[1]], file.path(root, "output/tog/alk/filled/operc/NJNYB-ALK_2021_filled.csv"), row.names = F)
+write.csv(near_filled_alks[[2]], file.path(root, "output/tog/alk/filled/operc/NJNYB-ALK_2022_filled.csv"), row.names = F)
+write.csv(near_filled_alks[[3]], file.path(root, "output/tog/alk/filled/operc/NJNYB-ALK_2023_filled.csv"), row.names = F)
+write.csv(near_filled_alks[[4]], file.path(root, "output/tog/alk/filled/operc/NJNYB-ALK_2024_filled.csv"), row.names = F)
