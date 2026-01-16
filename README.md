@@ -35,3 +35,20 @@ From here, I am leveraging git branching to version analyses:
 3  0 1.258088 1.3383643 1.1571795 1.173510 1.5215902 1.394820 1.723266 1.750667      NaN      NaN 3.467907
 4  0      NaN 0.5347857 0.8909305 1.050318 0.9829141 1.145502 1.550584 1.313462 2.526188 2.166455 2.255141
 ```
+  * opercalt: after age 12 fill down, filling opercula subset with "both" data, and then our region's "oto" data before doing the neighboring row fill and then neighboring region fill. This is better than operc and honestly better than main. (note to self: this is also what's in my "test" folder in filled ALKs)
+  ```
+  X1       X2        X3        X4       X5       X6       X7       X8       X9      X10      X11      X12
+1  0      NaN 0.7763193 0.9252209 1.024419 1.371454 1.479255 1.514572 2.068825 1.796253 1.437173 2.065067
+2  0 1.087465 1.1975156 1.2090998 1.264996 1.203165 1.348014 1.594575 1.708735 1.981787 1.763198 2.406508
+3  0 1.258088 1.3732804 1.1008168 1.180440 1.521590 1.405850 1.730387 1.750667      NaN 2.296133 3.467907
+4  0      NaN 0.5128732 0.8935515 1.107687 1.122007 1.212952 1.512120 1.521416 1.837487 2.636113 2.606131
+```
+  * opercalt2: after age 12 fill down, filling operc with oto + "both" data, before doing the neighboring row fill and then neighboring region fill (this one is worse than the above)
+```
+  X1       X2        X3        X4       X5       X6       X7       X8       X9      X10      X11      X12
+1  0      NaN 0.7763193 0.9252209 1.024419 1.371454 1.479255 1.514572 2.068825 1.796253 1.437173 2.065067
+2  0 1.087465 1.1975156 1.2090998 1.264996 1.203165 1.348014 1.594575 1.708735 1.981787 1.763198 2.406508
+3  0 1.258088 1.3732804 1.1008168 1.180440 1.521590 1.405850 1.730387 1.750667      NaN 2.296133 3.467907
+4  0      NaN 0.5128732 0.9165701 1.097998 1.117378 1.211839 1.514874 1.496344 1.884152 2.636113 2.606131
+```
+
