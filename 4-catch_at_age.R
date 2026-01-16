@@ -108,7 +108,6 @@ rec_discard_caa <- Map(function(yr, alk_prop) {
 rec_discard_caa_annual <- bind_rows(lapply(rec_discard_caa, function(x) {
   apply(x, 2, sum)
 })) %>% select(-Length)
-rec_discard_caa_annual <- cbind(X1=c(0,0,0,0), rec_discard_caa_annual)
 
 names(life_history[[1]])[names(life_history[[1]]) == "Year"] <- "Date"
 life_history[[1]]$Year <- as.integer(format(life_history[[1]]$Date, "%Y"))
@@ -204,20 +203,21 @@ waa <- Map(function(alk, yr, caal) {
   return(waa)
 }, alk_props, 2021:2024, caals)
 
-caa_out <- as.data.frame(cbind(X1 = c(0, 0, 0, 0), rbind(
+caa_out <- as.data.frame(rbind(
   t(sapply(caals, function(x) {
     apply(x, 2, sum) / 1000
   }))
-))) # Final output: catch-at-age
+)) # Final output: catch-at-age
 annual_sum <- apply(caa_out, 1, sum)
 caa_prop <- apply(caa_out[, 1:12], 2, function(x) x / annual_sum)
 
 # final output: weight-at-age
 waa <- cbind(bind_rows(waa)) / 1000 # for the ASAP inputs, these appear to be scaled?
 # OUTPUTS#############
-# write.csv(caa_out, file.path(root, "output/tog/caa.csv"))
-# write.csv(waa, file.path(root, "output/tog/waa.csv"))
+ write.csv(caa_out, file.path(root, "output/tog/caa-all.csv"))
+# 
 waa0 <- waa
 waa0[is.na(waa0)] <- 0
+write.csv(waa0, file.path(root, "output/tog/waa-all.csv"))
 discard_weights <- apply(waa0 * rec_discard_caa_annual, 1, sum) * .001
 harvest_weights <- apply(waa0 * rec_harvest_caa_annual, 1, sum) * .001
