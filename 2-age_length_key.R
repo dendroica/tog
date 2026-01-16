@@ -122,9 +122,6 @@ als$Length_cm <- floor(als$Length_cm)
 # min(unique(c(als$Length_cm, mrip_har$Length))) = 17
 # max(unique(c(als$Length_cm, mrip_har$Length))) = 83
 # sort(unique(c(als$Length_cm, mrip_har$Length)))
-# There is data for otoliths 17-27cm, also the only age 1 data
-#lengths <- c(17:60)
-#min_age <- 1
 
 # Since we are only using operc/both data, the next smallest bin is 29cm
 lengths <- c(29:60)
@@ -148,7 +145,7 @@ for_alk$Age_plus <- factor(for_alk$Age_plus, levels = min_age:max_age)
 operc <- for_alk[for_alk$structure == "operc" | for_alk$structure == "both", ]
 oto <- for_alk[for_alk$structure == "oto", ]
 # alk_data <- operc
-alk_data <- for_alk
+alk_data <- operc
 
 # Our region elected to use only operculum data
 # From a 6/13 email with Katie, she commented that there does not appear to be
@@ -237,20 +234,20 @@ FillGaps <- function(i, gaps, alk, dmv, lis) {
   if (gaps[i] == min(alk$length)) { ### if the gap to fill is the smallest bin in the ALK...
     if (next_len != gaps[i + 1]) { # if the next greater length bin isn't empty...
       filler <- next_row # ...fill from below
-    } else if (sum(lis[lis[, 1] == gaps[i], 2:ncol(lis)]) == 0) { # if not, use LIS if it has values for that bin
+    } else if (sum(lis[lis[, 1] == gaps[i], names(alk)[2:ncol(alk)]]) == 0) { # if not, use LIS if it has values for that bin
       # sum(dmv[dmv[,1]==gaps[i],min_age:max_age]) > 0 shows preference for DMV when it has values
-      filler <- dmv[dmv[, 1] == gaps[i], 2:ncol(dmv)] # else fill from DMV
+      filler <- dmv[dmv[, 1] == gaps[i], names(alk)[2:ncol(alk)]] # else fill from DMV
     } else {
-      filler <- lis[lis[, 1] == gaps[i], 2:ncol(lis)]
+      filler <- lis[lis[, 1] == gaps[i], names(alk)[2:ncol(alk)]]
     }
   } else if (gaps[i] == max(alk$length)) { ### if the gap to fill is the largest bin in the ALK...
     if (prev_len != gaps[i - 1] && num_fish_smaller > 0) { # if the next smallest length bin doesn't need filling and has values...
       filler <- prev_row # ...fill from above
     } else {
-      if (sum(lis[lis[, 1] == gaps[i], 2:ncol(lis)]) == 0) { # preference for filling from LIS when it has data
-        filler <- dmv[dmv[, 1] == gaps[i], 2:ncol(dmv)]
+      if (sum(lis[lis[, 1] == gaps[i], names(alk)[2:ncol(alk)]]) == 0) { # preference for filling from LIS when it has data
+        filler <- dmv[dmv[, 1] == gaps[i], names(alk)[2:ncol(alk)]]
       } else {
-        filler <- lis[lis[, 1] == gaps[i], 2:ncol(lis)]
+        filler <- lis[lis[, 1] == gaps[i], names(alk)[2:ncol(alk)]]
       }
     }
   } else if (i == length(gaps)) { ### if it's the last bin to be filled (and it's not the largest length bin in the ALK...)
@@ -266,10 +263,10 @@ FillGaps <- function(i, gaps, alk, dmv, lis) {
   } else if (!(next_len) %in% gaps && (prev_len) %in% gaps && num_fish_bigger > 0) { # if the bin above is empty and the bin below has non-0 values
     filler <- next_row
   } else {
-    if (sum(lis[lis[, 1] == gaps[i], min_age:max_age]) == 0) { # if 0s on both sides, fill from adjacent region (LIS first)
-      filler <- dmv[dmv[, 1] == gaps[i], min_age:max_age]
+    if (sum(lis[lis[, 1] == gaps[i], names(alk)[2:ncol(alk)]]) == 0) { # if 0s on both sides, fill from adjacent region (LIS first)
+      filler <- dmv[dmv[, 1] == gaps[i], names(alk)[2:ncol(alk)]]
     } else {
-      filler <- lis[lis[, 1] == gaps[i], min_age:max_age]
+      filler <- lis[lis[, 1] == gaps[i], names(alk)[2:ncol(alk)]]
     }
   }
   ages <- names(alk)[2:ncol(alk)]
