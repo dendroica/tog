@@ -4,10 +4,10 @@
 # July 1, 2025              #
 #---------------------------#
 root <- "C:/Users"
-usr <- "galax" #"jgorzo" #
+usr <-  "jgorzo" #"galax" #"jgorzo" #
 loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
 root <- file.path(root, usr, loc)
-setwd(file.path(root, "output/tog/asap/Sept3_noadjust"))
+setwd(file.path(root, "output/tog/asap/FINAL"))
 #---- ASAPplots library ----
 
 # Load the ASAPplots library, which will do a bunch of plots
@@ -22,7 +22,7 @@ library(dplyr)
 # and the name of the ASAP file for the run you want to plot
 
 pwd <- "base"
-fn <- "AUG29_KD_RAW"
+fn <- "ORIG"
 
 # By default, PlotASAP will provide the plots as individual .png files and
 # as a compiled pdf with all the plots. For initial exploration of results,
