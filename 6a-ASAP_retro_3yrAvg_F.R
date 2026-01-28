@@ -1,4 +1,3 @@
-<<<<<<< HEAD:5c-ASAP_retro_3yrAvg_F.R
 #-------------------------------------------#
 # Adjusting for a retrospective pattern     #
 # when using a 3-year average F for stock   #
@@ -19,7 +18,7 @@ usr <- "jgorzo"
 loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
 root <- file.path(root, usr, loc)
 
-asap <- file.path(root, "output/tog/asap/Sept3_noadjust")
+asap <- file.path(root, "output/tog/asap/FINAL")
 
 #---- Reference points for stock status ----
 
@@ -27,7 +26,7 @@ asap <- file.path(root, "output/tog/asap/Sept3_noadjust")
 # so use the F30% and F40% from the SPR.Target.Table output (this is in ASAP plots output)
 #30% = 0.3318533
 #40% = 0.201155
-F_ref <- data.frame(BRP=c("Target", "Threshold"), value=c(0.201155, 0.3318533))
+F_ref <- data.frame(BRP=c("Target", "Threshold"), value=c(0.20157032300054, 0.332662206371242))
 
 # You could do this with ASAP's F report (which is an average F over
 # ages, not years), as long as you use the equivalent full F in the 
