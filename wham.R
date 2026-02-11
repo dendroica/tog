@@ -1,3 +1,12 @@
 library(wham)
-asap <- read_asap3_dat("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/asap/FINAL/ORIG.DAT")
+asap <- read_asap3_dat("C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/asap/FINAL/ORIG.DAT")
 input_asap <- prepare_wham_input(asap)
+nofit_asap <- fit_wham(input_asap, do.fit=F)
+fit_asap <- fit_wham(input_asap, do.retro = FALSE, do.osa = FALSE, do.sdrep = FALSE, do.brps = FALSE)
+fit_asap <- do_sdreport(fit_asap)
+fit_asap$sdrep
+fit_asap <- do_reference_points(fit_asap, do.sdrep = TRUE)
+fit_asap <- do_retro_peels(fit_asap)
+fit_asap <- make_osa_residuals(fit_asap)
+tmp.dir <- tempdir(check=TRUE)
+plot_wham_output(fit_asap, dir.main = tmp.dir)
