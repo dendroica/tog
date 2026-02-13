@@ -1,6 +1,6 @@
 library(wham)
-asap <- read_asap3_dat("C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/asap/FINAL/ORIG.DAT")
-input_asap <- prepare_wham_input(asap)
+asap <- read_asap3_dat("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/asap/FINAL/ORIG.DAT")
+input <- prepare_wham_input(asap)
 nofit_asap <- fit_wham(input_asap, do.fit=F)
 fit_asap <- fit_wham(input_asap, do.retro = FALSE, do.osa = FALSE, do.sdrep = FALSE, do.brps = FALSE)
 fit_asap <- do_sdreport(fit_asap)
@@ -11,14 +11,15 @@ fit_asap <- make_osa_residuals(fit_asap)
 tmp.dir <- tempdir(check=TRUE)
 plot_wham_output(fit_asap, dir.main = tmp.dir)
 
-#selectivity <- list(model = c("age-specific", "logistic", "logistic"))
+#start need to figure out below #####
+selectivity <- list(model = c("age-specific", "logistic", "logistic"))
 selectivity$model <- rep("age-specific", 3)
 selectivity$initial_pars <- list(
   c(0.5,0.5,0.5,1,0.5, 0.5),
   c(0.5,0.5,0.5,1,0.5, 0.5),
   c(0.5,0.5,0.5,1,0.5, 0.5))
 selectivity$fix_pars <- list(4,4,4)
-input_3 <- set_selectivity(input, selectivity = selectivity)
+#input_3 <- set_selectivity(input_asap, selectivity = selectivity)
 
 F_opts <- list(
   F = cbind(rep(5,input$data$n_years_model)),
@@ -92,6 +93,8 @@ fit_9 <- fit_wham(input_9, do.sdrep = TRUE, do.osa = FALSE, do.retro = FALSE)
 plot_wham_output(fit_9, dir.main = tmp.dir)
 
 input <- set_selectivity(input_asap, selectivity)
+#### end need to figure out ####
+
 fit_0 <- fit_wham(input, do.retro=FALSE, do.osa=FALSE)
 plot_wham_output(fit_0, dir.main = tmp.dir)
 #2 fixed effects
@@ -161,7 +164,7 @@ NAA_list <- list(recruit_model = 3,
                  sigma = "rec+1",
                  cor = "ar1_y")
 input_10 <- set_NAA(input, NAA_list)
-fit_10 <- fit_wham(input_10, do.retro=FALSE, do.osa=FALSE)
+fit_10 <- fit_wham(input_10, do.retro=FALSE, do.osa=FALSE) #something wrong with this one?
 plot_wham_output(fit_10, dir.main = tmp.dir)
 
 NAA_list <- list(recruit_model = 4,
@@ -171,6 +174,7 @@ input_11 <- set_NAA(input, NAA_list)
 fit_11 <- fit_wham(input_11, do.retro=FALSE, do.osa=FALSE)
 plot_wham_output(fit_11, dir.main = tmp.dir)
 
+####need to figure this out#
 M <- list(
   mean_model = "estimate-M",
   means_map = array(1, dim = c(1,1,6)))
@@ -227,6 +231,8 @@ plot_wham_output(fit_17, dir.main = tmp.dir)
 catchability <- list(
   re = c("iid", "none")
 )
+#### end figure out#
+
 input_18 <- set_q(input, catchability)
 fit_18 <- fit_wham(input_18, do.retro = FALSE, do.osa = FALSE)
 plot_wham_output(fit_18, dir.main = tmp.dir)
@@ -234,16 +240,20 @@ plot_wham_output(fit_18, dir.main = tmp.dir)
 catchability <- list(
   re = c("ar1", "ar1")
 )
-input_19 <- set_q(input, catchability)
+input_19 <- set_q(input, catchability) #BEST
 fit_19 <- fit_wham(input_19, do.retro = FALSE, do.osa = FALSE)
 plot_wham_output(fit_19, dir.main = tmp.dir)
 
 catchability <- list(
   re = c("ar1", "ar1"),
-  q_upper = rep(1,2)
+  q_upper = rep(1,3)
 )
 input_20 <- set_q(input, catchability)
 fit_20 <- fit_wham(input_20, do.retro = FALSE, do.osa = FALSE)
 plot_wham_output(fit_20, dir.main = tmp.dir)
 
 ####end of vignette 4
+
+mods <- list(fit_0, fit_1, fit_2, fit_3, fit_4, fit_5, fit_6, fit_7, fit_8, fit_9, fit_10, fit_11, fit_18, fit_19, fit_20)
+ok_sdrep = sapply(mods, function(x) if(x$na_sdrep==FALSE & !is.na(x$na_sdrep)) 1 else 0)
+res <- compare_wham_models(mods, fdir="C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/", do.plot=F)
