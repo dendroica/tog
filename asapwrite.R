@@ -1,4 +1,4 @@
-function(asap, outfile) {
+writeoutasap <- function(asap, outfile) {
 asapfile <- c("# ASAP VERSION 3.0",
 "# NYB final model_4 sel_1989",
 "#",
@@ -222,6 +222,3 @@ paste0("#$",asap[[1]]$index.names[3]),
 "#")
 writeLines(asapfile, outfile)
 }
-
-#sink("C:/Users/jgorzo/Documents/console_output.txt")
-#sink()
