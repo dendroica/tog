@@ -1,8 +1,14 @@
+#input <- prepare_wham_input(asap3, model_name=paste(paste0("Model ",m), sel_model[m], paste(sel_re[[m]], collapse="-"), sep=": "), recruit_model=2,
+#                            selectivity=list(model=rep("logistic",3), re=sel_re[[m]], initial_pars=list(c(2,0.3),c(2,0.3),c(2,0.3))),
+#                            NAA_re = list(sigma='rec+1',cor='iid'),
+#                            age_comp = "logistic-normal-miss0")
+
 library(wham)
-asap <- read_asap3_dat("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/asap/FINAL/ORIG.DAT")
+infile <- paste0("C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/asap/FINAL/ORIG.DAT")
+asap <- read_asap3_dat(infile)
 input <- prepare_wham_input(asap)
-nofit_asap <- fit_wham(input_asap, do.fit=F)
-fit_asap <- fit_wham(input_asap, do.retro = FALSE, do.osa = FALSE, do.sdrep = FALSE, do.brps = FALSE)
+nofit_asap <- fit_wham(input, do.fit=F)
+fit_asap <- fit_wham(input, do.retro = FALSE, do.osa = FALSE, do.sdrep = FALSE, do.brps = FALSE)
 fit_asap <- do_sdreport(fit_asap)
 fit_asap$sdrep
 fit_asap <- do_reference_points(fit_asap, do.sdrep = TRUE)
@@ -11,89 +17,145 @@ fit_asap <- make_osa_residuals(fit_asap)
 tmp.dir <- tempdir(check=TRUE)
 plot_wham_output(fit_asap, dir.main = tmp.dir)
 
-#start need to figure out below #####
+#asap[[1]][[1]]$n_fleet_sel_blocks
+#asap[[1]][[1]]$n_indices
 selectivity <- list(model = c("age-specific", "logistic", "logistic"))
-selectivity$model <- rep("age-specific", 3)
-selectivity$initial_pars <- list(
-  c(0.5,0.5,0.5,1,0.5, 0.5),
-  c(0.5,0.5,0.5,1,0.5, 0.5),
-  c(0.5,0.5,0.5,1,0.5, 0.5))
-selectivity$fix_pars <- list(4,4,4)
-#input_3 <- set_selectivity(input_asap, selectivity = selectivity)
+selectivity$model <- rep("age-specific", 8) #asap[[1]][[1]]$n_fleet_sel_blocks + asap[[1]][[1]]$n_indices
+selectivity$initial_pars <- list( # 8 x number of ages (if age specific)
+  c(0.5,0.5,0.5,1,0.5, 0.5, 0.5,0.5,0.5,1,0.5, 0.5),
+  c(0.5,0.5,0.5,1,0.5, 0.5, 0.5,0.5,0.5,1,0.5, 0.5),
+  c(0.5,0.5,0.5,1,0.5, 0.5, 0.5,0.5,0.5,1,0.5, 0.5),
+  c(0.5,0.5,0.5,1,0.5, 0.5, 0.5,0.5,0.5,1,0.5, 0.5),
+  c(0.5,0.5,0.5,1,0.5, 0.5, 0.5,0.5,0.5,1,0.5, 0.5),
+  c(0.5,0.5,0.5,1,0.5, 0.5, 0.5,0.5,0.5,1,0.5, 0.5),
+  c(0.5,0.5,0.5,1,0.5, 0.5, 0.5,0.5,0.5,1,0.5, 0.5),
+  c(0.5,0.5,0.5,1,0.5, 0.5, 0.5,0.5,0.5,1,0.5, 0.5))
+selectivity$fix_pars <- list(4,4,4,4,4,4,4,4)
+input_3 <- set_selectivity(input, selectivity = selectivity)
 
 F_opts <- list(
   F = cbind(rep(5,input$data$n_years_model)),
   map_F = cbind(rep(NA, input$data$n_years_model)))
-selectivity$re <- c("iid", "none", "none")
+selectivity$re <- c("iid", "none", "none", "none", "none", "none", "none", "none")
 selectivity$fix_pars <- NULL
-selectivity$initial_pars[[1]] <- rep(0.1,6)
-selectivity$map_pars <- list(c(1,1,1,1,1,1),c(2:4,NA,5:6), c(7:9,NA,10:11))
+selectivity$initial_pars[[1]] <- rep(0.1,12)
+selectivity$map_pars <- list(c(1,1,1,1,1,1, 1,1,1,1,1,1),
+                             c(2:4,NA,5:6, 2:4,NA,5:6),
+                             c(7:9,NA,10:11, 7:9,NA,10:11),
+                             c(1,1,1,1,1,1, 1,1,1,1,1,1),
+                             c(2:4,NA,5:6, 2:4,NA,5:6),
+                             c(7:9,NA,10:11, 7:9,NA,10:11),
+                             c(1,1,1,1,1,1, 1,1,1,1,1,1),
+                             c(2:4,NA,5:6, 2:4,NA,5:6))
 input_4 <- set_selectivity(input, selectivity = selectivity)
 input_4 <- set_F(input_4, F_opts)
 # This one takes a while
 fit_4 <- fit_wham(input_4, do.sdrep = TRUE, do.osa = FALSE, do.retro = FALSE)
 plot_wham_output(fit_4, dir.main = tmp.dir)
 
-selectivity <- list(model = rep("age-specific", 3))
-selectivity$re <- c("iid", "none", "none")
+selectivity <- list(model = rep("age-specific", 8))
+selectivity$re <- c("iid", "none", "none", "none", "none", "none", "none", "none")
 selectivity$fix_pars <- NULL
 selectivity$initial_pars <- list(
-  c(rep(0.5,4),1,0.5),
-  c(0.5,0.5,0.5,1,0.5, 0.5),
-  c(0.5,0.5,0.5,1,0.5, 0.5))
-selectivity$map_pars <- list(c(1,1,1,1,NA,1),c(2:4,NA,5:6), c(7:9,NA,10:11))
+  c(rep(0.5,4),1,0.5, rep(0.5,4),1,0.5),
+  c(0.5,0.5,0.5,1,0.5,0.5, 0.5,0.5,0.5,1,0.5,0.5),
+  c(0.5,0.5,0.5,1,0.5, 0.5, 0.5,0.5,0.5,1,0.5, 0.5),
+  c(rep(0.5,4),1,0.5, rep(0.5,4),1,0.5),
+  c(0.5,0.5,0.5,1,0.5,0.5, 0.5,0.5,0.5,1,0.5,0.5),
+  c(0.5,0.5,0.5,1,0.5, 0.5, 0.5,0.5,0.5,1,0.5, 0.5),
+  c(rep(0.5,4),1,0.5, rep(0.5,4),1,0.5),
+  c(0.5,0.5,0.5,1,0.5,0.5, 0.5,0.5,0.5,1,0.5,0.5))
+selectivity$map_pars <- list(c(1,1,1,1,NA,1,1,1,1,1,NA,1),
+                             c(2:4,NA,5:6, 2:4,NA,5:6),
+                             c(7:9,NA,10:11, 7:9,NA,10:11),
+                             c(1,1,1,1,NA,1,1,1,1,1,NA,1),
+                             c(2:4,NA,5:6, 2:4,NA,5:6),
+                             c(7:9,NA,10:11, 7:9,NA,10:11),
+                             c(1,1,1,1,NA,1,1,1,1,1,NA,1),
+                             c(2:4,NA,5:6, 2:4,NA,5:6))
 input_5 <- set_selectivity(input, selectivity = selectivity)
 fit_5 <- fit_wham(input_5, do.sdrep = TRUE, do.osa = FALSE, do.retro = FALSE)
 plot_wham_output(fit_5, dir.main = tmp.dir)
 
-selectivity <- list(model = rep("age-specific", 3))
-selectivity$re <- c("ar1_y", "none", "none")
+selectivity <- list(model = rep("age-specific", 8))
+selectivity$re <- c("ar1_y", "none", "none", "none", "none", "none", "none", "none")
 selectivity$fix_pars <- NULL
 selectivity$initial_pars <- list(
-  c(rep(0.5,4),1,0.5),
-  c(0.5,0.5,0.5,1,0.5, 0.5),
-  c(0.5,0.5,0.5,1,0.5, 0.5))
-selectivity$map_pars <- list(c(1:4,NA,5),c(6:8,NA,9:10), c(11:13,NA,14:15))
+  c(rep(0.5,4),1,0.5, rep(0.5,4),1,0.5),
+  c(0.5,0.5,0.5,1,0.5,0.5, 0.5,0.5,0.5,1,0.5,0.5),
+  c(0.5,0.5,0.5,1,0.5, 0.5, 0.5,0.5,0.5,1,0.5, 0.5),
+  c(rep(0.5,4),1,0.5, rep(0.5,4),1,0.5),
+  c(0.5,0.5,0.5,1,0.5,0.5, 0.5,0.5,0.5,1,0.5,0.5),
+  c(0.5,0.5,0.5,1,0.5, 0.5, 0.5,0.5,0.5,1,0.5, 0.5),
+  c(rep(0.5,4),1,0.5, rep(0.5,4),1,0.5),
+  c(0.5,0.5,0.5,1,0.5,0.5, 0.5,0.5,0.5,1,0.5,0.5))
+selectivity$map_pars <- list(c(1,1,1,1,NA,1,1,1,1,1,NA,1),
+                             c(2:4,NA,5:6, 2:4,NA,5:6),
+                             c(7:9,NA,10:11, 7:9,NA,10:11),
+                             c(1,1,1,1,NA,1,1,1,1,1,NA,1),
+                             c(2:4,NA,5:6, 2:4,NA,5:6),
+                             c(7:9,NA,10:11, 7:9,NA,10:11),
+                             c(1,1,1,1,NA,1,1,1,1,1,NA,1),
+                             c(2:4,NA,5:6, 2:4,NA,5:6))
 input_6 <- set_selectivity(input, selectivity = selectivity)
 fit_6 <- fit_wham(input_6, do.sdrep = TRUE, do.osa = FALSE, do.retro = FALSE)
 plot_wham_output(fit_6, dir.main = tmp.dir)
 
-selectivity$re <- c("ar1", "none", "none")
+selectivity$re <- c("ar1", "none", "none", "none", "none", "none", "none", "none")
 selectivity$fix_pars <- NULL
-selectivity$initial_pars <- list(
-  c(rep(0.5,4),1,0.5),
-  c(0.5,0.5,0.5,1,0.5, 0.5),
-  c(0.5,0.5,0.5,1,0.5, 0.5))
-selectivity$map_pars <- list(c(1,1,1,1,NA,1),c(2:4,NA,5:6), c(7:9,NA,10:11))
+#selectivity$initial_pars <- list(
+#  c(rep(0.5,4),1,0.5),
+#  c(0.5,0.5,0.5,1,0.5, 0.5),
+#  c(0.5,0.5,0.5,1,0.5, 0.5))
+#selectivity$map_pars <- list(c(1,1,1,1,NA,1,1,1,1,1,NA,1),
+#                             c(2:4,NA,5:6, 2:4,NA,5:6),
+#                             c(7:9,NA,10:11, 7:9,NA,10:11),
+#                             c(1,1,1,1,NA,1,1,1,1,1,NA,1),
+#                             c(2:4,NA,5:6, 2:4,NA,5:6),
+#                             c(7:9,NA,10:11, 7:9,NA,10:11),
+#                             c(1,1,1,1,NA,1,1,1,1,1,NA,1),
+#                             c(2:4,NA,5:6, 2:4,NA,5:6))
 input_7 <- set_selectivity(input, selectivity = selectivity)
 fit_7 <- fit_wham(input_7, do.sdrep = TRUE, do.osa = FALSE, do.retro = FALSE)
 plot_wham_output(fit_7, dir.main = tmp.dir)
 
-selectivity$re <- c("2dar1", "none", "none")
+selectivity$re <- c("2dar1", "none", "none", "none", "none", "none", "none", "none")
 selectivity$fix_pars <- NULL
-selectivity$initial_pars <- list(
-  c(rep(0.5,4),1,0.5),
-  c(0.5,0.5,0.5,1,0.5, 0.5),
-  c(0.5,0.5,0.5,1,0.5, 0.5))
-selectivity$map_pars <- list(c(1,1,1,1,NA,1),c(2:4,NA,5:6), c(7:9,NA,10:11))
+#selectivity$initial_pars <- list(
+#  c(rep(0.5,4),1,0.5),
+#  c(0.5,0.5,0.5,1,0.5, 0.5),
+#  c(0.5,0.5,0.5,1,0.5, 0.5))
+#selectivity$map_pars <- list(c(1,1,1,1,NA,1,1,1,1,1,NA,1),
+#                             c(2:4,NA,5:6, 2:4,NA,5:6),
+#                             c(7:9,NA,10:11, 7:9,NA,10:11),
+#                             c(1,1,1,1,NA,1,1,1,1,1,NA,1),
+#                             c(2:4,NA,5:6, 2:4,NA,5:6),
+#                             c(7:9,NA,10:11, 7:9,NA,10:11),
+#                             c(1,1,1,1,NA,1,1,1,1,1,NA,1),
+#                             c(2:4,NA,5:6, 2:4,NA,5:6))
 input_8 <- set_selectivity(input, selectivity = selectivity)
 fit_8 <- fit_wham(input_8, do.sdrep = FALSE, do.osa = FALSE, do.retro = FALSE)
 #Does not converge...
 plot_wham_output(fit_8, dir.main = tmp.dir)
 
-selectivity <- list(model = rep("logistic", 3))
-selectivity$re <- c("iid", "none", "none")
+####MODEL 9: THIS ONE DOESN'T FIT
+selectivity <- list(model = rep("logistic", 8))
+selectivity$re <- c("iid", "none", "none", "none", "none", "none", "none", "none")
 selectivity$fix_pars <- NULL
 selectivity$initial_pars <- list(
   c(3, 0.2), 
   c(3, 0.2), 
-  c(3, 0.2)) 
+  c(3, 0.2),
+  c(3, 0.2),
+  c(3, 0.2),
+  c(3, 0.2),
+  c(3, 0.2),
+  c(3, 0.2))
 input_9 <- set_selectivity(input, selectivity = selectivity)
 fit_9 <- fit_wham(input_9, do.sdrep = TRUE, do.osa = FALSE, do.retro = FALSE)
 plot_wham_output(fit_9, dir.main = tmp.dir)
 
 input <- set_selectivity(input_asap, selectivity)
-#### end need to figure out ####
 
 fit_0 <- fit_wham(input, do.retro=FALSE, do.osa=FALSE)
 plot_wham_output(fit_0, dir.main = tmp.dir)
