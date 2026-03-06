@@ -4,7 +4,9 @@
 #                            age_comp = "logistic-normal-miss0")
 
 library(wham)
-infile <- paste0("C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/asap/FINAL/ORIG.DAT")
+usr <- "jgorzo"
+infile <- file.path("C:/Users/", usr,
+                    "OneDrive - New Jersey Office of Information Technology/Documents/output/tog/asap/FINAL/ORIG.DAT")
 asap <- read_asap3_dat(infile)
 input <- prepare_wham_input(asap)
 nofit_asap <- fit_wham(input, do.fit=F)
