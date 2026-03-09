@@ -8,7 +8,6 @@ asap[[1]]$dat$maturity #add rows for new years
 asap[[1]]$dat$WAA_mats[[1]] #add rows for new years
 asap[[1]]$dat$WAA_mats[[2]] #add rows for new years
 asap[[1]]$dat$sel_block_assign[[1]] #add values for new years
-asap[[1]]$dat$sel_block_option #if you add a selectivity block, update options
 asap[[1]]$dat$CAA_mats[[1]] #add rows for new years
 asap[[1]]$dat$DAA_mats[[1]] #add rows for new years
 asap[[1]]$dat$prop_rel_mats[[1]] #add rows for new years
@@ -25,3 +24,6 @@ asap[[1]]$dat$catch_Neff #add values for new years
 asap[[1]]$dat$discard_Neff #add values for new years
 
 asap[[1]]$dat$R_avg_end #update to be last year
+
+#IF YOU ADD A SELECTIVITY BLOCK
+asap[[1]]$dat$sel_block_option #if you add a selectivity block, update options

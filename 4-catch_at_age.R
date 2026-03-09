@@ -199,8 +199,9 @@ waa <- Map(function(alk, yr, caal) {
 
   print(paste("total weight", yr))
   comm <- total_catch[total_catch$Year == yr, ]$comm # this is in metric tons converted to g
+  x <- (sum(weights) + comm) / 1000000
   print((sum(weights) + comm) / 1000000)
-  return(waa)
+  return(list(waa,x))
 }, alk_props, 2021:2024, caals)
 
 caa_out <- as.data.frame(cbind(X1 = c(0, 0, 0, 0), rbind(
@@ -211,13 +212,15 @@ caa_out <- as.data.frame(cbind(X1 = c(0, 0, 0, 0), rbind(
 annual_sum <- apply(caa_out, 1, sum)
 caa_prop <- apply(caa_out[, 1:12], 2, function(x) x / annual_sum)
 
+total_weight <- unlist(lapply(waa, "[[", 2))
+waa <- lapply(waa, "[[", 1)
 # final output: weight-at-age
 waa <- cbind(X1 = c(0, 0, 0, 0), bind_rows(waa)) / 1000 # for the ASAP inputs, these appear to be scaled?
 # OUTPUTS#############
-write.csv(caa_out, file.path(root, "output/tog/caa-orig.csv"))
+#write.csv(caa_out, file.path(root, "output/tog/caa-orig.csv"))
 # 
 waa0 <- waa
-write.csv(waa0, file.path(root, "output/tog/waa-orig.csv"))
 waa0[is.na(waa0)] <- 0
+#write.csv(waa0, file.path(root, "output/tog/waa-orig.csv"))
 discard_weights <- apply(waa0 * rec_discard_caa_annual, 1, sum) * .001
 harvest_weights <- apply(waa0 * rec_harvest_caa_annual, 1, sum) * .001
