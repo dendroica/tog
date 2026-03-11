@@ -14,6 +14,7 @@ library(bbmle)
 library(mgcv)
 library(mgcViz)
 library(readxl)
+library(buildmer)
 
 base_path <- "C:/Users"
 usr <- "jgorzo"
@@ -82,8 +83,8 @@ unique(wlidata3$Year)
 # Decide if you need to subset your data to specific strata, months, etc.
 # based on when/where you most reliably catch (or expect to catch) your species.
 # Check mean catch:
-barplot(tapply(wlidata3$Tautog, wlidata3[, "Month"], mean), xlab = i, ylab = "Mean CPUE")
-barplot(tapply(wlidata3$Tautog, wlidata3[, "Station"], mean), xlab = i, ylab = "Mean CPUE")
+barplot(tapply(wlidata3$Tautog, wlidata3[, "Month"], mean), xlab = "Month", ylab = "Mean CPUE")
+barplot(tapply(wlidata3$Tautog, wlidata3[, "Station"], mean), xlab = "Station", ylab = "Mean CPUE")
 # don't catch a lot in May or June but will leave for now
 # some stations don't have tautog catch: JAM07, JAM11, JAM13, JAM14
 # maybe should remove but will continue with all stations for now
@@ -91,8 +92,8 @@ unique(wlidata3$Month)
 # Check the proportion of positive samples:
 # Calculate the proportion of positive tows/sets/hauls
 wlidata3$PosTow <- ifelse(wlidata3$Tautog > 0, 1, 0)
-barplot(tapply(wlidata3$PosTow, wlidata3[, "Month"], mean), xlab = i, ylab = "Proportion Positive")
-barplot(tapply(wlidata3$PosTow, wlidata3[, "Station"], mean), xlab = i, ylab = "Proportion Positive")
+barplot(tapply(wlidata3$PosTow, wlidata3[, "Month"], mean), xlab = "Month", ylab = "Proportion Positive")
+barplot(tapply(wlidata3$PosTow, wlidata3[, "Station"], mean), xlab = "Station", ylab = "Proportion Positive")
 
 # Check the sample size for different factors:
 ggplot(wlidata3) +
@@ -110,13 +111,15 @@ xtabs(~ Year + Station, wlidata3)
 # so will leave all months in for now
 
 # In the end, we are going to calculate the index by predicting CPUE by
-# year by holding all other factors/covariates constant at one level.
+# year by holding all other factors/co-variates constant at one level.
 # R assigns levels of factors alphabetically by default, but the first level
 # may not be exactly what you want. If the first level is not well-sampled
-# or if it has a low CPUE, high variance, etc. you might want to relevel
+# or if it has a low CPUE, high variance, etc. you might want to re-level
 # your factors.
 barplot(tapply(wlidata3$Tautog, wlidata3[, "Month"], function(x) sd(x) / mean(x)),
-      xlab = i, ylab = "CV") #do station too
+      xlab = "Month", ylab = "CV")
+barplot(tapply(wlidata3$Tautog, wlidata3[, "Station"], function(x) sd(x) / mean(x)),
+        xlab = "Station", ylab = "CV")
 
 # checking which stations catch tautog and during what years
 new <- wlidata3 %>%
@@ -127,8 +130,6 @@ ggplot(data = new, aes(x = Station, y = N)) +
   facet_wrap(~Year, scales = "free")
 
 barplot(tapply(wlidata3$Tautog, wlidata3$Station, mean), xlab = "Station", ylab = "CPUE")
-
-unique(wlidata3$Station[wlidata3$Year == 1984])
 stations <- unique(wlidata3$Station[wlidata3$Year == 2024])
 wlidata3$SurfaceTemp <- wlidata3$`Surface Temp`
 wlidata3$`Surface Temp` <- NULL
@@ -145,7 +146,7 @@ ggplot(data = new2, aes(x = Station, y = N)) +
   facet_wrap(~Year, scales = "free")
 
 
-# Generally speaking, we don't want to work with indices with less than 10%
+# Generally speaking, we don't want to work with less than 10%
 # positive tows/hauls/sets -- it suggests that this survey may not be doing
 # a good job of sampling that species. Now that we've subset down to the best
 # months, strata, etc., let's check the annual proportion positive
@@ -170,27 +171,14 @@ for (i in names(wlidata4)) {
   print(tapply(y, wlidata4$Year, function(x) round((sum(is.na(x)) / length(x)) * 100, 1)))
 }
 
-# 1985, 1994, 2009 are empty
 # check for outliers?
 plot(wlidata4$Salinity)
 plot(wlidata4$SurfaceTemp)
 plot(wlidata4$DO)
 
-# surface temp has one extreme outlier that == 243??? in 2016
-# could just be a typo of 24.3 but am going to remove
-# get filtered out when stations are removed
-# wlidata4$Tautog[wlidata4$SurfaceTemp==243.0]
-# View(wlidata3)
-# wlidata4<-subset(wlidata4, SurfaceTemp != 243)
-# View(wlidata4)
-
-
 # salinity and DO don't have values in 1984, DO does not have values in 1986, 1997
 # will drop these values from standardization
 colnames(wlidata4)
-# wlidata5<-wlidata4[,-which(names(df) %in% c("z","u"))]
-# colnames(wlidata5)
-
 
 # take complete cases
 indata <- wlidata4[complete.cases(wlidata4), ]
@@ -199,115 +187,97 @@ indata <- wlidata4[complete.cases(wlidata4), ]
 # offset is needed. Here, soak time varies from set to set, so we will
 # create an effort offset to account for that.
 
-# this survey has no effort category so we will skip
-# indata4$lnEffort <- log(indata4$EFFORT)
-
-
-# Final dataset for exploration
-dat <- indata
+# Final data set for exploration
+dat <- as.data.frame(indata)
 
 # We've looked at mean catch by factor; now let's look at mean catch
 # as it relates to continuous variables
-for (i in colnames(dat)) {
-  if (is.numeric(dat[, i])) {
-    plot(dat$Tautog ~ dat[, i], xlab = i)
-  }
-}
+plot(dat$Tautog ~ dat[, "Salinity"], xlab = "Salinity")
+plot(dat$Tautog ~ dat[, "DO"], xlab = "DO")
+plot(dat$Tautog ~ dat[, "SurfaceTemp"], xlab = "SurfaceTemp")
 
 ## -CHECK COLLINEARITY-##
 # We don't want to include covariates that are correlated with each other
-pairs(~ Month + Station + Body.of.water + SurfaceTemp + Salinity + DO, data = dat)
-
-dat <- as.data.frame(dat)
-
-# =============================#
-#### Calculate the Index ####
-# =============================#
-ZINB <- glmmTMB(Tautog ~ 1 + Year + SurfaceTemp + Salinity,
-  ziformula = ~ SurfaceTemp + Salinity,
-  data = dat,
-  family = nbinom2
-)
-GAM.NB <- gam(Tautog ~ Year + s(SurfaceTemp) + s(Salinity) + s(DO),
-  data = dat, family = "nb"
-)
-SE2 <- boot.GAM(GAM.NB, nboots = 1000)
-# best <-NB2
-best <- ZINB
-# We will calculate the index by predicting the mean CPUE in each year while
-# holding the other factors constant at one level and holding continuous values
-# constant at their mean values.
-
-# What factors did ZINB.2
-
+pairs(~ Month + Station + SurfaceTemp + Salinity + DO, data = dat)
 p.data <- data.frame(
   Year = levels(dat$Year),
-  # Station=levels(dat$Station)[1],
   SurfaceTemp = mean(dat$SurfaceTemp),
-  # DO=mean(dat$DO),
   Salinity = mean(dat$Salinity)
 )
 
-# The bootstrap_functions.R script also has a function to do this.
-# p.data <- expand.pred(best$frame)
-p.data <- expand.pred(best$frame, re = best$modelInfo$grpVar)
+mod <- as.formula("Tautog ~ Year + SurfaceTemp + Salinity + DO")
+bmc <- buildmerControl(include= ~ Year)
+nb <- buildglmmTMB(mod, dat, family = nbinom2, 
+                   buildmerControl = bmc)
+#Formula:          Tautog ~ 1 + Year + SurfaceTemp + Salinity
 
-# We may also calculate the marginal mean by expanding the data to get every
-# combination of factor in the model and then calculating the mean CPUE
-# over all combinations for each year. Your TC/SAS can decide which approach
-# is preferred.
+NB <- glmmTMB(Tautog ~ 1 + Year + SurfaceTemp + Salinity, #when just year and surface temp, super high STD ERROR
+              data = dat,
+              family = nbinom2)
 
-index.out <- data.frame(
-  Year = as.numeric(unique(dat$Year)), # PICK UP HERE JESS
-  # Station=as.character(unique(dat$Station)), #use unique rather than levels bc removed 3 years
-  Index = predict(best, newdata = p.data, type = "response")
-)
+bmc2 <- buildmerControl(include= ~ Year, args=list(ziformula = ~ SurfaceTemp + Salinity))
+zinb <- buildglmmTMB(mod,
+                     data = dat,
+                     family = nbinom2, buildmerControl = bmc2)
+#Formula: Tautog ~ 1 + Year + SurfaceTemp + Salinity
+
+ZINB <- glmmTMB(Tautog ~ 1 + Year + SurfaceTemp + Salinity ,
+                ziformula = ~ SurfaceTemp + Salinity,
+                data = dat,
+                family = nbinom2)
+
+#bmc3 <- buildmerControl(include= ~ Year, args=list(ziformula = ~ SurfaceTemp))
+#zanb <- buildglmmTMB(mod,
+#                data = dat,
+#                family = truncated_nbinom2(link = "log"), buildmerControl = bmc3)
+
+#ZANB <- glmmTMB(Tautog ~ Station + SurfaceTemp+Salinity+DO,
+#                ziformula = ~.,
+#                data = dat,
+#                family = truncated_nbinom2(link = "log"))
+
+bmc4 <- buildmerControl(include= ~ Year) 
+#gam <- buildgamm4(mod, data = dat, family = nbinom2, buildmerControl = bmc4) doesn't work
+
+GAM.NB <- gam(Tautog~ Year + s(SurfaceTemp)+s(Salinity), #+s(DO),
+              data = dat, family = 'nb') #still wins
+AICtab(NB, ZINB, GAM.NB)
 
 # We will bootstrap the index to get the CVs and confidence intervals.
 # Use boot.NB() for non-zero-inflated models and boot.GAM() for
 # GAMs. boot.ZI(), boot.NB(), and boot.GAM() are custom functions included in the
-# "bootstrap_functions.r" file.
-SE <- boot.ZI(best, nboots = 1000)
-# If you have a low percent (<50%) of converged runs, it's a sign that the model
-# may not be robust.
+# "bootstrap_functions.r" file. If you have a low percent (<50%) of converged
+# runs, it's a sign that the model may not be robust.
+SE2 <- boot.GAM(GAM.NB, nboots = 1000) #100% converged
+#Warning messages:
+#  1: In newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L = G$L,  :
+#     Fitting terminated with step failure - check results carefully
+#  2: In newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L = G$L,  :
+#     Fitting terminated with step failure - check results carefully
+#  3: In newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L = G$L,  :
+#     Fitting terminated with step failure - check results carefully
 
-index.out <- cbind.data.frame(index.out, SE)
+index.out <- data.frame(
+  Year = as.numeric(unique(dat$Year)),
+  # Station=as.character(unique(dat$Station)), #use unique rather than levels bc removed 3 years
+  Index = predict(GAM.NB, newdata = p.data, type = "response")
+)
 
+index.out <- cbind.data.frame(index.out, SE2)
 index.out$Year <- as.integer(levels(p.data$Year))
+
 allyrs <- 1989:2024
 missing <- allyrs[!allyrs %in% p.data$Year]
 index.out <- index.out[index.out$Year > 1987, ]
 index.out <- rbind(index.out, c(1997, -1, -1, -1, -1), c(2010, -1, -1, -1, -1))
 index.out <- index.out[order(index.out$Year), ]
 index.out$CV <- index.out$SE / index.out$Index
+index.out$scale <- index.out$Index / mean(index.out$Index)
+index.out$Year <- index.out$Year + 1 #this survey needs to be lagged by a year
 
-jpeg("NY_WLI_index.jpeg", width = 8, height = 5, units = "in", res = 600)
 ggplot(index.out) +
   geom_ribbon(aes(x = Year, ymin = LCI, ymax = UCI), alpha = 0.4) +
   geom_point(aes(x = Year, y = Index), shape = 16) +
   geom_line(aes(x = Year, y = Index)) +
   ylim(c(0, NA)) +
   theme_bw()
-dev.off()
-
-write.csv(index.out, "NYWLI_index.csv", row.names = F)
-
-
-# compare to previous index
-index.out$scale <- index.out$Index / mean(index.out$Index)
-index.out$newYear <- index.out$Year + 1
-# update<-read.csv("NYWLIindexfromlastupdate.csv",header=TRUE)
-# update<-update[-c(1,3,12,27),]
-# plot(update$Index)
-# update$scale<-update$Index/mean(update$Index)
-
-jpeg("NYWLI_compare.jpeg", width = 8, height = 5, units = "in", res = 600)
-ggplot(index.out) +
-  geom_point(aes(x = newYear, y = scale), shape = 16) +
-  geom_line(aes(x = newYear, y = scale), linetype = 1) +
-  # geom_point(data=update,aes(x=Year,y=scale),shape=16,col="blue")+
-  # geom_line(data=update,aes(x=Year, y=scale),linetype = 1,col="blue") +
-  # geom_path(linejoin = "mitre")+
-  ylim(c(0, NA)) +
-  theme_bw() #+ ggtitle("scaled to mean")
-dev.off()
