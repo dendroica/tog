@@ -67,7 +67,18 @@ ggplot(F.plot, aes(x=Year, y=Fmult)) +
 # Probability of exceeding reference points
 agepro$threshprob
 
-harvest <- as.data.frame(year = 1989:2030,
+harvest <- data.frame(year = 1989:2030,
               quo = c(asap[[1]]$dat$CAA_mats[[1]][,13], rep(1833, 6)), 
               harvest30 = c(asap[[1]]$dat$CAA_mats[[1]][,13], rep(1094, 6)),
               harvest_28 = c(asap[[1]]$dat$CAA_mats[[1]][,13], rep(1028, 6)))
+harvest2 <- pivot_longer(harvest, cols=-year, names_to="scenario", values_to="harvest")
+
+ggplot(harvest2, aes(x=year, y=harvest, colour = scenario)) + 
+  #geom_ribbon(aes(x=Year, ymin=LCI, ymax=UCI), alpha=0.4) +
+  geom_line() + geom_point() +
+  #geom_hline(aes(yintercept=F_target, linetype="F Target", color="F Target")) +
+  #geom_hline(aes(yintercept=F_thresh, linetype="F Threshold", color="F Threshold")) +
+  #scale_color_manual(values=c("F Target"="black", "F Threshold" = "red"), name="Reference Points") + 
+  #scale_linetype_manual(values=c("F Target"=2, "F Threshold"=1), name="Reference Points") +
+  scale_y_continuous(name="Harvest", labels=scales::comma, limits=c(0,NA)) +
+  theme_bw()
