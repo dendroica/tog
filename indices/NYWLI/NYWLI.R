@@ -23,7 +23,7 @@ root <- file.path(base_path, usr, loc)
 
 wlidata <- read_excel(file.path(root, "data/tog", "2025_SA_NY_Tautog_Survey_Data_1984-2024.xlsx"), sheet = "WLIS Seine")
 # Source helper functions for bootstrapping
-source("./indices/bootstrap_functions.r")
+source("./indices/NYWLI/bootstrap_functions.r")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
