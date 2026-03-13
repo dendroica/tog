@@ -46,10 +46,6 @@ ZANB1 <- glmmTMB(mod,
                  ziformula = ~ BTEMP, data = dat,
                  offset=lnEffort,family = truncated_nbinom2(link = "log"))
 
-#When looking at AIC and bootstrapping, GAM is best
-#however is it over-fitting? is this really important?
-#my reading led me to that GAM might be overkill and "beside the point" for this purpose
-#namely, all I really want here is the index, not to really dig into the nature of the response to the predictors
 bmc2 <- buildmerControl(include= ~offset(lnEffort) + YEAR) #, crit='F'
 bestgam <- buildgamm4(CPUE~ YEAR + s(STRATA, bs="re") + s(DEPTH) + s(BDO)+s(BTEMP)+s(BSAL),
          data = dat, buildmerControl = bmc2)
@@ -58,8 +54,14 @@ GAM.NB <- gam(bestgam@model$gam$formula,
 bootgam <- boot.GAM(GAM.NB, nboots=1000)
 AICtab(NB00, ZINB00, ZANB, ZANB1, GAM.NB)
 
+#When looking at AIC and bootstrapping, GAM is best
+#however is it over-fitting? is this really important?
+#my reading led me to that GAM might be overkill and "beside the point" for this purpose
+#namely, all I really want here is the index, not to really dig into the nature of the response to the predictors
+
 #nb2.coefs <- data.frame(estimate = c(coef(summary(NB00))$cond[, "Estimate"], coef(GAM.NB)),
 #                        model    =  c(rep("glmmTMB", 38), rep("mgcv::gam", 57)),
 #                        term     = c(names(coef(summary(NB00))$cond[, "Estimate"]), names(coef(GAM.NB)))
 #)
 #save(dat, NB00, out, file="NJOTmodel.RData")
+#save.image("~/output/tog/njot.RData")
