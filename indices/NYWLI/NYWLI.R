@@ -214,7 +214,7 @@ nb <- buildglmmTMB(mod, dat, family = nbinom2,
                    buildmerControl = bmc)
 #Formula:          Tautog ~ 1 + Year + SurfaceTemp + Salinity
 
-NB <- glmmTMB(Tautog ~ 1 + Year + SurfaceTemp + Salinity, #when just year and surface temp, super high STD ERROR
+NB <- glmmTMB(formula(nb), #when just year and surface temp, super high STD ERROR
               data = dat,
               family = nbinom2)
 
@@ -224,7 +224,7 @@ zinb <- buildglmmTMB(mod,
                      family = nbinom2, buildmerControl = bmc2)
 #Formula: Tautog ~ 1 + Year + SurfaceTemp + Salinity
 
-ZINB <- glmmTMB(Tautog ~ 1 + Year + SurfaceTemp + Salinity ,
+ZINB <- glmmTMB(formula(zinb) ,
                 ziformula = ~ SurfaceTemp + Salinity,
                 data = dat,
                 family = nbinom2)
@@ -240,7 +240,7 @@ ZINB <- glmmTMB(Tautog ~ 1 + Year + SurfaceTemp + Salinity ,
 #                family = truncated_nbinom2(link = "log"))
 
 bmc4 <- buildmerControl(include= ~ Year) 
-#gam <- buildgamm4(mod, data = dat, family = nbinom2, buildmerControl = bmc4) doesn't work
+#gam <- buildgamm4(mod, data = dat, buildmerControl = bmc4) #works without the family specification
 
 GAM.NB <- gam(Tautog~ Year + s(SurfaceTemp)+s(Salinity) +s(DO),
               data = dat, family = 'nb') #still wins

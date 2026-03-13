@@ -13,6 +13,7 @@ library(reshape2)
 library(doBy)
 library(dplyr)
 library(foreign)
+
 root <- "C:/Users"
 usr <- "jgorzo"
 loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
@@ -23,7 +24,7 @@ geomean0 <- function(x) {
   exp(mean(log(x + 1))) - 1
 }
 
-pctPos <- function(x) {
+PctPos <- function(x) {
   x <- ifelse(x > 0, 1, 0)
   mean(x)
 }
@@ -75,4 +76,29 @@ dat$PosTow <- ifelse(dat$CPUE > 0, 1, 0)
 
 # create offset for variable tow durations
 dat$lnEffort <- log(dat$EFFORT)
-save(dat, file = "NJOT.RData")
+
+### Check collinearity
+pairs(~YEAR+MONTH+VESSEL+STRATA+DEPTH+STEMP+BTEMP+SSAL+BSAL+SDO+BDO,data=dat)
+round(with(dat, cor(data.frame(
+  as.numeric(as.character(YEAR)),
+  as.numeric(as.character(MONTH)),
+  as.numeric(VESSEL),
+  as.numeric(as.character(STRATA)),
+  DEPTH,STEMP,BTEMP,SSAL,BSAL,SDO,BDO),method="pearson")),2)
+
+# Check the variance inflation factor for a more statistical check.
+mod = lm(CPUE ~ YEAR + MONTH + STRATA + DEPTH + BTEMP + BSAL + BDO, data = dat) #+ VESSEL
+#ld.vars <- attributes(alias(mod)$Complete)$dimnames[[1]]
+vif_values <- car::vif(mod)
+barplot(vif_values, col = "skyblue", main = "Variance Inflation Factor (VIF)")
+#we need YEAR but the next highest is MONTH, and it's above 10 so should probably be removed
+
+with(dat, tapply(CPUE,list(YEAR,MONTH),PctPos))
+# vessel and YEAR highly correlated, so removing vessel
+#mod = lm(CPUE ~ YEAR + MONTH + STRATA + DEPTH + BTEMP + BSAL + BDO, data = dat)
+mod = lm(CPUE ~ YEAR + STRATA + DEPTH + BTEMP + BSAL + BDO, data = dat)
+vif(mod)
+pairs(~CPUE + YEAR + STRATA + DEPTH + BTEMP + BSAL + BDO,data=dat)
+round(with(dat, cor(data.frame(CPUE,as.numeric(as.character(YEAR)),as.numeric(as.character(STRATA)),DEPTH,BTEMP,BSAL,BDO),method="pearson")),2)
+mod <- as.formula("CPUE ~ YEAR + STRATA + DEPTH + BTEMP + BSAL + BDO")
+#save(dat, mod, file="NJOTmod.RData")
