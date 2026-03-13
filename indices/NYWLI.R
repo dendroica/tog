@@ -202,8 +202,11 @@ pairs(~ Month + Station + SurfaceTemp + Salinity + DO, data = dat)
 p.data <- data.frame(
   Year = levels(dat$Year),
   SurfaceTemp = mean(dat$SurfaceTemp),
-  Salinity = mean(dat$Salinity)
+  Salinity = mean(dat$Salinity),
+  DO = mean(dat$DO)
 )
+p.data <- p.data[p.data$Year > 1986,]
+p.data <- p.data[!p.data$Year %in% c(1997, 2010),]
 
 mod <- as.formula("Tautog ~ Year + SurfaceTemp + Salinity + DO")
 bmc <- buildmerControl(include= ~ Year)
@@ -239,7 +242,7 @@ ZINB <- glmmTMB(Tautog ~ 1 + Year + SurfaceTemp + Salinity ,
 bmc4 <- buildmerControl(include= ~ Year) 
 #gam <- buildgamm4(mod, data = dat, family = nbinom2, buildmerControl = bmc4) doesn't work
 
-GAM.NB <- gam(Tautog~ Year + s(SurfaceTemp)+s(Salinity), #+s(DO),
+GAM.NB <- gam(Tautog~ Year + s(SurfaceTemp)+s(Salinity) +s(DO),
               data = dat, family = 'nb') #still wins
 AICtab(NB, ZINB, GAM.NB)
 
@@ -258,13 +261,11 @@ SE2 <- boot.GAM(GAM.NB, nboots = 1000) #100% converged
 #     Fitting terminated with step failure - check results carefully
 
 index.out <- data.frame(
-  Year = as.numeric(unique(dat$Year)),
+  Year = as.numeric(unique(as.character(dat$Year))),
   # Station=as.character(unique(dat$Station)), #use unique rather than levels bc removed 3 years
   Index = predict(GAM.NB, newdata = p.data, type = "response")
 )
-
 index.out <- cbind.data.frame(index.out, SE2)
-index.out$Year <- as.integer(levels(p.data$Year))
 
 allyrs <- 1989:2024
 missing <- allyrs[!allyrs %in% p.data$Year]
@@ -281,3 +282,12 @@ ggplot(index.out) +
   geom_line(aes(x = Year, y = Index)) +
   ylim(c(0, NA)) +
   theme_bw()
+#save(index.out, file="NYWLI.RData")
+
+sim.GAM <- simulateResiduals(GAM.NB)
+plot(sim.GAM, quantreg=T) 
+vars <- names(GAM.NB$model)
+vars <- vars[vars!="Tautog"]
+for(v in vars){ #doesn't work?
+  plotResiduals(sim.GAM, form=dat[,v], sub=v, quantreg=T)
+}
