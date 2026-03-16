@@ -56,8 +56,9 @@ AICtab(NB00, ZINB00, ZANB, ZANB1, GAM.NB)
 
 #When looking at AIC and bootstrapping, GAM is best
 #however is it over-fitting? is this really important?
-#my reading led me to that GAM might be overkill and "beside the point" for this purpose
-#namely, all I really want here is the index, not to really dig into the nature of the response to the predictors
+#my reading led me to that GAM might be overkill and "beside the point" for this
+#purpose; namely, all I really want here is the index, not to really dig into
+#the nature of the response to the predictors
 
 #nb2.coefs <- data.frame(estimate = c(coef(summary(NB00))$cond[, "Estimate"], coef(GAM.NB)),
 #                        model    =  c(rep("glmmTMB", 38), rep("mgcv::gam", 57)),
