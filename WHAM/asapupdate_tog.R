@@ -1,6 +1,11 @@
 library(wham)
-source("4-catch_at_age.R") #waa0, caa_out, total_weight
+source("4-catch_at_age.R")
+caa <- CAA("jgorzo")
+waa0 <- caa[[1]]
+caa_out <- caa[[2]]
+total_weight <- caa[[3]]
 #load model workspaces for IAA
+
 endyr <- 2024
 asap <- read_asap3_dat("C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/asap/FINAL/ORIG.DAT")
 n <- endyr - asap[[1]]$dat$R_avg_end

@@ -8,9 +8,9 @@ library(tidyverse)
 library(readxl)
 library(ggplot2)
 
+CAA <- function(usr) { #galax, jgorzo
 # INPUTS USED#############################
 root <- "C:/Users"
-usr <- "galax" #"jgorzo"
 loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
 root <- file.path(root, usr, loc)
 # root <- "/media/jess/9CE61C02E61BDB7A/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents"
@@ -224,3 +224,4 @@ waa0[is.na(waa0)] <- 0
 #write.csv(waa0, file.path(root, "output/tog/waa-orig.csv"))
 discard_weights <- apply(waa0 * rec_discard_caa_annual, 1, sum) * .001
 harvest_weights <- apply(waa0 * rec_harvest_caa_annual, 1, sum) * .001
+return(list(waa0, caa_out, total_weight))}
