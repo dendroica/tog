@@ -57,23 +57,34 @@ vts24 <- read_excel(file.path(root, "data/tog/RE_ ventless trap survey data",
                               "NJDEP Trap_survey_yr_9_2024.xlsx"), sheet = "AllCombined")
 names(vts24) <- tolower(names(vts24))
 vts24 <- vts24[,which(names(vts24) %in% names(vts17))]
-
 vts <- rbind(vts16, vts17, vts18, vts19, vts20, vts21, vts22, vts23) %>%
   arrange(haul_date) %>% rename(onoff=`on/off reef`)
+vts[,c("season", "species")] <- apply(vts[,c("season", "species")], 2, tolower)
+vts[vts$vessel=="reef bound",]$vessel <- "reefbound"
+vts[vts$vessel=="resiliance",]$vessel <- "resilience"
 
 counts <- vts %>%
   group_by(year, set_date, haul_date, season, reef, soak_time, trap_id, material, vessel, onoff, species) %>%
   summarise(count = n()) %>% ungroup()
 filled <- counts %>%
   complete(species, nesting(year, haul_date, trap_id, reef, soak_time, material, onoff),
-           fill=list(count=0)) %>% filter(species == "Tautog")
-filled$year <- as.factor(filled$year)
-allvars <- "count ~ year + season + set_date + haul_date + reef + soak_time + (1|trap_id) + material + vessel + onoff"
+           fill=list(count=0)) %>% filter(species == "tautog" & !is.na(year))
+filled$Year <- as.factor(filled$year)
+filled$material <- as.factor(filled$material)
+filled$trap_id <- as.factor(filled$trap_id)
+allvars <- "count ~ Year + season + set_date + haul_date + reef + soak_time + (1|trap_id) + material + vessel"
 mod <- as.formula(allvars)
-bmc <- buildmerControl(include= ~ year) #+ (1|site)
+bmc <- buildmerControl(include= ~ Year) #+ (1|site)
 nb <- buildglmmTMB(mod, filled, family = nbinom2, 
                    buildmerControl = bmc)
 NB <- glmmTMB(formula(nb), #when just year and surface temp, super high STD ERROR
               data = filled,
               family = nbinom2)
-SE <- boot.NB(NB, nboots=1000)
+SE <- boot.NB(NB, nboots=1000) #100% converged
+p.data <- expand.pred(NB$frame)
+index.out <- data.frame(Year=as.numeric(as.character(unique(filled$Year))), #use unique rather than levels bc removed 3 years
+                        Index= predict(NB, newdata=p.data, type="response"))
+
+gamselect <- buildgamm4(mod, data = filled, buildmerControl = bmc)
+GAM.NB <- gam(formula(gamselect), data = filled, family = 'nb') #still wins
+#SE2 <- boot.GAM(GAM.NB, nboots = 1000)

@@ -238,10 +238,7 @@ ZINB <- glmmTMB(formula(zinb) ,
 #                ziformula = ~.,
 #                data = dat,
 #                family = truncated_nbinom2(link = "log"))
-
-bmc4 <- buildmerControl(include= ~ Year) 
-#gam <- buildgamm4(mod, data = dat, buildmerControl = bmc4) #works without the family specification
-
+#gam <- buildgamm4(mod, data = dat, buildmerControl = bmc) #works without the family specification
 GAM.NB <- gam(Tautog~ Year + s(SurfaceTemp)+s(Salinity) +s(DO),
               data = dat, family = 'nb') #still wins
 AICtab(NB, ZINB, GAM.NB)
