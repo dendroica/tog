@@ -75,7 +75,9 @@ boot.ZI <- function(best=NULL, nboots=1000, CI=0.95, print.prog=T){
 boot.NB <- function(best=NULL, nboots=1000, CI=0.95, print.prog=T){
   dat <- best$frame
   dat$YEAR <- dat[,grep("YEAR", names(dat), ignore.case = T)]
-  yrs = as.numeric(levels(dat$YEAR))
+  if(is.factor(dat$YEAR)) {
+    yrs = as.numeric(levels(dat$YEAR))
+  } else {yrs = as.numeric(dat$YEAR)}
   index = matrix(nrow = length(yrs),ncol = nboots)
   convg <- vector()
   p.data = expand.pred(best$frame, re=best$modelInfo$grpVar)

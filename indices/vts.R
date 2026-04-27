@@ -1,5 +1,8 @@
 library(readxl)
 library(dplyr)
+library(glmmTMB)
+source("./indices/bootstrap_functions.r")
+
 base_path <- "C:/Users"
 usr <- "jgorzo"
 loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
@@ -56,16 +59,21 @@ names(vts24) <- tolower(names(vts24))
 vts24 <- vts24[,which(names(vts24) %in% names(vts17))]
 
 vts <- rbind(vts16, vts17, vts18, vts19, vts20, vts21, vts22, vts23) %>%
-  arrange(haul_date) 
+  arrange(haul_date) %>% rename(onoff=`on/off reef`)
 
 counts <- vts %>%
-  group_by(year, haul_date, reef, soak_time, trap_id, material, species) %>%
+  group_by(year, set_date, haul_date, season, reef, soak_time, trap_id, material, vessel, onoff, species) %>%
   summarise(count = n()) %>% ungroup()
 filled <- counts %>%
-  complete(species, nesting(year, haul_date, trap_id, reef, soak_time, material),
+  complete(species, nesting(year, haul_date, trap_id, reef, soak_time, material, onoff),
            fill=list(count=0)) %>% filter(species == "Tautog")
-
-mod <- as.formula("Tautog ~ Year + SurfaceTemp + Salinity + DO")
-bmc <- buildmerControl(include= ~ Year) #+ (1|site)
-nb <- buildglmmTMB(mod, dat, family = nbinom2, 
+filled$year <- as.factor(filled$year)
+allvars <- "count ~ year + season + set_date + haul_date + reef + soak_time + (1|trap_id) + material + vessel + onoff"
+mod <- as.formula(allvars)
+bmc <- buildmerControl(include= ~ year) #+ (1|site)
+nb <- buildglmmTMB(mod, filled, family = nbinom2, 
                    buildmerControl = bmc)
+NB <- glmmTMB(formula(nb), #when just year and surface temp, super high STD ERROR
+              data = filled,
+              family = nbinom2)
+SE <- boot.NB(NB, nboots=1000)
