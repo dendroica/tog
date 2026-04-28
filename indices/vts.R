@@ -111,6 +111,7 @@ b1 <- lme4::bootMer(NB, FUN=get_fixef, nsim=1000, .progress="txt")
 print(b1)
 boot_ci <- confint(b1, type = "perc")
 #https://easystats.github.io/parameters/reference/bootstrap_model.html
+#https://rpubs.com/Mchesney/capstone
 ###from script
 SE <- boot.NB(NB, nboots=1000) #come back to check this tomorrow! might have to make categorical vars factors...
 p.data <- expand.pred(NB$frame)
