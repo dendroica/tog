@@ -1,6 +1,8 @@
 library(readxl)
 library(dplyr)
 library(glmmTMB)
+library(gamm4)
+library(lme4)
 source("./indices/bootstrap_functions.r")
 
 base_path <- "C:/Users"
@@ -59,20 +61,42 @@ names(vts24) <- tolower(names(vts24))
 vts24 <- vts24[,which(names(vts24) %in% names(vts17))]
 vts <- rbind(vts16, vts17, vts18, vts19, vts20, vts21, vts22, vts23) %>%
   arrange(haul_date) %>% rename(onoff=`on/off reef`)
+vts <- vts[,which(names(vts) %in% names(vts24))]
+vts <- rbind(vts, vts24)
 vts[,c("season", "species")] <- apply(vts[,c("season", "species")], 2, tolower)
 vts[vts$vessel=="reef bound",]$vessel <- "reefbound"
 vts[vts$vessel=="resiliance",]$vessel <- "resilience"
+vts$reef <- toupper(vts$reef)
+vts[grep("u", vts$total_length_mm),]$total_length_mm <- "245"
+vts[which(vts$total_length_mm=="NA"),]$total_length_mm <- "1"
+vts$total_length_mm <- as.integer(vts$total_length_mm)
+vts <- vts %>% filter(total_length_mm > 0 & total_length_mm < 2000)
+vts$season <- factor(vts$season, levels=c("spring", "summer", "fall", "winter"))
+tog <- vts[vts$species=="tautog",]
+ggplot(tog, aes(x=season, y=total_length_mm)) + geom_point()
 
 counts <- vts %>%
-  group_by(year, set_date, haul_date, season, reef, soak_time, trap_id, material, vessel, onoff, species) %>%
+  group_by(year, set_date, haul_date, season, reef, soak_time, trap_id, vessel, species) %>%
   summarise(count = n()) %>% ungroup()
 filled <- counts %>%
-  complete(species, nesting(year, haul_date, trap_id, reef, soak_time, material, onoff),
+  complete(species, nesting(year, set_date, haul_date, season, reef, soak_time, trap_id, vessel),
            fill=list(count=0)) %>% filter(species == "tautog" & !is.na(year))
+ggplot(data = filled, aes(x = reef, y = count)) +
+  geom_bar(position = "dodge", stat = "sum") #+
+  #facet_wrap(~Year, scales = "free")
+ #+
+#facet_wrap(~Year, scales = "free")
+filled <- filled %>% filter(reef != "S7")
 filled$Year <- as.factor(filled$year)
-filled$material <- as.factor(filled$material)
+ggplot(data = filled, aes(x = Year)) +
+  geom_histogram(stat="count")
+ggplot(data = filled, aes(x = Year, y = count)) +
+  geom_bar(position = "dodge", stat = "sum")
+#filled$material <- as.factor(filled$material)
 filled$trap_id <- as.factor(filled$trap_id)
-allvars <- "count ~ Year + season + set_date + haul_date + reef + soak_time + (1|trap_id) + material + vessel"
+filled$vessel <- as.factor(filled$vessel)
+
+allvars <- "count ~ Year + season + set_date + haul_date + (1|reef) + soak_time + (1|trap_id) + (1|vessel)"
 mod <- as.formula(allvars)
 bmc <- buildmerControl(include= ~ Year) #+ (1|site)
 nb <- buildglmmTMB(mod, filled, family = nbinom2, 
@@ -80,11 +104,31 @@ nb <- buildglmmTMB(mod, filled, family = nbinom2,
 NB <- glmmTMB(formula(nb), #when just year and surface temp, super high STD ERROR
               data = filled,
               family = nbinom2)
-SE <- boot.NB(NB, nboots=1000) #100% converged
+#fm1R <- refit(NB, simulate(NB)[[1]])
+get_fixef <- function(x) fixef(x)$cond
+b1 <- lme4::bootMer(NB, FUN=get_fixef, nsim=1000, .progress="txt")
+#View standard errors
+print(b1)
+boot_ci <- confint(b1, type = "perc")
+#https://easystats.github.io/parameters/reference/bootstrap_model.html
+###from script
+SE <- boot.NB(NB, nboots=1000) #come back to check this tomorrow! might have to make categorical vars factors...
 p.data <- expand.pred(NB$frame)
 index.out <- data.frame(Year=as.numeric(as.character(unique(filled$Year))), #use unique rather than levels bc removed 3 years
                         Index= predict(NB, newdata=p.data, type="response"))
+index.out <- cbind.data.frame(index.out, SE)
+index.out$CV <- index.out$SE / index.out$Index
+index.out$scale <- index.out$Index / mean(index.out$Index)
+#####
+
+ggplot(index.out) +
+  geom_ribbon(aes(x = Year, ymin = LCI, ymax = UCI), alpha = 0.4) +
+  geom_point(aes(x = Year, y = Index), shape = 16) +
+  geom_line(aes(x = Year, y = Index)) +
+  ylim(c(0, NA)) +
+  theme_bw()
+#save(index.out, file="NYWLI.RData")
 
 gamselect <- buildgamm4(mod, data = filled, buildmerControl = bmc)
-GAM.NB <- gam(formula(gamselect), data = filled, family = 'nb') #still wins
+GAM.NB <- gamm4(formula(gamselect), data = filled, family = 'nb') #still wins
 #SE2 <- boot.GAM(GAM.NB, nboots = 1000)
