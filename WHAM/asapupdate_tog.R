@@ -66,3 +66,9 @@ asap[[1]]$dat$catch_Neff #add values for new years
 asap[[1]]$dat$IAA_mats[[1]] #add data for new years
 asap[[1]]$dat$IAA_mats[[2]] #add data for new years
 asap[[1]]$dat$IAA_mats[[3]] #add data for new years
+
+#[[1]]$index.names
+#[1] "NY seine" "NJ trawl" "MRIP" 
+
+#[[1]]$dat$index.names
+#[1] "NY seine" "NJ trawl" "MRIP"   

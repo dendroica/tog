@@ -3,6 +3,7 @@ library(dplyr)
 library(glmmTMB)
 library(gamm4)
 library(lme4)
+library(buildmer)
 source("./indices/bootstrap_functions.r")
 
 base_path <- "C:/Users"
@@ -98,23 +99,26 @@ filled$vessel <- as.factor(filled$vessel)
 
 allvars <- "count ~ Year + season + set_date + haul_date + (1|reef) + soak_time + (1|trap_id) + (1|vessel)"
 mod <- as.formula(allvars)
-bmc <- buildmerControl(include= ~ Year) #+ (1|site)
+bmc <- buildmerControl(include= ~ (0 + Year)) #+ (0 +)
 nb <- buildglmmTMB(mod, filled, family = nbinom2, 
                    buildmerControl = bmc)
 NB <- glmmTMB(formula(nb), #when just year and surface temp, super high STD ERROR
               data = filled,
               family = nbinom2)
 #fm1R <- refit(NB, simulate(NB)[[1]])
-get_fixef <- function(x) fixef(x)$cond
-b1 <- lme4::bootMer(NB, FUN=get_fixef, nsim=1000, .progress="txt")
+#get_fixef <- function(x) fixef(x)$cond
+#b1 <- lme4::bootMer(NB, FUN=get_fixef, nsim=1000, .progress="txt")
 #View standard errors
-print(b1)
-boot_ci <- confint(b1, type = "perc")
+#print(b1)
+#boot_ci <- confint(b1, type = "perc")
+#b1$CV <- b1$SE / index.out$Index
 #https://easystats.github.io/parameters/reference/bootstrap_model.html
 #https://rpubs.com/Mchesney/capstone
 ###from script
 SE <- boot.NB(NB, nboots=1000) #come back to check this tomorrow! might have to make categorical vars factors...
 p.data <- expand.pred(NB$frame)
+p.data$trap_id <- NA
+p.data$vessel <- NA
 index.out <- data.frame(Year=as.numeric(as.character(unique(filled$Year))), #use unique rather than levels bc removed 3 years
                         Index= predict(NB, newdata=p.data, type="response"))
 index.out <- cbind.data.frame(index.out, SE)

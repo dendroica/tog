@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
   cache = FALSE
 )
 root <- "C:/Users"
-usr <- "galax"
+usr <- "jgorzo"
 loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
 root <- file.path(root, usr, loc)
 ```
