@@ -5,7 +5,7 @@ library(knitr, quietly = TRUE, verbose = FALSE)
 library(dplyr)
 library(tidyr)
 root <- "C:/Users"
-usr <- "jgorzo"
+usr <- "galax"
 loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
 root <- file.path(root, usr, loc)
 

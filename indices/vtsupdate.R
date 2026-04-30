@@ -8,7 +8,6 @@ root <- file.path(base_path, usr, loc)
 
 load(file.path(root, "output/tog/vtsindex.RData"))
 asap <- read_asap3_dat(file.path(root, "output/tog/asap/FINAL/ORIG.DAT"))
-vts <- read_asap3_dat(file.path(root, "output/tog/asap/vts.DAT"))
 asap[[1]]$dat$n_indices <- 4
 #in my case, I used all the same options as the ocean trawl
 #but look at these under Index Specification, Index Selectivity
