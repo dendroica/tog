@@ -150,28 +150,28 @@ MCMC.inorig <- read.table(paste0(file.path(pwd, fnorig), ".MCM"), header=T)
 # SSB in terminal year
 ssb.mcmcorig <- MCMC.inorig[,paste0("SSB", asap.baseorig$parms$endyr)]
 
-SSB_minorig <-quantile(ssb.mcmcorig, probs=0.05)
-SSB_maxorig <- quantile(ssb.mcmcorig, probs=0.95)
+SSB_min <-quantile(ssb.mcmcorig, probs=0.05)
+SSB_max <- quantile(ssb.mcmcorig, probs=0.95)
 
 # 3-year average from MCMC runs
 Y3orig <- c(asap.baseorig$parms$endyr, asap.baseorig$parms$endyr-1, asap.baseorig$parms$endyr-2)
 f.mcmcorig <-   MCMC.inorig[,paste0("Fmult_", Y3orig)]
-f.mcmcorig$F_3yrorig <- apply(f.mcmcorig, 1, mean)
+f.mcmcorig$F_3yr <- apply(f.mcmcorig, 1, mean)
 
-F_minorig <- quantile(f.mcmcorig$F_3yrorig, probs=0.05)
-F_maxorig <- quantile(f.mcmcorig$F_3yrorig, probs=0.95)
+F_minorig <- quantile(f.mcmcorig$F_3yr, probs=0.05)
+F_maxorig <- quantile(f.mcmcorig$F_3yr, probs=0.95)
 
 # 90% CIs for plotting
-CI_boxorig <- data.frame(SSB_CI1=c(SSB_minorig, SSB_minorig, SSB_minorig, SSB_maxorig),
-                     SSB_CI2=c(SSB_maxorig, SSB_minorig, SSB_maxorig, SSB_maxorig),
+CI_boxorig <- data.frame(SSB_CI1=c(SSB_min, SSB_min, SSB_min, SSB_max),
+                     SSB_CI2=c(SSB_max, SSB_min, SSB_max, SSB_max),
                      F_CI1=c(F_minorig, F_minorig, F_maxorig, F_minorig),
                      F_CI2=c(F_minorig, F_maxorig, F_maxorig, F_maxorig))
 
 ## No BRPs, only the box
 ggplot() +   
   geom_segment(data=CI_boxorig, aes(x=SSB_CI1, y=F_CI1, xend=SSB_CI2, yend=F_CI2)) +
-  geom_segment(aes(x=SSB[nyears,1], xend=SSB[nyears,1], y=F_minorig, yend=F_maxorig, lty="90% CI")) +
-  geom_segment(aes(x=SSB_minorig, xend=SSB_maxorig, y=F_3yrorig[nyears,1], yend=F_3yrorig[nyears,1], lty="90% CI"))+
+  geom_segment(aes(x=SSBorig[nyears,1], xend=SSBorig[nyears,1], y=F_minorig, yend=F_maxorig, lty="90% CI")) +
+  geom_segment(aes(x=SSB_min, xend=SSB_max, y=F_3yrorig[nyears,1], yend=F_3yrorig[nyears,1], lty="90% CI"))+
   # geom_hline(data=F_reforig, aes(yintercept=value, lty=BRP))+
   # geom_vline(data=SSB_reforig, aes(xintercept=value, lty=BRP))+
   geom_point(data=F_SSBorig, aes(x=SSB, y=F_rep, color=Metric, shape=Metric)) +

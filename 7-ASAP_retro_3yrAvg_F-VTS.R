@@ -354,3 +354,4 @@ ggplot(base_out) + geom_line(aes(x=Year, y=F_rep)) +
   scale_shape_manual(values=c(16), name=NULL) +
   scale_y_continuous(name="3-Year Average F", limits=c(0, NA), labels=scales::comma)+
   theme_bw()
+
