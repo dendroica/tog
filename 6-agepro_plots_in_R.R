@@ -33,7 +33,11 @@ SSB_thresh <- round(median(c(5.9948,
 # We'll do the same thing for the SSB target
 #agepro <- dget("C:\\Users\\katie_d\\Documents\\AGEPRO\\MARI_SSB_Target_2021_2025-06-30_16-12-28\\MARI_SSB_Target_2021.rdat")
 #SSB_target <- round(median(agepro$ssb$pct50[90:100]), 0)
-SSB_target = round(median(c(7.9936, 7.9867, 7.9948, 7.9875, 7.9817, 7.9783, 7.9837, 7.9911, 7.9893, 7.9671))*1000,0)
+SSB_target = round(
+  median(
+    c(7.9936,
+      7.9867, 7.9948, 7.9875, 7.9817, 7.9783, 7.9837, 7.9911, 7.9893, 7.9671)
+    )*1000,0)
 # Now we can plot the short-term projections with the reference points
 
 #---- Short-term projections

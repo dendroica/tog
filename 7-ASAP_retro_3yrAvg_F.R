@@ -716,4 +716,3 @@ ggplot(base_out) + geom_line(aes(x=Year, y=F_rep)) +
   theme_bw()
 
 #ggsave("F_status.png", height=4.5, width=6.5)
-#>>>>>>> 197c7cd3f658f521c8068a643cc5569faba5bad2:6a-ASAP_retro_3yrAvg_F.R
