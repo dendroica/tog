@@ -1,9 +1,14 @@
 library(wham)
 source("indices/vtsage.R")
 source("WHAM/asapwrite.R")
-load("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/vtsindex.RData")
-asap <- read_asap3_dat("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/asap/FINAL/ORIG.DAT")
-vts <- read_asap3_dat("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/asap/vts.DAT")
+base_path <- "C:/Users"
+usr <- "galax"
+loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
+root <- file.path(base_path, usr, loc)
+
+load(file.path(root, "output/tog/vtsindex.RData"))
+asap <- read_asap3_dat(file.path(root, "output/tog/asap/FINAL/ORIG.DAT"))
+vts <- read_asap3_dat(file.path(root, "output/tog/asap/vts.DAT"))
 asap[[1]]$dat$n_indices <- 4
 #in my case, I used all the same options as the ocean trawl
 #but look at these under Index Specification, Index Selectivity
@@ -38,4 +43,4 @@ asap[[1]]$dat$q_ini <- c(asap[[1]]$dat$q_ini, asap[[1]]$dat$q_ini[length(asap[[1
 asap[[1]]$comments <- append(asap[[1]]$comments, "# Index-4 Selectivity Data ", after = 43)
 asap[[1]]$comments <- append(asap[[1]]$comments, "# Index-4 Data ", after = 47)
 
-writeoutasap(asap, "C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/asap/vts.dat")
+writeoutasap(asap, file.path(root, "output/tog/asap/vts.dat"))
