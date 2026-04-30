@@ -8,26 +8,32 @@
 library(tidyverse)
 
 # We set the F reference points based on the ASAP output
-F_thresh <- 0.33
-F_target <- 0.2
+F_thresh <- 0.324995790032184
+F_target <- 0.197726475852373
 
 #---- Long-term projections ----
-#agepro <- dget("C:\\Users\\katie_d\\Documents\\AGEPRO\\MARI_SSB_Thresh_2021_2025-06-30_16-00-12\\MARI_SSB_Thresh_2021.rdat")
-
+#agepro <- dget("C:/Users/galax/OneDrive/Documents/AGEPRO/vts30_2026-04-30_14-53-48/vts30.rdat")
 #str(agepro)
-
 #plot(agepro$ssb$pct50, ylim=c(0, 7000))
 
 # Where SSB stabilizes under the F threshold (F30%SPR) is the SSB threshold. 
 # We use the median of the last 10 years of this projections as the SSB threshold
-
 #SSB_thresh <- round(median(agepro$ssb$pct50[90:100]), 0)
-SSB_thresh = 5929
+SSB_thresh <- round(median(c(5.9948,
+                             5.9963,
+                             6.0025,
+                             6.0035,
+                             6.0024,
+                             5.9973,
+                             6.0041,
+                             6.0074,
+                             6.0130,
+                             5.9977))*1000, 0)
 
 # We'll do the same thing for the SSB target
 #agepro <- dget("C:\\Users\\katie_d\\Documents\\AGEPRO\\MARI_SSB_Target_2021_2025-06-30_16-12-28\\MARI_SSB_Target_2021.rdat")
 #SSB_target <- round(median(agepro$ssb$pct50[90:100]), 0)
-SSB_target = 7910
+SSB_target = round(median(c(7.9936, 7.9867, 7.9948, 7.9875, 7.9817, 7.9783, 7.9837, 7.9911, 7.9893, 7.9671))*1000,0)
 # Now we can plot the short-term projections with the reference points
 
 #---- Short-term projections
