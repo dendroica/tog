@@ -1,4 +1,14 @@
 writeoutasap <- function(asap, outfile) {
+N <- asap[[1]]$dat$n_indices
+indices <- sapply(1:N, function(x) {
+  c(paste0("# Index-", x, " Selectivity Data"),
+    capture.output(write.table(asap[[1]]$dat$index_sel_ini[[x]], sep="\t", row.names=F, col.names=F)))
+})
+
+index_data <- sapply(1:N, function(x) {
+  c(paste0("# Index-", x, " Data"),
+    capture.output(write.table(asap[[1]]$dat$IAA_mats[[x]], sep="\t", row.names=F, col.names=F)))
+})
 asapfile <- c("# ASAP VERSION 3.0",
 "# NYB final model_4 sel_1989",
 "#",
@@ -89,18 +99,8 @@ capture.output(write.table(t(asap[[1]]$dat$index_sel_end_age), row.names=F, col.
 capture.output(write.table(t(asap[[1]]$dat$use_index_acomp), row.names=F, col.names=F)),
 "# Use Index (Yes=1)",
 capture.output(write.table(t(asap[[1]]$dat$use_index), row.names=F, col.names=F)),
-"# Index-1 Selectivity Data",
-capture.output(write.table(asap[[1]]$dat$index_sel_ini[[1]], sep="\t", row.names=F, col.names=F)),
-"# Index-2 Selectivity Data",
-capture.output(write.table(asap[[1]]$dat$index_sel_ini[[2]], sep="\t", row.names=F, col.names=F)),
-"# Index-3 Selectivity Data",
-capture.output(write.table(asap[[1]]$dat$index_sel_ini[[3]], sep="\t", row.names=F, col.names=F)),
-"# Index-1 Data",
-capture.output(write.table(asap[[1]]$dat$IAA_mats[[1]], sep="\t", row.names=F, col.names=F)),
-"# Index-2 Data",
-capture.output(write.table(asap[[1]]$dat$IAA_mats[[2]], sep="\t", row.names=F, col.names=F)),
-"# Index-3 Data",
-capture.output(write.table(asap[[1]]$dat$IAA_mats[[3]], sep="\t", row.names=F, col.names=F)),
+indices,
+index_data,
 "# Phase Control",
 "# Phase for F mult in 1st Year",
 asap[[1]]$dat$phase_F1,
