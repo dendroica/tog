@@ -7,7 +7,7 @@ root <- "C:/Users"
 usr <-  "galax" #"jgorzo" #
 loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
 root <- file.path(root, usr, loc)
-setwd(file.path(root, "output/tog/asap/VTS"))
+setwd(file.path(root, "output/tog/asap/test"))
 #---- ASAPplots library ----
 
 # Load the ASAPplots library, which will do a bunch of plots
@@ -21,8 +21,8 @@ library(dplyr)
 # Give it the name of the directory where your ASAP run is saved
 # and the name of the ASAP file for the run you want to plot
 
-pwd <- "base"
-fn <- "VTS_MANUAL"
+pwd <- "age"
+fn <- "VTS_age"
 
 # By default, PlotASAP will provide the plots as individual .png files and
 # as a compiled pdf with all the plots. For initial exploration of results,
