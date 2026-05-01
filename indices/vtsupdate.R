@@ -1,12 +1,12 @@
 library(wham)
-source("indices/vtsage.R")
 source("WHAM/asapwrite.R")
 base_path <- "C:/Users"
 usr <- "galax"
 loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
 root <- file.path(base_path, usr, loc)
-
 load(file.path(root, "output/tog/vtsindex.RData"))
+source("indices/vtsage.R")
+
 asap <- read_asap3_dat(file.path(root, "output/tog/asap/FINAL/ORIG.DAT"))
 asap[[1]]$dat$n_indices <- 4
 #in my case, I used all the same options as the ocean trawl
