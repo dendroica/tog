@@ -5,7 +5,7 @@ usr <- "galax"
 loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
 root <- file.path(base_path, usr, loc)
 load(file.path(root, "output/tog/vtsindex.RData"))
-source("indices/vtsage.R")
+source("indices/vtsage.R") #needs to be updated with current user path
 
 asap <- read_asap3_dat(file.path(root, "output/tog/asap/FINAL/ORIG.DAT"))
 asap[[1]]$dat$n_indices <- 4
