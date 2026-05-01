@@ -1,6 +1,6 @@
 library(wham)
 source("indices/vtsage.R")
-source("WHAM/asapwrite.R")
+source("WHAM/asapwrite_vts.R")
 base_path <- "C:/Users"
 usr <- "galax"
 loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
