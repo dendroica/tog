@@ -5,11 +5,7 @@ library(tidyverse)
 library(dplyr)
 library(readxl)
 library(ggplot2)
-root <- "C:/Users"
-usr <- "jgorzo"
-loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
-root <- file.path(root, usr, loc)
-
+root <- Sys.getenv("FILEPATH")
 #INPUTS: read in data for discard LF#########
 mrip9 <- read.csv(file.path(root, "data/tog/rec/Tautog_MRIP_Type9_lengths_2021-24.csv"), header=TRUE)
 #American Littoral Society 
