@@ -5,11 +5,7 @@ library(gamm4)
 library(lme4)
 library(buildmer)
 source("./indices/bootstrap_functions.r")
-
-base_path <- "C:/Users"
-usr <- "jgorzo"
-loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
-root <- file.path(base_path, usr, loc)
+root <- Sys.getenv("FILEPATH")
 
 vts16 <- read_excel(file.path(root, "data/tog/RE_ ventless trap survey data",
                                 "NJDEP Trap_survey_yr_1_2016.xlsx"), sheet = "trap_survey_yr_1")

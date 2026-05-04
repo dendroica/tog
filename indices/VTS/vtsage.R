@@ -4,10 +4,7 @@ library(rmarkdown, quietly = TRUE, verbose = FALSE)
 library(knitr, quietly = TRUE, verbose = FALSE)
 library(dplyr)
 library(tidyr)
-root <- "C:/Users"
-usr <- "galax"
-loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
-root <- file.path(root, usr, loc)
+root <- Sys.getenv("FILEPATH")
 
 vts16 <- read_excel(file.path(root, "data/tog/RE_ ventless trap survey data",
                               "NJDEP Trap_survey_yr_1_2016.xlsx"), sheet = "trap_survey_yr_1")

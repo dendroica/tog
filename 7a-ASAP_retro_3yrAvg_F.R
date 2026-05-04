@@ -13,10 +13,7 @@
 # the retrospective flow chart plots with the 3-year avg. F
 
 library(tidyverse)
-root <- "C:/Users"
-usr <- "galax"
-loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
-root <- file.path(root, usr, loc)
+root <- Sys.getenv("FILEPATH")
 
 asap <- file.path(root, "output/tog/asap/FINAL")
 

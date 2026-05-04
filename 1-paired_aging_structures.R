@@ -1,6 +1,6 @@
 library(readxl)
 library(ggplot2)
-setwd("C:\\Users\\jgorzo\\OneDrive - New Jersey Office of Information Technology\\Documents\\data\\")
+setwd(file.path(Sys.getenv("FILEPATH"), "data"))
 
 #INPUT#####################
 #lines below won't work if file is open

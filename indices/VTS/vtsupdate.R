@@ -1,9 +1,6 @@
 library(wham)
 source("WHAM/asapwrite.R")
-base_path <- "C:/Users"
-usr <- "galax"
-loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
-root <- file.path(base_path, usr, loc)
+root <- Sys.getenv("FILEPATH")
 load(file.path(root, "output/tog/vtsindex.RData"))
 source("indices/vtsage.R") #needs to be updated with current user path
 

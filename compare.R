@@ -1,5 +1,6 @@
+root <- Sys.getenv("FILEPATH")
 source("C:/Users/galax/Documents/tog/7a-ASAP_retro_3yrAvg_F.R")
-source("C:/Users/galax/Documents/tog/7-ASAP_retro_3yrAvg_F-VTS.R")
+source("C:/Users/galax/Documents/tog/indices/VTS/7-ASAP_retro_3yrAvg_F-VTS.R")
 
 F_ref$BRP <- c("Target VTS", "Threshold VTS")
 F_ref <- rbind(F_reforig, F_ref)

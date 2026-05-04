@@ -1,5 +1,5 @@
 library(wham)
-asap <- read_asap3_dat("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/asap/FINAL/ORIG.DAT")
+asap <- read_asap3_dat(file.path(Sys.getenv("FILEPATH"),"/output/tog/asap/FINAL/ORIG.DAT"))
 #will have to update for new indices
 asap[[1]]$dat$n_years #needs to be updated to number of years
 asap[[1]]$dat$n_fleet_sel_blocks #are you going to add sensitivity blocks?

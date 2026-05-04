@@ -3,10 +3,7 @@
 # Tautog SAS ASAP Webinar   #
 # July 1, 2025              #
 #---------------------------#
-root <- "C:/Users"
-usr <-  "galax" #"jgorzo" #
-loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
-root <- file.path(root, usr, loc)
+root <- Sys.getenv("FILEPATH")
 setwd(file.path(root, "output/tog/asap/test"))
 #---- ASAPplots library ----
 
