@@ -6,11 +6,7 @@ library(ggplot2)
 library(tidyverse)
 library(readxl)
 options(scipen=999)
-
-root <- "C:/Users"
-usr <- "jgorzo"
-loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
-root <- file.path(root, usr, loc)
+root <- Sys.getenv("FILEPATH")
 
 #INPUT####################################
 MRIP_har <- read.csv(file.path(root, "/data/tog/rec/Tautog_MRIP_AB1_LFs_2021-2024_NJNYB.csv"), header=TRUE)
