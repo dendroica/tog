@@ -1,9 +1,6 @@
 library(wham)
 source("4-catch_at_age.R")
-usr <- "jgorzo"
-asap <- read_asap3_dat(file.path("C:/Users", usr, 
-                                 "OneDrive - New Jersey Office of Information Technology",
-                                 "Documents/output/tog/asap/FINAL/ORIG.DAT"))
+asap <- read_asap3_dat(file.path(Sys.getenv("FILEPATH"), "output/tog/asap/FINAL/ORIG.DAT"))
 caa <- CAA(usr)
 waa0 <- caa[[1]]
 caa_out <- caa[[2]]
@@ -66,9 +63,3 @@ asap[[1]]$dat$catch_Neff #add values for new years
 asap[[1]]$dat$IAA_mats[[1]] #add data for new years
 asap[[1]]$dat$IAA_mats[[2]] #add data for new years
 asap[[1]]$dat$IAA_mats[[3]] #add data for new years
-
-#[[1]]$index.names
-#[1] "NY seine" "NJ trawl" "MRIP" 
-
-#[[1]]$dat$index.names
-#[1] "NY seine" "NJ trawl" "MRIP"   
