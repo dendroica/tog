@@ -14,10 +14,7 @@ library(doBy)
 library(dplyr)
 library(foreign)
 
-root <- "C:/Users"
-usr <- "jgorzo"
-loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
-root <- file.path(root, usr, loc)
+root <- Sys.getenv("FILEPATH")
 source("./indices/bootstrap_functions.R")
 
 geomean0 <- function(x) {
