@@ -76,6 +76,9 @@ ocean_len <- tog %>%
   summarise(FREQUENCY = n()) %>% ungroup()
 ocean_len[which(ocean_len$total_length_mm==1), "FREQUENCY"] <- 0
 ocean_len$LENGTH <- floor(ocean_len$total_length_mm / 10)
+ggplot(data = ocean_len, aes(x = LENGTH)) +
+  geom_histogram()
+
 ### Step 1: Data processing
 yrs <- c(2021:2024) # unique(ocean_len$YEAR)
 # use min/max below [vs length(yrs)] to account for missing years
@@ -146,7 +149,17 @@ for (i in 1:length(yrs)) {
 yrs <- 2016:2020
 oldACs <- matrix(NA, nrow = length(yrs), ncol = 12)
 NAAs <- matrix(NA, nrow = length(yrs), ncol = 12)
-.alk <- alks[alks$Year == 2022, 1:11]
+#.alk <- alks[alks$Year == 2022, 1:11]
+alk <- alk2021numnj[,2:12] + alk2022numnj[,2:12] + alk2023numnj[,2:12] + alk2024numnj[,2:12]
+.alk <- alk %>%
+  mutate(rowsum = rowSums(.[grep("X", names(.))], na.rm = TRUE)) %>% # add row sum
+  mutate(across(1:11, .fns = function(x) {
+    x / rowsum
+  })) %>%
+  replace(is.na(.), 0) %>%
+  #rename("FL.cm" = "length") %>%
+  select(-rowsum)
+#.alk <- cbind(y, "FL.cm" = alk2021numnj[,1])
 
 for (i in 1:length(yrs)) {
   print(nrow(.alk))
