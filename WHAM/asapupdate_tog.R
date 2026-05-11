@@ -1,7 +1,7 @@
 library(wham)
 source("4-catch_at_age.R")
 asap <- read_asap3_dat(file.path(Sys.getenv("FILEPATH"), "output/tog/asap/FINAL/ORIG.DAT"))
-caa <- CAA(usr)
+
 waa0 <- caa[[1]]
 caa_out <- caa[[2]]
 total_weight <- caa[[3]]
