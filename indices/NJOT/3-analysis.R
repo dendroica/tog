@@ -1,7 +1,4 @@
-root <- "C:/Users"
-usr <- "jgorzo"
-loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
-root <- file.path(root, usr, loc)
+root <- Sys.getenv("FILEPATH")
 load(file.path(root, "output/tog/index/NJOTmodel.RData"))
 library(ggplot2)
 source("./indices/bootstrap_functions.R")
