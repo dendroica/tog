@@ -1,8 +1,8 @@
 library(buildmer)
 library(glmmTMB)
+library(mgcv)
 source("./indices/NJOT/1-data.R")
 
-#library(mgcv)
 bmc <- buildmerControl(include= ~offset(lnEffort) + YEAR)
 #mod <- as.formula("CPUE ~ YEAR + STRATA + DEPTH + BTEMP + BSAL + BDO")
 nb <- buildglmmTMB(mod, dat, family = nbinom2, buildmerControl = bmc)
@@ -50,9 +50,9 @@ bmc2 <- buildmerControl(include= ~offset(lnEffort) + YEAR) #, crit='F'
 #bestgam <- buildgamm4(CPUE~ YEAR + s(STRATA, bs="re") + s(DEPTH) + s(BDO)+s(BTEMP)+s(BSAL),
 #         data = dat, buildmerControl = bmc2)
 #GAM.NB <- gam(bestgam@model$gam$formula,
-              #data = dat, family = 'nb', method="ML")
+#              data = dat, family = 'nb', method="ML")
 #bootgam <- boot.GAM(GAM.NB, nboots=1000)
-AICtab(NB00, ZINB00, ZANB, ZANB1) #GAM.NB)
+AICtab(NB00, ZINB00, ZANB, ZANB1, GAM.NB)
 
 #When looking at AIC and bootstrapping, GAM is best
 #however is it over-fitting? is this really important?
