@@ -35,6 +35,7 @@ filled <- startyr:(indexstart-1)
 filled <- unname(cbind(filled, matrix(-1, indexstart-startyr, ncol(asap[[1]]$dat$IAA_mats[[1]])-1)))
 asap[[1]]$dat$IAA_mats[[4]] <- rbind(filled,vtsindex)
 
+#Lambdas-3
 asap[[1]]$dat$lambda_index <- c(asap[[1]]$dat$lambda_index, asap[[1]]$dat$lambda_index[length(asap[[1]]$dat$lambda_index)])
 asap[[1]]$dat$lambda_q <- c(asap[[1]]$dat$lambda_q, asap[[1]]$dat$lambda_q[length(asap[[1]]$dat$lambda_q)])
 asap[[1]]$dat$cv_q <- c(asap[[1]]$dat$cv_q, asap[[1]]$dat$cv_q[length(asap[[1]]$dat$cv_q)])
