@@ -65,8 +65,8 @@ index.out <- cbind.data.frame(index.out, out)
 index.out <- rbind(index.out, c(2020, -1, -1, -1, -1), c(2021, -1, -1, -1, -1))
 index.out$CV <- index.out$SE/index.out$Index
 
-index.out <- index.out[order(index.out$YEAR),]
-index.out$Method="NB"
+index.out_nj <- index.out[order(index.out$YEAR),]
+index.out_nj$Method="NB"
 #write.csv(index.out, "octrawl.csv")
 tmp <- rbind(index.out,nom)
 tmp

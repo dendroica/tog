@@ -257,34 +257,34 @@ SE2 <- boot.GAM(GAM.NB, nboots = 1000) #100% converged
 #  3: In newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L = G$L,  :
 #     Fitting terminated with step failure - check results carefully
 
-index.out <- data.frame(
+index.out_NY <- data.frame(
   Year = as.numeric(unique(as.character(dat$Year))),
   # Station=as.character(unique(dat$Station)), #use unique rather than levels bc removed 3 years
   Index = predict(GAM.NB, newdata = p.data, type = "response")
 )
-index.out <- cbind.data.frame(index.out, SE2)
+index.out_NY <- cbind.data.frame(index.out_NY, SE2)
 
 allyrs <- 1989:2024
 missing <- allyrs[!allyrs %in% p.data$Year]
-index.out <- index.out[index.out$Year > 1987, ]
-index.out <- rbind(index.out, c(1997, -1, -1, -1, -1), c(2010, -1, -1, -1, -1))
-index.out <- index.out[order(index.out$Year), ]
-index.out$CV <- index.out$SE / index.out$Index
-index.out$scale <- index.out$Index / mean(index.out$Index)
-index.out$Year <- index.out$Year + 1 #this survey needs to be lagged by a year
+index.out_NY <- index.out_NY[index.out_NY$Year > 1987, ]
+index.out_NY <- rbind(index.out_NY, c(1997, -1, -1, -1, -1), c(2010, -1, -1, -1, -1))
+index.out_NY <- index.out_NY[order(index.out_NY$Year), ]
+index.out_NY$CV <- index.out_NY$SE / index.out_NY$Index
+index.out_NY$scale <- index.out_NY$Index / mean(index.out_NY$Index)
+index.out_NY$Year <- index.out_NY$Year + 1 #this survey needs to be lagged by a year
 
-ggplot(index.out) +
+ggplot(index.out_NY) +
   geom_ribbon(aes(x = Year, ymin = LCI, ymax = UCI), alpha = 0.4) +
   geom_point(aes(x = Year, y = Index), shape = 16) +
   geom_line(aes(x = Year, y = Index)) +
   ylim(c(0, NA)) +
   theme_bw()
-#save(index.out, file="NYWLI.RData")
+#save(index.out_NY, file="NYWLI.RData")
 
 sim.GAM <- simulateResiduals(GAM.NB)
 plot(sim.GAM, quantreg=T) 
 vars <- names(GAM.NB$model)
 vars <- vars[vars!="Tautog"]
-for(v in vars){ #doesn't work?
-  plotResiduals(sim.GAM, form=dat[,v], sub=v, quantreg=T)
-}
+#for(v in vars){ #doesn't work?
+#  plotResiduals(sim.GAM, form=dat[,v], sub=v, quantreg=T)
+#}

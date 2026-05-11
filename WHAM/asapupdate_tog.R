@@ -1,5 +1,13 @@
 library(wham)
-source("4-catch_at_age.R")
+library(readxl)
+source("4-catch_at_age.R") #caa
+load(file.path(Sys.getenv("FILEPATH"), "output/tog/index/NYWLI_index.RData")) #index.out_NY
+source("./indices/NJOT/3a-analysis_nogam.R") #index.out_nj
+source("./indices/NJOT/4-age.R") #agecomp
+mrip <- read_xlsx(
+  file.path(root, "data/tog/MRIP indices tautog 1981-2024.xlsx"),
+  sheet = "NJNYB"
+)[, c("Year", "CPUE", "CV")]
 asap <- read_asap3_dat(file.path(Sys.getenv("FILEPATH"), "output/tog/asap/FINAL/ORIG.DAT"))
 
 waa0 <- caa[[1]]
@@ -59,7 +67,12 @@ asap[[1]]$dat$sel_block_assign[[1]] <- c(asap[[1]]$dat$sel_block_assign[[1]],
 #need to add
 asap[[1]]$dat$catch_cv #add values for new years
 asap[[1]]$dat$catch_Neff #add values for new years
+
 #index data
-asap[[1]]$dat$IAA_mats[[1]] #add data for new years
-asap[[1]]$dat$IAA_mats[[2]] #add data for new years
-asap[[1]]$dat$IAA_mats[[3]] #add data for new years
+asap[[1]]$dat$IAA_mats[[1]] <- unname(as.matrix(index.out_NY[index.out_NY$Year <= endyr,c("Year", "Index", "CV")]))
+
+olddata <- asap[[1]]$dat$IAA_mats[[2]][,c(1,4:ncol(asap[[1]]$dat$IAA_mats[[2]]))]
+updatedata <- rbind(olddata, c(2021, rep(-1, ncol(olddata)-2), 0), agecomp)
+asap[[1]]$dat$IAA_mats[[2]] <- unname(as.matrix(cbind(index.out_nj[,c("YEAR", "Index", "CV")], updatedata[,2:14])))
+#MRIP asap[[1]]$dat$IAA_mats[[3]]
+mrip <- mrip[mrip$Year >= asap[[1]]$dat$year1,]

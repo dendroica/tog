@@ -1,0 +1,153 @@
+library(ggplot2, quietly = TRUE, verbose = FALSE)
+library(readxl, quietly = TRUE, verbose = FALSE)
+library(rmarkdown, quietly = TRUE, verbose = FALSE)
+library(knitr, quietly = TRUE, verbose = FALSE)
+library(dplyr)
+library(tidyr)
+
+knitr::opts_chunk$set(
+  echo = TRUE,
+  cache = FALSE
+)
+root <- "C:/Users"
+usr <- "jgorzo"
+loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
+root <- file.path(root, usr, loc)
+
+########################## Index from length records:
+
+# Concatenation of Cruise6 [6 char], Stratum [leading zeros, 5 digits],
+#  Tow [leading zeros, 3 digits] and STA values [leading zeros 4 digits].
+library(foreign)
+len <- read.dbf(file.path(root, "data/tog/TOLENG.DBF"))
+catch <- read.dbf(file.path(root, "data/tog/TOABUN.DBF")) # Technology/Documents/data/tog/examples/NEFSC_Fall_Survey_Data_for_Std_V3.xlsx", #same as a in block above
+#  sheet="BLUEFISH_FALL_BIG_SAW60_09_21",range="A63:AJ713",na="NA")) # from v2 of the catch query
+catch <- catch[catch$YEAR > 1988, ]
+len <- len[len$YEAR > 1988, ]
+
+# len2 <- as.data.frame(read_xlsx("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/data/tog/examples/blf_nefsc_trawl_lengths_mgmtTrk.xlsx",sheet="Sheet1",
+#   range="A1:L12152"))
+
+catch <- catch[as.numeric(substr(catch$CRUCODE, 5, 5)) %in% 4:6, ]
+# table(indata2$Month) # check
+
+strata_weights <- data.frame("STRATUM" = 12:26,
+                             "zone" = rep(c("inner", "middle", "outer"), times = 5),
+                             "STRATUM_AREA"=c(14.7, 32.5, 76.7, 17.4, 81.3, 293, 59.9, 235.9, 279.9, 17.1, 198.7, 185.1, 34, 133.6, 131.9))
+total <- sum(strata_weights[strata_weights$zone == "inner",]$STRATUM_AREA)
+in_data <- merge(catch, strata_weights)
+in_data <- in_data[in_data$zone == "inner", ] # | indata2$zone=="middle"]
+#A <- len[len$ID %in% in_data$ID, ]
+ocean_len <- merge(in_data, len)
+
+# Verify that expanded len freq sums to expanded catch (i.e., the length
+#  records match the catch numbers):
+# Check first few by hand:
+ocean_len[1:25, c("ID", "NUMBER", "FREQUENCY")] # manually check a few
+
+# Check to see if there are any NAs:
+apply(apply(ocean_len[, c("LENGTH", "FREQUENCY")], 2, is.na), 2, any) # yes, so need to change:
+
+# Change missing lengths to 1cm:
+ocean_len[is.na(ocean_len$LENGTH), "LENGTH"] <- 1
+# Change missing frequencies to 0
+ocean_len[is.na(ocean_len$FREQUENCY), "FREQUENCY"] <- 0
+
+
+# Then automate to check all:
+summary(
+  tmp <- sapply(split(ocean_len, ocean_len$ID), function(z) {
+    z$NUMBER[1] - sum(z$FREQUENCY)
+  })
+) # pretty good! (+/- ~1e-13)
+plot(tmp) # note that Bigelow catch records are expanded somewhat differently than length records
+ocean_len[is.element(ocean_len$ID, names(which(tmp > 0))), ]
+ocean_len[is.element(ocean_len$ID, names(which(tmp < 0))), ]
+rm(tmp)
+
+# double check zeros:
+ocean_len[ocean_len$NUMBER == 0, c("NUMBER", "FREQUENCY")]
+################################################################################
+
+yrs <- c(2022:2024) # unique(ocean_len$YEAR)
+strata <- unique(ocean_len$STRATUM)
+# use min/max below [vs length(yrs)] to account for missing years
+out <- matrix(NA, nrow = 100, ncol = length(min(yrs):max(yrs))) # nrow = lenghts = 1:100 cm         # output storage matrix
+colnames(out) <- paste0("x", min(yrs):max(yrs))
+
+tes <- ocean_len %>% filter(YEAR > 2021 & YEAR < 2025) %>% group_by(STRATUM, LENGTH, YEAR) %>% summarise(freq = sum(FREQUENCY))
+test <- ocean_len %>% group_by(STRATUM, YEAR) %>% summarise(nsta = n_distinct(STA))
+t2 <- merge(tes, test)
+t2$meanFREQUENCY <- t2$freq / t2$nsta
+t2 <- t2 %>% complete(YEAR, LENGTH=full_seq(29:60, 1), STRATUM, fill=list(meanFREQUENCY=0))
+t2 <- merge(t2, strata_weights)
+t2$weighted_count <- t2$meanFREQUENCY * t2$STRATUM_AREA
+out <- t2 %>% group_by(LENGTH, YEAR) %>% 
+  summarise(weight_count = sum(weighted_count) / total) %>% 
+  pivot_wider(names_from = "YEAR", values_from = "weight_count", values_fill=0)
+
+colSums(out) # should equal stratified mean (& does!)
+
+################################################################################
+# Age the index (specify directory where ALKs are):
+indir <- "output/tog/alk/filled/opercboth"
+alk2021numnj <- read.csv(file.path(root, indir, "NJNYB-ALK_2021_filled.csv"))
+alk2022numnj <- read.csv(file.path(root, indir, "NJNYB-ALK_2022_filled.csv"))
+alk2023numnj <- read.csv(file.path(root, indir, "NJNYB-ALK_2023_filled.csv"))
+alk2024numnj <- read.csv(file.path(root, indir, "NJNYB-ALK_2024_filled.csv"))
+
+alks <- list(alk2021numnj, alk2022numnj, alk2023numnj, alk2024numnj)
+
+alkprops <- lapply(alks, function(y) {
+  y <- y %>%
+    mutate(rowsum = rowSums(.[grep("X", names(.))], na.rm = TRUE)) %>% # add row sum
+    mutate(across(2:12, .fns = function(x) {
+      x / rowsum
+    })) %>%
+    replace(is.na(.), 0) %>%
+    rename("FL.cm" = "length") %>%
+    select(-rowsum)
+})
+
+alkprops <- bind_rows(Map(function(x, y) {
+  y <- y %>% mutate("Year" = x)
+}, 2021:2024, alkprops))
+
+# alks<- rbind(alk2021numnj, alk2022numnj, alk2023numnj, alk2024numnj) %>%
+
+alks <- alkprops[, c(paste0("X", 2:12), "FL.cm", "Year")]
+################################################################################
+################################### ALKs #######################################
+####################### read in only one at a time #############################
+
+# Multinomial, seasonal ALK:
+################################################################################
+wtdLF <- out
+wtdLF <- wtdLF[wtdLF$LENGTH > 28 & wtdLF$LENGTH < 61,]
+# get length freq proportions
+# scaledWtdLF <- t(t(out)/colSums(out))
+
+# age composition of index (storage matrix):
+ACs <- matrix(NA, nrow = length(yrs), ncol = 12) # 8 cols = year, plus ages 0:6+
+NAAs <- matrix(NA, nrow = length(yrs), ncol = 12)
+
+for (i in 1:length(yrs)) {
+  .alk <- alks[alks$Year == yrs[i], 1:11] # & alk$Geo=="North"
+  print(nrow(.alk))
+  
+  wtdLF_annual <- wtdLF[, which(colnames(wtdLF)==as.character(yrs[i]))]
+  wtd <- do.call(cbind, apply(.alk, 2, function(x) x * wtdLF_annual))
+  names(wtd) <- 2:12
+  NAA <- colSums(wtd) # numbers at age
+  NAAs[i, ] <- c(yrs[i], NAA)
+  PAA <- NAA / sum(NAA) # proportions at age
+  ACs[i, 1] <- yrs[i]
+  ACs[i, 2:12] <- PAA
+}
+# rm(.alk,alk)
+agecomp <- ACs
+agecomp[is.na(agecomp)] <- -1
+agecomp <- cbind(agecomp[, 1:2], 0, agecomp[, 3:ncol(agecomp)])
+agecomp <- cbind(agecomp, c(35, 35, 0))
+# ACs;cbind(NAAs[,1],NAAs[,-1]/rowSums(NAAs[,-1]));NAAs
+Sys.time()
