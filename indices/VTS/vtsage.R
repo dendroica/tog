@@ -159,7 +159,6 @@ alk <- alk2021numnj[,2:12] + alk2022numnj[,2:12] + alk2023numnj[,2:12] + alk2024
   replace(is.na(.), 0) %>%
   #rename("FL.cm" = "length") %>%
   select(-rowsum)
-#.alk <- cbind(y, "FL.cm" = alk2021numnj[,1])
 
 for (i in 1:length(yrs)) {
   print(nrow(.alk))

@@ -1,13 +1,14 @@
 library(wham)
 source("WHAM/asapwrite.R")
 root <- Sys.getenv("FILEPATH")
-load(file.path(root, "output/tog/vtsindex.RData"))
+load(file.path(root, "output/tog/vts_index.RData"))
 source("indices/vtsage.R")
 asap <- read_asap3_dat(file.path(root, "output/tog/asap/FINAL/ORIG.DAT"))
 
 #ADD AN INDEX
-indexstart <- 2016
 asap[[1]]$dat$n_indices <- asap[[1]]$dat$n_indices + 1
+asap[[1]]$dat$index.names <- c(asap[[1]]$dat$index.names, "VTS")
+asap[[1]]$index.names <- c(asap[[1]]$index.names, "VTS")
 #in my case, I used all the same options as the ocean trawl
 #but look at these under Index Specification
 asap[[1]]$dat$index_units <- c(asap[[1]]$dat$index_units, asap[[1]]$dat$index_units[length(asap[[1]]$dat$index_units)])
@@ -21,18 +22,18 @@ asap[[1]]$dat$use_index <- c(asap[[1]]$dat$use_index, asap[[1]]$dat$use_index[le
 asap[[1]]$dat$use_index_acomp <- c(asap[[1]]$dat$use_index_acomp, asap[[1]]$dat$use_index_acomp[length(asap[[1]]$dat$use_index_acomp)])
 
 #Index Selectivity
+asap[[1]]$comments <- append(asap[[1]]$comments, "# Index-4 Selectivity Data ", after = 43)
 asap[[1]]$dat$index_sel_option <- c(asap[[1]]$dat$index_sel_option, asap[[1]]$dat$index_sel_option[length(asap[[1]]$dat$index_sel_option)])
 asap[[1]]$dat$index_sel_ini[[4]] <- asap[[1]]$dat$index_sel_ini[[2]]
 
 #Index Data
+asap[[1]]$comments <- append(asap[[1]]$comments, "# Index-4 Data ", after = 47)
 startyr <- asap[[1]]$dat$IAA_mats[[1]][1,1]
-vtsindex <- unname(as.matrix(cbind(index.out[,c("Year", "Index", "CV")], age1=0,ACs[,2:13])))
+vtsindex <- unname(as.matrix(cbind(index.out_vts[,c("Year", "Index", "CV")], age1=0,ACs[,2:13])))
+indexstart <- vtsindex[1,1]
 filled <- startyr:(indexstart-1)
 filled <- unname(cbind(filled, matrix(-1, indexstart-startyr, ncol(asap[[1]]$dat$IAA_mats[[1]])-1)))
-
 asap[[1]]$dat$IAA_mats[[4]] <- rbind(filled,vtsindex)
-asap[[1]]$dat$index.names <- c(asap[[1]]$dat$index.names, "VTS")
-asap[[1]]$index.names <- c(asap[[1]]$index.names, "VTS")
 
 asap[[1]]$dat$lambda_index <- c(asap[[1]]$dat$lambda_index, asap[[1]]$dat$lambda_index[length(asap[[1]]$dat$lambda_index)])
 asap[[1]]$dat$lambda_q <- c(asap[[1]]$dat$lambda_q, asap[[1]]$dat$lambda_q[length(asap[[1]]$dat$lambda_q)])
@@ -40,9 +41,6 @@ asap[[1]]$dat$cv_q <- c(asap[[1]]$dat$cv_q, asap[[1]]$dat$cv_q[length(asap[[1]]$
 asap[[1]]$dat$lambda_q_devs <- c(asap[[1]]$dat$lambda_q_devs, asap[[1]]$dat$lambda_q_devs[length(asap[[1]]$dat$lambda_q_devs)])
 asap[[1]]$dat$cv_q_devs <- c(asap[[1]]$dat$cv_q_devs, asap[[1]]$dat$cv_q_devs[length(asap[[1]]$dat$cv_q_devs)])
 
+#Initial Guesses
 asap[[1]]$dat$q_ini <- c(asap[[1]]$dat$q_ini, asap[[1]]$dat$q_ini[length(asap[[1]]$dat$q_ini)])
-
-asap[[1]]$comments <- append(asap[[1]]$comments, "# Index-4 Selectivity Data ", after = 43)
-asap[[1]]$comments <- append(asap[[1]]$comments, "# Index-4 Data ", after = 47)
-
-writeoutasap(asap, file.path(root, "output/tog/asap/vts.dat"))
+#writeoutasap(asap, file.path(root, "output/tog/asap/vts.dat"))

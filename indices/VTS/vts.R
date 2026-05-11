@@ -100,7 +100,7 @@ mod <- as.formula(allvars)
 bmc <- buildmerControl(include= ~ (0 + Year)) #+ (0 +)
 nb <- buildglmmTMB(mod, filled, family = nbinom2, 
                    buildmerControl = bmc)
-NB <- glmmTMB(formula(nb), #when just year and surface temp, super high STD ERROR
+NB_vts <- glmmTMB(formula(nb), #when just year and surface temp, super high STD ERROR
               data = filled,
               family = nbinom2)
 #fm1R <- refit(NB, simulate(NB)[[1]])
@@ -113,15 +113,15 @@ NB <- glmmTMB(formula(nb), #when just year and surface temp, super high STD ERRO
 #https://easystats.github.io/parameters/reference/bootstrap_model.html
 #https://rpubs.com/Mchesney/capstone
 ###from script
-SE <- boot.NB(NB, nboots=1000) #come back to check this tomorrow! might have to make categorical vars factors...
-p.data <- expand.pred(NB$frame)
+SE_vts <- boot.NB(NB_vts, nboots=1000) #come back to check this tomorrow! might have to make categorical vars factors...
+p.data <- expand.pred(NB_vts$frame)
 p.data$trap_id <- NA
 p.data$vessel <- NA
 index.out <- data.frame(Year=as.numeric(as.character(unique(filled$Year))), #use unique rather than levels bc removed 3 years
-                        Index= predict(NB, newdata=p.data, type="response"))
-index.out <- cbind.data.frame(index.out, SE)
-index.out$CV <- index.out$SE / index.out$Index
-index.out$scale <- index.out$Index / mean(index.out$Index)
+                        Index= predict(NB_vts, newdata=p.data, type="response"))
+index.out_vts <- cbind.data.frame(index.out, SE_vts)
+index.out_vts$CV <- index.out$SE / index.out$Index
+index.out_vts$scale <- index.out$Index / mean(index.out$Index)
 #####
 
 ggplot(index.out) +
@@ -134,3 +134,4 @@ ggplot(index.out) +
 #gamselect <- buildgamm4(mod, data = filled, buildmerControl = bmc)
 #GAM.NB <- gamm4(formula(gamselect), data = filled, family = 'nb') #still wins
 #SE2 <- boot.GAM(GAM.NB, nboots = 1000)
+#save(index.out_vts, SE_vts, NB_vts, file=file.path(root, "output/tog/vts_index.RData"))
