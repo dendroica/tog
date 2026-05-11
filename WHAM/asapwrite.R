@@ -9,6 +9,9 @@ index_data <- sapply(1:N, function(x) {
   c(paste0("# Index-", x, " Data"),
     capture.output(write.table(asap[[1]]$dat$IAA_mats[[x]], sep="\t", row.names=F, col.names=F)))
 })
+index_names <- sapply(1:N, function(x) {
+  paste0("#$",asap[[1]]$index.names[x])
+})
 asapfile <- c("# ASAP VERSION 3.0",
 "# NYB final model_4 sel_1989",
 "#",
@@ -216,9 +219,7 @@ asap[[1]]$dat$testval,
 "# Fleet Names",
 paste0("#$", asap[[1]]$dat$fleet.names),
 "# Survey Names",
-paste0("#$",asap[[1]]$index.names[1]),
-paste0("#$",asap[[1]]$index.names[2]),
-paste0("#$",asap[[1]]$index.names[3]),
+index_names,
 "#")
 writeLines(asapfile, outfile)
 }
