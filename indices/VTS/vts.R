@@ -5,6 +5,7 @@ library(glmmTMB)
 library(gamm4)
 library(lme4)
 library(buildmer)
+library(tidyr)
 source("./indices/bootstrap_functions.r")
 root <- Sys.getenv("FILEPATH")
 
@@ -129,8 +130,7 @@ ggplot(index.out) +
   geom_line(aes(x = Year, y = Index)) +
   ylim(c(0, NA)) +
   theme_bw()
-#save(index.out, file="NYWLI.RData")
 
-gamselect <- buildgamm4(mod, data = filled, buildmerControl = bmc)
-GAM.NB <- gamm4(formula(gamselect), data = filled, family = 'nb') #still wins
+#gamselect <- buildgamm4(mod, data = filled, buildmerControl = bmc)
+#GAM.NB <- gamm4(formula(gamselect), data = filled, family = 'nb') #still wins
 #SE2 <- boot.GAM(GAM.NB, nboots = 1000)

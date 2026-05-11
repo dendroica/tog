@@ -2,12 +2,14 @@ library(wham)
 source("WHAM/asapwrite.R")
 root <- Sys.getenv("FILEPATH")
 load(file.path(root, "output/tog/vtsindex.RData"))
-source("indices/vtsage.R") #needs to be updated with current user path
-
+source("indices/vtsage.R")
 asap <- read_asap3_dat(file.path(root, "output/tog/asap/FINAL/ORIG.DAT"))
-asap[[1]]$dat$n_indices <- 4
+
+#ADD AN INDEX
+indexstart <- 2016
+asap[[1]]$dat$n_indices <- asap[[1]]$dat$n_indices + 1
 #in my case, I used all the same options as the ocean trawl
-#but look at these under Index Specification, Index Selectivity
+#but look at these under Index Specification
 asap[[1]]$dat$index_units <- c(asap[[1]]$dat$index_units, asap[[1]]$dat$index_units[length(asap[[1]]$dat$index_units)])
 asap[[1]]$dat$index_acomp_units <- c(asap[[1]]$dat$index_acomp_units, asap[[1]]$dat$index_acomp_units[length(asap[[1]]$dat$index_acomp_units)])
 asap[[1]]$dat$index_month <- c(asap[[1]]$dat$index_month, asap[[1]]$dat$index_month[length(asap[[1]]$dat$index_month)])
@@ -15,15 +17,19 @@ asap[[1]]$dat$index_sel_choice <- c(asap[[1]]$dat$index_sel_choice, asap[[1]]$da
 asap[[1]]$dat$index_sel_start_age <- c(asap[[1]]$dat$index_sel_start_age, asap[[1]]$dat$index_sel_start_age[length(asap[[1]]$dat$index_sel_start_age)])
 asap[[1]]$dat$index_sel_end_age <- c(asap[[1]]$dat$index_sel_end_age, asap[[1]]$dat$index_sel_end_age[length(asap[[1]]$dat$index_sel_end_age)])
 asap[[1]]$dat$index_WAA_pointers <- c(asap[[1]]$dat$index_WAA_pointers, asap[[1]]$dat$index_WAA_pointers[length(asap[[1]]$dat$index_WAA_pointers)])
-asap[[1]]$dat$use_index_acomp <- c(asap[[1]]$dat$use_index_acomp, asap[[1]]$dat$use_index_acomp[length(asap[[1]]$dat$use_index_acomp)])
 asap[[1]]$dat$use_index <- c(asap[[1]]$dat$use_index, asap[[1]]$dat$use_index[length(asap[[1]]$dat$use_index)])
+asap[[1]]$dat$use_index_acomp <- c(asap[[1]]$dat$use_index_acomp, asap[[1]]$dat$use_index_acomp[length(asap[[1]]$dat$use_index_acomp)])
 
+#Index Selectivity
 asap[[1]]$dat$index_sel_option <- c(asap[[1]]$dat$index_sel_option, asap[[1]]$dat$index_sel_option[length(asap[[1]]$dat$index_sel_option)])
 asap[[1]]$dat$index_sel_ini[[4]] <- asap[[1]]$dat$index_sel_ini[[2]]
 
+#Index Data
+startyr <- asap[[1]]$dat$IAA_mats[[1]][1,1]
 vtsindex <- unname(as.matrix(cbind(index.out[,c("Year", "Index", "CV")], age1=0,ACs[,2:13])))
-filled <- 1989:2015
-filled <- unname(cbind(filled, matrix(-1, 27, 15)))
+filled <- startyr:(indexstart-1)
+filled <- unname(cbind(filled, matrix(-1, indexstart-startyr, ncol(asap[[1]]$dat$IAA_mats[[1]])-1)))
+
 asap[[1]]$dat$IAA_mats[[4]] <- rbind(filled,vtsindex)
 asap[[1]]$dat$index.names <- c(asap[[1]]$dat$index.names, "VTS")
 asap[[1]]$index.names <- c(asap[[1]]$index.names, "VTS")
