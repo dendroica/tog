@@ -149,6 +149,7 @@ for (i in 1:length(yrs)) {
 yrs <- 2016:2020
 oldACs <- matrix(NA, nrow = length(yrs), ncol = 12)
 NAAs <- matrix(NA, nrow = length(yrs), ncol = 12)
+
 #.alk <- alks[alks$Year == 2022, 1:11]
 alk <- alk2021numnj[,2:12] + alk2022numnj[,2:12] + alk2023numnj[,2:12] + alk2024numnj[,2:12]
 .alk <- alk %>%
