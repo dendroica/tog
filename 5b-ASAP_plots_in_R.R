@@ -4,7 +4,7 @@
 # July 1, 2025              #
 #---------------------------#
 root <- Sys.getenv("FILEPATH")
-setwd(file.path(root, "output/tog/asap/test"))
+setwd(file.path(root, "output/tog/asap"))
 #---- ASAPplots library ----
 
 # Load the ASAPplots library, which will do a bunch of plots
@@ -18,8 +18,8 @@ library(dplyr)
 # Give it the name of the directory where your ASAP run is saved
 # and the name of the ASAP file for the run you want to plot
 
-pwd <- "age"
-fn <- "VTS_age"
+pwd <- "vtsage"
+fn <- "vtsage"
 
 # By default, PlotASAP will provide the plots as individual .png files and
 # as a compiled pdf with all the plots. For initial exploration of results,
