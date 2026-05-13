@@ -41,4 +41,4 @@ lastrow <- data.frame(c(min_len,60), c(0,0), c(0,0), c(0,0), c(0,0))
 names(lastrow) <- names(MRIP_har)
 MRIP_har <- bind_rows(MRIP_har, lastrow)
 MRIP_har <- MRIP_har[order(MRIP_har$Length),]
-write.csv(MRIP_har, file.path(root, "output/tog/harvest_LF.csv"), row.names=FALSE)
+#write.csv(MRIP_har, file.path(root, "output/tog/harvest_LF.csv"), row.names=FALSE)

@@ -27,7 +27,7 @@ discard <- discards %>% group_by(YEAR) %>% group_split %>%
   reduce(full_join) %>% complete(Length_cm=full_seq(Length_cm, 1)) %>%
   replace(is.na(.), 0) %>% group_by(Length_cm) %>% summarise_all(sum)
 
-write.csv(discard,file.path(root, "output/tog/discard_mripLF.csv"))
+#write.csv(discard,file.path(root, "output/tog/discard_mripLF.csv"))
 
 #plot out frequencies
 discardexpand<- pivot_longer(discard, cols = c('2021','2022','2023','2024'), names_to = "Year", values_to = "Count")

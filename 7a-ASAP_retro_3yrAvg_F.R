@@ -15,7 +15,7 @@
 library(tidyverse)
 root <- Sys.getenv("FILEPATH")
 
-asap <- file.path(root, "output/tog/asap/FINAL")
+asap <- file.path(root, "output/tog/asap/newtest")
 
 #---- Reference points for stock status ----
 
@@ -31,7 +31,7 @@ F_reforig <- data.frame(BRP=c("Target", "Threshold"), value=c(0.20157032300054, 
 
 # Use the SSB reference points from your long-term AgePro projections 
 # that used the F values above
-SSB_reforig <- data.frame(BRP=c("Target", "Threshold"), value=c(7306,5474 ))
+SSB_reforig <- data.frame(BRP=c("Target", "Threshold"), value=c(7306,5474))
 
 #---- Read in retro runs and calculate the 3-year average F ----
 
@@ -39,7 +39,7 @@ SSB_reforig <- data.frame(BRP=c("Target", "Threshold"), value=c(7306,5474 ))
 rdorig <- file.path(asap, "retro")
 
 # Name of your ASAP input file (no .dat extension)
-fnorig <- "ORIG"
+fnorig <- "TEST"
 
 # Number of peels you ran in your retrospective analysis
 # (usually 5-7)
@@ -185,8 +185,8 @@ ggplot() +
 ## With BRPs
 ggplot() +   
   geom_segment(data=CI_boxorig, aes(x=SSB_CI1, y=F_CI1, xend=SSB_CI2, yend=F_CI2)) +
-  geom_segment(aes(x=SSB[nyears,1], xend=SSB[nyears,1], y=F_minorig, yend=F_maxorig, lty="90% CI")) +
-  geom_segment(aes(x=SSB_minorig, xend=SSB_maxorig, y=F_3yrorig[nyears,1], yend=F_3yrorig[nyears,1], lty="90% CI"))+
+  geom_segment(aes(x=SSBorig[nyears,1], xend=SSBorig[nyears,1], y=F_minorig, yend=F_maxorig, lty="90% CI")) +
+  geom_segment(aes(x=SSB_min, xend=SSB_max, y=F_3yrorig[nyears,1], yend=F_3yrorig[nyears,1], lty="90% CI"))+
   geom_hline(data=F_reforig, aes(yintercept=value, lty=BRP))+
   geom_vline(data=SSB_reforig, aes(xintercept=value, lty=BRP))+
   geom_point(data=F_SSBorig, aes(x=SSB, y=F_rep, color=Metric, shape=Metric)) +

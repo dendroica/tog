@@ -2,6 +2,22 @@ root <- Sys.getenv("FILEPATH")
 load(file.path(root, "output/tog/index/NJOTmodel.RData"))
 library(ggplot2)
 source("./indices/bootstrap_functions.R")
+
+p.data <- expand.pred(NB00$frame)
+best <- NB00
+index.out <- data.frame(
+  YEAR = as.numeric(unique(as.character(dat$YEAR))), #PICK UP HERE JESS
+  #Station=as.character(unique(dat$Station)), #use unique rather than levels bc removed 3 YEARs
+  Index= predict(best, newdata=p.data, type="response"))
+index.out <- cbind.data.frame(index.out, out)
+#gaps <- which(diff(x) > 1) + 1 # Identify the index of the element after the gap
+#missing_numbers <- x[gaps] - 1 # Find the missing number(s)
+index.out <- rbind(index.out, c(2020, -1, -1, -1, -1), c(2021, -1, -1, -1, -1))
+index.out$CV <- index.out$SE/index.out$Index
+
+index.out_nj <- index.out[order(index.out$YEAR),]
+index.out_nj$Method="NB"
+
 # Stratified mean:
 # Standardize catch for 20 minute tow (the standard unit of effort of NJOT)
 dat$Fish <- round((dat$CPUE*20)/dat$EFFORT,0)
@@ -53,29 +69,15 @@ CV <- SE/.m
 nom <- data.frame("YEAR"=as.numeric(as.character(unique(dat$YEAR))),"Index"=.m,SE,
                   "LCI"=LCL,"UCI"=UCL,CV,"Method"="stratifiedMean")
 
-p.data <- expand.pred(NB00$frame)
-best <- NB00
-index.out <- data.frame(
-  YEAR = as.numeric(unique(as.character(dat$YEAR))), #PICK UP HERE JESS
-  #Station=as.character(unique(dat$Station)), #use unique rather than levels bc removed 3 YEARs
-  Index= predict(best, newdata=p.data, type="response"))
-index.out <- cbind.data.frame(index.out, out)
-#gaps <- which(diff(x) > 1) + 1 # Identify the index of the element after the gap
-#missing_numbers <- x[gaps] - 1 # Find the missing number(s)
-index.out <- rbind(index.out, c(2020, -1, -1, -1, -1), c(2021, -1, -1, -1, -1))
-index.out$CV <- index.out$SE/index.out$Index
-
-index.out_nj <- index.out[order(index.out$YEAR),]
-index.out_nj$Method="NB"
 #write.csv(index.out, "octrawl.csv")
-tmp <- rbind(index.out,nom)
-tmp
+#tmp <- rbind(index.out,nom)
+#tmp
 
 
-ggplot(tmp, aes(x=YEAR, y=Index, color=Method, shape=Method)) +
-  geom_ribbon(aes(x=YEAR, ymin=LCI, ymax=UCI, fill=Method), alpha=0.5) +
-  geom_line() + geom_point() +
-  xlab("YEAR") + theme_bw()
+#ggplot(tmp, aes(x=YEAR, y=Index, color=Method, shape=Method)) +
+#  geom_ribbon(aes(x=YEAR, ymin=LCI, ymax=UCI, fill=Method), alpha=0.5) +
+#  geom_line() + geom_point() +
+#  xlab("YEAR") + theme_bw()
 
 # scale indices to respective means:
 op <- par(mfrow=c(1,1))
