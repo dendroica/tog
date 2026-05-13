@@ -1,3 +1,7 @@
+#This is for an assessment update, updating the ASAP file with new years' data
+#For the new years: need CAA, WAA, total weights, MRIP ages, ages for your indices
+#For all years: update indices and CV, ESS
+
 library(wham)
 library(readxl)
 source("./WHAM/asapwrite.R")
@@ -18,7 +22,7 @@ load(file.path(Sys.getenv("FILEPATH"), "output/tog/index/NYWLI_index.RData")) #i
 source("./indices/NJOT/3a-analysis_nogam.R") #index.out_nj
 #the last update ASAP file
 asap <- read_asap3_dat(file.path(Sys.getenv("FILEPATH"), "data/tog/NJ-NYB_BASE_RUN_2021.DAT"))
-source("./indices/VTS/vtsupdate.R")
+source("./indices/VTS/vtsupdate.R") #could fold this into this script
 endyr <- 2024
 waa0 <- caa[[1]]
 caa_out <- caa[[2]]
