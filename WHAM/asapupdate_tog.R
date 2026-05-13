@@ -3,7 +3,6 @@ library(readxl)
 source("./WHAM/asapwrite.R")
 
 source("4-catch_at_age.R") #caa
-source("./indices/MRIP.R") #mrip_prop
 #INDEX DATA
 mrip <- read_xlsx(
   file.path(root, "data/tog/MRIP indices tautog 1981-2024.xlsx"),
@@ -12,6 +11,7 @@ mrip <- read_xlsx(
 ess <- read_xlsx(
   file.path(root, "data/tog/rec/Tautog_Regional_ESS_1982-2023.xlsx")
 )
+source("./indices/MRIP.R") #mrip_prop
 source("./indices/NJOT/4-age.R") #agecomp
 #these would require time-intensive model reruns
 load(file.path(Sys.getenv("FILEPATH"), "output/tog/index/NYWLI_index.RData")) #index.out_NY
