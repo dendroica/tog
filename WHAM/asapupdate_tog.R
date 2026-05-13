@@ -19,14 +19,11 @@ source("./indices/NJOT/3a-analysis_nogam.R") #index.out_nj
 #the last update ASAP file
 asap <- read_asap3_dat(file.path(Sys.getenv("FILEPATH"), "data/tog/NJ-NYB_BASE_RUN_2021.DAT"))
 source("./indices/VTS/vtsupdate.R")
-
+endyr <- 2024
 waa0 <- caa[[1]]
 caa_out <- caa[[2]]
 total_weight <- caa[[3]]
-#load model workspaces for IAA
-
-#GETS UPDATED##############
-endyr <- 2024
+###############
 n <- endyr - asap[[1]]$dat$R_avg_end
 asap[[1]]$dat$R_avg_end <- endyr
 asap[[1]]$dat$n_years <- as.integer(asap[[1]]$dat$n_years + n)
