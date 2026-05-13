@@ -1,9 +1,6 @@
-library(wham)
-source("WHAM/asapwrite.R")
 root <- Sys.getenv("FILEPATH")
-load(file.path(root, "output/tog/vts_index.RData"))
 source("./indices/VTS/vtsage.R")
-asap <- read_asap3_dat(file.path(root, "output/tog/asap/FINAL/ORIG.DAT"))
+load(file.path(root, "output/tog/index/vts_index.RData"))
 
 #ADD AN INDEX
 asap[[1]]$dat$n_indices <- asap[[1]]$dat$n_indices + 1
@@ -44,4 +41,3 @@ asap[[1]]$dat$cv_q_devs <- c(asap[[1]]$dat$cv_q_devs, asap[[1]]$dat$cv_q_devs[le
 
 #Initial Guesses
 asap[[1]]$dat$q_ini <- c(asap[[1]]$dat$q_ini, asap[[1]]$dat$q_ini[length(asap[[1]]$dat$q_ini)])
-writeoutasap(asap, file.path(root, "output/tog/asap/vts-age.dat"))

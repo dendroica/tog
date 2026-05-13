@@ -18,6 +18,7 @@ load(file.path(Sys.getenv("FILEPATH"), "output/tog/index/NYWLI_index.RData")) #i
 source("./indices/NJOT/3a-analysis_nogam.R") #index.out_nj
 #the last update ASAP file
 asap <- read_asap3_dat(file.path(Sys.getenv("FILEPATH"), "data/tog/NJ-NYB_BASE_RUN_2021.DAT"))
+source("./indices/VTS/vtsupdate.R")
 
 waa0 <- caa[[1]]
 caa_out <- caa[[2]]
@@ -86,4 +87,4 @@ asap[[1]]$dat$catch_Neff <- ess$`NJ-NYB`
 olddata <- asap[[1]]$dat$IAA_mats[[3]][,4:(ncol(asap[[1]]$dat$IAA_mats[[2]])-1)]
 updatedata <- rbind(olddata, mrip_prop)
 asap[[1]]$dat$IAA_mats[[3]] <- unname(as.matrix(cbind(mrip[, c("Year", "CPUE", "CV")], updatedata, ess$`NJ-NYB`)))
-writeoutasap(asap, file.path(Sys.getenv("FILEPATH"), "output/tog/asap/writetest/2024update.dat"))
+writeoutasap(asap, file.path(Sys.getenv("FILEPATH"), "output/tog/asap/writetest/2024update_vts.dat"))
