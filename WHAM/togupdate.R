@@ -3,7 +3,7 @@
 #For all years: update indices and CV, ESS
 library(readxl)
 source("./WHAM/asap_update.R")
-
+source("./WHAM/asapwrite.R")
 source("4-catch_at_age.R") #caa
 #INDEX DATA
 mrip <- read_xlsx(
@@ -33,7 +33,8 @@ caa_out <- caa[[2]]
 total_weight <- caa[[3]]
 
 endyr <- 2024
-fileout <- file.path(Sys.getenv("FILEPATH"), "output/tog/asap/writetest/2024update-test.dat")
+fileout <- file.path(Sys.getenv("FILEPATH"), "output/tog/asap/writetest/2024update.dat")
 ########
-AssessUpdate(asap, endyr, caa_out, waa0, total_weight, index, mrip, mrip_prop, ess, fileout)
-#source("./indices/VTS/vtsupdate.R") #could fold this into this script
+asap <- AssessUpdate(asap, endyr, caa_out, waa0, total_weight, index, mrip, mrip_prop, ess, whichmrip=3)
+source("./indices/VTS/vtsupdate.R")
+writeoutasap(asap, fileout)
