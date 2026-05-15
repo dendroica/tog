@@ -2,7 +2,8 @@
 #For the new years: need CAA, WAA, total weights, MRIP ages, ages for your indices
 #For all years: update indices and CV, ESS
 library(readxl)
-source("./WHAM/asapupdate_tog.R")
+source("./WHAM/asapwrite.R")
+source("./WHAM/asap_update.R")
 
 source("4-catch_at_age.R") #caa
 #INDEX DATA
@@ -20,7 +21,11 @@ load(file.path(Sys.getenv("FILEPATH"), "output/tog/index/NYWLI_index.RData")) #i
 source("./indices/NJOT/3a-analysis_nogam.R") #index.out_nj
 index1 <- index.out_NY
 index2 <- index.out_nj
+names(index2)[1:3] <- c("Year", "Index", "CV")
 index2age <- agecomp
+
+index <- list(list(1, index1),
+              list(2, index2, index2age, c(0, 35, 35, 0)))
 #the last update ASAP file
 asap <- read_asap3_dat(file.path(Sys.getenv("FILEPATH"), "data/tog/NJ-NYB_BASE_RUN_2021.DAT"))
 
@@ -31,5 +36,5 @@ total_weight <- caa[[3]]
 endyr <- 2024
 fileout <- file.path(Sys.getenv("FILEPATH"), "output/tog/asap/writetest/2024update.dat")
 ########
-asap <- AssessUpdate(asap, endyr, caa_out, waa0, total_weight, index1, index2, index2age, mrip, mrip_prop, ess, fileout)
+AssessUpdate(asap, endyr, caa_out, waa0, total_weight, index, mrip, mrip_prop, ess, fileout)
 source("./indices/VTS/vtsupdate.R") #could fold this into this script
