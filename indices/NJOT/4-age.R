@@ -148,6 +148,7 @@ for (i in 1:length(yrs)) {
 agecomp <- ACs
 agecomp[is.na(agecomp)] <- -1
 agecomp <- cbind(agecomp[, 1:2], 0, agecomp[, 3:ncol(agecomp)])
-agecomp <- cbind(agecomp, c(35, 35, 0))
+#agecomp <- cbind(agecomp, c(35, 35, 0))
+agecomp <- rbind(c(2021, rep(-1, ncol(agecomp)-1)), agecomp)
 # ACs;cbind(NAAs[,1],NAAs[,-1]/rowSums(NAAs[,-1]));NAAs
 Sys.time()

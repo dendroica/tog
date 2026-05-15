@@ -34,7 +34,7 @@ caa_out <- caa[[2]]
 total_weight <- caa[[3]]
 
 endyr <- 2024
-fileout <- file.path(Sys.getenv("FILEPATH"), "output/tog/asap/writetest/2024update.dat")
+fileout <- file.path(Sys.getenv("FILEPATH"), "output/tog/asap/writetest/2024update-test.dat")
 ########
 AssessUpdate(asap, endyr, caa_out, waa0, total_weight, index, mrip, mrip_prop, ess, fileout)
 source("./indices/VTS/vtsupdate.R") #could fold this into this script
