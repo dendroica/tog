@@ -2,9 +2,7 @@
 #For the new years: need CAA, WAA, total weights, MRIP ages, ages for your indices
 #For all years: update indices and CV, ESS
 library(readxl)
-source("./WHAM/asapwrite.R")
 source("./WHAM/asap_update.R")
-
 source("4-catch_at_age.R") #caa
 #INDEX DATA
 mrip <- read_xlsx(
