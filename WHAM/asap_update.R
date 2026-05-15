@@ -1,5 +1,4 @@
 library(wham)
-# specify which index is MRIP instead of hard code
 AssessUpdate <- function(asap, endyr, caa_out, waa0, total_weight, index, mrip, mrip_prop, ess, whichmrip, fileout) {
   n <- endyr - asap[[1]]$dat$R_avg_end
   asap[[1]]$dat$R_avg_end <- endyr
