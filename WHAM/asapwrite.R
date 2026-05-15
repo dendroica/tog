@@ -221,5 +221,5 @@ paste0("#$", asap[[1]]$dat$fleet.names),
 "# Survey Names",
 index_names,
 "#")
-writeLines(asapfile, outfile)
+writeLines(unlist(asapfile), outfile)
 }
