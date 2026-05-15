@@ -1,7 +1,7 @@
 library(wham)
 source("./WHAM/asapwrite.R")
 # specify which index is MRIP instead of hard code
-AssessUpdate <- function(asap, endyr, caa_out, waa0, total_weight, index, mrip, mrip_prop, ess, fileout) {
+AssessUpdate <- function(asap, endyr, caa_out, waa0, total_weight, index, mrip, mrip_prop, ess, whichmrip, fileout) {
   n <- endyr - asap[[1]]$dat$R_avg_end
   asap[[1]]$dat$R_avg_end <- endyr
   asap[[1]]$dat$n_years <- as.integer(asap[[1]]$dat$n_years + n)
@@ -105,9 +105,9 @@ AssessUpdate <- function(asap, endyr, caa_out, waa0, total_weight, index, mrip, 
   asap[[1]]$dat$catch_cv <- mrip$CV
   ess <- ess[ess$YEAR >= asap[[1]]$dat$year1, ]
   asap[[1]]$dat$catch_Neff <- ess$`NJ-NYB`
-  olddata <- asap[[1]]$dat$IAA_mats[[3]][, 4:(ncol(asap[[1]]$dat$IAA_mats[[2]]) - 1)]
+  olddata <- asap[[1]]$dat$IAA_mats[[whichmrip]][, 4:(ncol(asap[[1]]$dat$IAA_mats[[2]]) - 1)]
   updatedata <- rbind(olddata, mrip_prop)
-  asap[[1]]$dat$IAA_mats[[3]] <- unname(as.matrix(cbind(mrip[, c("Year", "CPUE", "CV")], updatedata, ess$`NJ-NYB`)))
+  asap[[1]]$dat$IAA_mats[[whichmrip]] <- unname(as.matrix(cbind(mrip[, c("Year", "CPUE", "CV")], updatedata, ess$`NJ-NYB`)))
   writeoutasap(asap, fileout)
   return(asap)
 }

@@ -34,4 +34,4 @@ total_weight <- caa[[3]]
 endyr <- 2024
 fileout <- file.path(Sys.getenv("FILEPATH"), "output/tog/asap/writetest/2024update.dat")
 ########
-AssessUpdate(asap, endyr, caa_out, waa0, total_weight, index, mrip, mrip_prop, ess, fileout)
+AssessUpdate(asap, endyr, caa_out, waa0, total_weight, index, mrip, mrip_prop, ess, whichmrip=3, fileout)
