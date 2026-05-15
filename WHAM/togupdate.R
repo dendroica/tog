@@ -3,7 +3,7 @@
 #For all years: update indices and CV, ESS
 library(readxl)
 source("./WHAM/asapwrite.R")
-source("./WHAM/asapupdate_tog.R")
+source("./WHAM/asap_update.R")
 
 source("4-catch_at_age.R") #caa
 #INDEX DATA

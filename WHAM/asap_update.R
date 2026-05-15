@@ -1,4 +1,5 @@
 library(wham)
+source("./WHAM/asapwrite.R")
 #make agecomp optional for all indices: generalize index ingestion
 #specify which index is MRIP instead of hard code
 AssessUpdate <- function(asap, endyr, caa_out, waa0, total_weight, index1, index2, index2age, mrip, mrip_prop, ess, fileout) {
@@ -62,4 +63,5 @@ asap[[1]]$dat$catch_Neff <- ess$`NJ-NYB`
 olddata <- asap[[1]]$dat$IAA_mats[[3]][,4:(ncol(asap[[1]]$dat$IAA_mats[[2]])-1)]
 updatedata <- rbind(olddata, mrip_prop)
 asap[[1]]$dat$IAA_mats[[3]] <- unname(as.matrix(cbind(mrip[, c("Year", "CPUE", "CV")], updatedata, ess$`NJ-NYB`)))
-writeoutasap(asap, fileout)}
+writeoutasap(asap, fileout)
+return(asap)}
