@@ -25,9 +25,9 @@ ggplot(MRIP_har, aes(x=Length, y=Number)) +
   scale_x_continuous(breaks=c(15,20,25,30,35,40,45,50,55,60,65)) +
   ylab("Count of Fish") +
   xlab("Length (cm)") +
-  ggtitle("MARI Recreational Harvest Length Frequencies") +
+  ggtitle("Recreational Harvest Length Frequencies") +
   theme(plot.title = element_text(size=16, face="bold", hjust=0.5))
-ggsave("MARI_Recreational_Harvest_LengthFreq.png")
+#ggsave("MARI_Recreational_Harvest_LengthFreq.png")
 
 MRIP_har <- MRIP_har %>% select(Year, Length, Number)
 MRIPG60 <- MRIP_har %>% filter(Length >= 60) %>% #should I do this with smaller length bins??
