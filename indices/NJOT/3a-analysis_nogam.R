@@ -55,20 +55,20 @@ nom <- data.frame("YEAR"=as.numeric(as.character(unique(dat$YEAR))),"Index"=.m,S
 
 p.data <- expand.pred(NB00$frame)
 best <- NB00
-index.out <- data.frame(
+index.out_nj <- data.frame(
   YEAR = as.numeric(unique(as.character(dat$YEAR))), #PICK UP HERE JESS
   #Station=as.character(unique(dat$Station)), #use unique rather than levels bc removed 3 YEARs
   Index= predict(best, newdata=p.data, type="response"))
-index.out <- cbind.data.frame(index.out, out)
+index.out_nj <- cbind.data.frame(index.out_nj, out)
 #gaps <- which(diff(x) > 1) + 1 # Identify the index of the element after the gap
 #missing_numbers <- x[gaps] - 1 # Find the missing number(s)
-index.out <- rbind(index.out, c(2020, -1, -1, -1, -1), c(2021, -1, -1, -1, -1))
-index.out$CV <- index.out$SE/index.out$Index
+index.out_nj <- rbind(index.out_nj, c(2020, -1, -1, -1, -1), c(2021, -1, -1, -1, -1))
+index.out_nj$CV <- index.out_nj$SE/index.out_nj$Index
 
-index.out <- index.out[order(index.out$YEAR),]
-index.out$Method="NB"
-#write.csv(index.out, "octrawl.csv")
-tmp <- rbind(index.out,nom)
+index.out_nj <- index.out_nj[order(index.out_nj$YEAR),]
+index.out_nj$Method="NB"
+#write.csv(index.out_nj, "octrawl.csv")
+tmp <- rbind(index.out_nj,nom)
 tmp
 
 

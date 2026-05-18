@@ -30,7 +30,7 @@ total_rec_catch <- read.csv(
 # Length Frequencies for Recreational Catch and Discard
 harvest_lf <- read.csv(file.path(root, "output/tog/harvest_LF.csv"))
 # Modified from discard_LF.R from Samarah Nehemiah for LIS
-discard_lf <- read.csv(file.path(root, "output/tog/discard_LF.csv"))[, 2:6]
+discard_lf <- read.csv(file.path(root, "output/tog/discard_mripLF.csv"))[, 2:6]
 #########################################
 names(harvest_lf) <- c("Length", "2021", "2022", "2023", "2024")
 min_age <- 2
