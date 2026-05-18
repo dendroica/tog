@@ -1,5 +1,5 @@
 library(wham)
-AssessUpdate <- function(asap, endyr, caa_out, waa0, total_weight, index, mrip, mrip_prop, ess, whichmrip, fileout) {
+AssessUpdate <- function(asap, endyr, caa_out, waa0, total_weight, index, mrip, mrip_prop, ess, whichmrip) {
   n <- endyr - asap[[1]]$dat$R_avg_end
   asap[[1]]$dat$R_avg_end <- endyr
   asap[[1]]$dat$n_years <- as.integer(asap[[1]]$dat$n_years + n)
