@@ -26,7 +26,7 @@ index2age <- agecomp
 index <- list(list(1, index1),
               list(2, index2, index2age, c(0, 35, 35, 0)))
 #the last update ASAP file
-asap <- read_asap3_dat(file.path(Sys.getenv("FILEPATH"), "data/tog/NJ-NYB_BASE_RUN_2021.DAT"))
+asapin <- read_asap3_dat(file.path(Sys.getenv("FILEPATH"), "data/tog/NJ-NYB_BASE_RUN_2021.DAT"))
 
 waa0 <- caa[[1]]
 caa_out <- caa[[2]]
@@ -35,6 +35,6 @@ total_weight <- caa[[3]]
 endyr <- 2024
 fileout <- file.path(Sys.getenv("FILEPATH"), "output/tog/asap/writetest/2024update.dat")
 ########
-asap <- AssessUpdate(asap, endyr, caa_out, waa0, total_weight, index, mrip, mrip_prop, ess, whichmrip=3)
+asap <- AssessUpdate(asapin, endyr, caa_out, waa0, total_weight, index, mrip, mrip_prop, ess, whichmrip=3)
 source("./indices/VTS/vtsupdate.R")
 writeoutasap(asap, fileout)
