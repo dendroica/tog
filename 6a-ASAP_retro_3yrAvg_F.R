@@ -18,7 +18,7 @@ usr <- "jgorzo"
 loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
 root <- file.path(root, usr, loc)
 
-asap <- file.path(root, "output/tog/asap/FINAL")
+asap <- file.path(root, "output/tog/asap/updated_best")
 
 #---- Reference points for stock status ----
 
@@ -42,7 +42,7 @@ SSB_ref <- data.frame(BRP=c("Target", "Threshold"), value=c(7306,5474 ))
 rd <- file.path(asap, "retro")
 
 # Name of your ASAP input file (no .dat extension)
-fn <- "AUG29_KD_RAW"
+fn <- "2024update"
 
 # Number of peels you ran in your retrospective analysis
 # (usually 5-7)
@@ -355,7 +355,7 @@ ggplot(base_out) + geom_line(aes(x=Year, y=F_rep)) +
   theme_bw()
 
 #ggsave("F_status.png", height=4.5, width=6.5)
-=======
+#=======
 #-------------------------------------------#
 # Adjusting for a retrospective pattern     #
 # when using a 3-year average F for stock   #
@@ -715,4 +715,4 @@ ggplot(base_out) + geom_line(aes(x=Year, y=F_rep)) +
   theme_bw()
 
 #ggsave("F_status.png", height=4.5, width=6.5)
->>>>>>> 197c7cd3f658f521c8068a643cc5569faba5bad2:6a-ASAP_retro_3yrAvg_F.R
+#>>>>>>> 197c7cd3f658f521c8068a643cc5569faba5bad2:6a-ASAP_retro_3yrAvg_F.R
