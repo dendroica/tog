@@ -6,6 +6,8 @@ inpfile <- file.path("C:/Users/jgorzo/OneDrive - New Jersey Office of Informatio
 # Load path of ageproR's included test Example1 Bootstrap File
 bsnfile <- file.path("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/AGEPRO/agepro_test/ORIG.BSN")
 
+agepro_params <- read.csv("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/asap/vtsage/plots/AGEPRO_ave_params_vtsage.csv")
+
 # Create a agepro_inp_model with default values (This will 
 test <- ageproR::agepro_inp_model$new()
 test$read_inp(inpfile)
