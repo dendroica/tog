@@ -18,7 +18,7 @@ colnames(test$recruit$recruit_data[[1]]$observations) <- "recruit"
 test$recruit$recruit_probability #needs to be updated to named vector with all years
 
 agepro_params <- read.csv("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/asap/vtsage/plots/AGEPRO_ave_params_vtsage.csv")
-test$fishery
+test$fishery #sel.age
 #?fishery_selectivity
 # Set Recruit Models. 
 test$set_recruit_model(c(14))
