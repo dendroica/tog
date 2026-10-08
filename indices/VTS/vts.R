@@ -71,6 +71,7 @@ vts[which(vts$total_length_mm=="NA"),]$total_length_mm <- "1"
 vts$total_length_mm <- as.integer(vts$total_length_mm)
 vts <- vts %>% filter(total_length_mm > 0 & total_length_mm < 2000)
 vts$season <- factor(vts$season, levels=c("spring", "summer", "fall", "winter"))
+#################################
 tog <- vts[vts$species=="tautog",]
 ggplot(tog, aes(x=season, y=total_length_mm)) + geom_point()
 
