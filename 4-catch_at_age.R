@@ -88,7 +88,7 @@ discard_prop <- discard_lf |>
   filter(Length >= min_len & Length <= 60)
 
 total_rec_catch <- total_rec_catch |> # number of fish
-  mutate(discard_mortality = Released.B2 * 0.025)
+  mutate(dead_release = Released.B2 * 0.025)
 ## Recreational Discard Catch-at-Age
 rec_discard_caa <- Map(function(yr, alk_prop) {
   aged_discard_props <- apply(
@@ -96,7 +96,7 @@ rec_discard_caa <- Map(function(yr, alk_prop) {
       x * discard_prop[, as.character(yr)]
     }
   )
-  discards <- total_rec_catch$discard_mortality[total_rec_catch$Year == yr]
+  discards <- total_rec_catch$dead_release[total_rec_catch$Year == yr]
   aged_discards <- as.data.frame(aged_discard_props * discards)
   aged_discards$Length <- min_len:60
   aged_discards <- aged_discards[, c("Length", paste0("X", min_age:max_age))]
@@ -105,6 +105,9 @@ rec_discard_caa_annual <- bind_rows(lapply(rec_discard_caa, function(x) {
   apply(x, 2, sum)
 })) %>% select(-Length)
 rec_discard_caa_annual <- cbind(X1=c(0,0,0,0), rec_discard_caa_annual)
+
+#If you only have the numbers-at-age, you can multiply the numbers-at-age by the average weight-at-age from the ASAP input file for those years, and then sum across ages to get the total weight of the B2s. (And then divide by the total number of dead B2s to get the average weight of a dead B2 fish.)
+
 # Length-weight relationships for recreational harvested fish
 # ggplot(
 #  data = life_history,
@@ -130,7 +133,7 @@ lw_relationship_all <- nls(
   data = life_history, start = c(alpha = 5e6, beta = 3)
 )
 
-lw_pars <- bind_rows(lapply(2021:2024, function(i) {
+lw_params <- bind_rows(lapply(2021:2024, function(i) {
   # if (i < 2024) {
   annual_lw <- nls(
     Weight ~ alpha * (Length^beta),
@@ -162,7 +165,7 @@ weights_means <- life_history |>
   )
 
 total_rec_catch <- total_rec_catch |> # numbers of fish
-  mutate(TotalRecCatch = Harvest.A.B1 + discard_mortality)
+  mutate(TotalRecCatch = Harvest.A.B1 + dead_release)
 
 names(comm_catch)[names(comm_catch) == "NYB-NJ"] <- "comm" # metric tons
 comm_catch$comm <- comm_catch$comm * 1000000
@@ -182,11 +185,11 @@ caals <- Map(function(x, y) {
 # so we'll use rec weights to infer comm weights.
 waa <- Map(function(alk, yr, caal) {
   # Get your yearly L-W pars
-  b <- lw_pars[lw_pars$Year == yr, "b"]
+  b <- lw_params[lw_params$Year == yr, "b"]
   # Convert length bins to weights. Our length bins are floored, so we'll
   # add 0.5 to get to the center of the bin for the weight calculations.
   # If you rounded your lengths, you don't need to add anything.
-  wl <- lw_pars[lw_pars$Year == yr, "a"] * ((alk[, 1] + 0.5)^b)
+  wl <- lw_params[lw_params$Year == yr, "a"] * ((alk[, 1] + 0.5)^b)
   waal <- do.call(cbind, apply(caal, 2, function(caal_annual) caal_annual * wl)) # how much weight is in each AL bin
   names(waal) <- paste0("X",min_age:max_age)
   weights <- apply(waal, 2, sum) # total weight in each age bin
