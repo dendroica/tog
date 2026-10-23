@@ -194,11 +194,11 @@ waa <- Map(function(alk, yr, caal) {
   names(waal) <- paste0("X",min_age:max_age)
   weights <- apply(waal, 2, sum) # total weight in each age bin
   caa <- apply(caal, 2, sum) # catch-at-age
-  waa <- weights / caa # average weight per fish
+  waa <- weights / caa # average weight per fish in g
 
-  print(paste("total weight", yr))
+  print(paste("total weight metric ton", yr))
   comm <- total_catch[total_catch$Year == yr, ]$comm # this is in metric tons converted to g
-  x <- (sum(weights) + comm) / 1000000
+  x <- (sum(weights) + comm) / 1000000 #back to metric tons
   print((sum(weights) + comm) / 1000000)
   return(list(waa,x))
 }, alk_props, 2021:2024, caals)
@@ -211,16 +211,29 @@ caa_out <- as.data.frame(cbind(X1 = c(0, 0, 0, 0), rbind(
 annual_sum <- apply(caa_out, 1, sum)
 caa_prop <- apply(caa_out[, 1:12], 2, function(x) x / annual_sum)
 
-total_weight <- unlist(lapply(waa, "[[", 2))
-waa <- lapply(waa, "[[", 1)
+total_weight <- unlist(lapply(waa, "[[", 2)) #metric tons
+waa <- lapply(waa, "[[", 1) #grams
 # final output: weight-at-age
 waa <- cbind(X1 = c(0, 0, 0, 0), bind_rows(waa)) / 1000 # for the ASAP inputs, these appear to be scaled?
+#waa is now in kg
+
 # OUTPUTS#############
 #write.csv(caa_out, file.path(root, "output/tog/caa-orig.csv"))
 # 
 waa0 <- waa
 waa0[is.na(waa0)] <- 0
 #write.csv(waa0, file.path(root, "output/tog/waa-orig.csv"))
-discard_weights <- apply(waa0 * rec_discard_caa_annual, 1, sum) * .001
+discard_weights <- apply(waa0 * rec_discard_caa_annual, 1, sum) * .001 #now in metric tons
+dead <- sum(discard_weights) / sum(total_rec_catch$dead_release) * 1000 # ave weight of dead fish in kg
+
+###2025 numbers###
+tog25 <- data.frame(Year = 2025,
+           Sector = c("Comm", "AB1", "deadB2"),
+           Unit = c("lbs", "lbs", "n"),
+           value = c(243463, 2356325.701, 301173.5404))
+####
+deadweight <- tog25[tog25$Sector=="deadB2",]$value * dead * 2.20462 #lbs
+removals25 <- (deadweight + sum(tog25$value[1:2])) / 2.20462 / 1000 #metric tons
+
 harvest_weights <- apply(waa0 * rec_harvest_caa_annual, 1, sum) * .001
 caa <- list(waa0, caa_out, total_weight)
