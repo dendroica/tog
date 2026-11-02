@@ -226,7 +226,7 @@ waa0[is.na(waa0)] <- 0
 discard_weights <- apply(waa0 * rec_discard_caa_annual, 1, sum) * .001 #now in metric tons
 dead <- sum(discard_weights) / sum(total_rec_catch$dead_release) * 1000 # ave weight of dead fish in kg
 
-###2025 numbers to use for new projection###
+###2025 numbers to use for new projection for tog board###
 tog25 <- data.frame(Year = 2025,
            Sector = c("Comm", "AB1", "deadB2"),
            Unit = c("lbs", "lbs", "n"),
