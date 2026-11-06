@@ -4,7 +4,7 @@
 # July 1, 2025              #
 #---------------------------#
 root <- Sys.getenv("FILEPATH")
-setwd(file.path(root, "output/tog/asap/test"))
+setwd(file.path(root, "output/tog/asap/FINALforupdate"))
 #---- ASAPplots library ----
 
 # Load the ASAPplots library, which will do a bunch of plots
@@ -18,8 +18,8 @@ library(dplyr)
 # Give it the name of the directory where your ASAP run is saved
 # and the name of the ASAP file for the run you want to plot
 
-pwd <- "age"
-fn <- "VTS_age"
+pwd <- "base"
+fn <- "ORIG"
 
 # By default, PlotASAP will provide the plots as individual .png files and
 # as a compiled pdf with all the plots. For initial exploration of results,
@@ -75,11 +75,13 @@ for(i in 1:asap$parms$nfleets){
   
 }
 
+c.plot <- rbind(c.plot, data.frame(Year=2025, Fleet = "Fleet 1", Catch = 1408.62, Type = 2025))
+
 ggplot(c.plot, aes(x=Year, y=Catch, color=Type, shape=Type, linetype=Type)) +
-  geom_line() + geom_point() +
-  scale_color_manual(values=c("black", "blue")) +
-  scale_linetype_manual(values=c(0, 1)) +
-  scale_shape_manual(values=c(16, NA)) +
+  geom_line() + geom_point() + geom_point() +
+  scale_color_manual(values=c("red","black", "blue")) +
+  scale_linetype_manual(values=c(0, 0, 1)) +
+  scale_shape_manual(values=c(16, 16, NA)) +
   facet_wrap(~Fleet, ncol=2) +
   scale_y_continuous(name="Catch (mt)", labels=scales::comma, limits=c(0,NA))+
   theme_bw()
