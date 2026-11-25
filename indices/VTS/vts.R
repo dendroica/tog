@@ -78,13 +78,17 @@ vts25$missing_trap <- NULL
 vts25$empty <- NULL
 vts25$fork_length_mm <- NULL
 vts <- rbind(vts, vts25)
-
+vts <- vts[!is.na(vts$vessel),]
 vts[,c("season", "species")] <- apply(vts[,c("season", "species")], 2, tolower)
 vts[vts$vessel=="reef bound",]$vessel <- "reefbound"
 vts[vts$vessel=="resiliance",]$vessel <- "resilience"
 vts$reef <- toupper(vts$reef)
 vts[grep("u", vts$total_length_mm),]$total_length_mm <- "245"
-vts[which(vts$total_length_mm=="NA"),]$total_length_mm <- "1"
+vts[grep("600+", vts$total_length_mm),]$total_length_mm <- "601"
+vts[grep("<25", vts$total_length_mm),]$total_length_mm <- "24"
+vts[which(vts$total_length_mm %in% c("NA", "X", "--", "-", "-999", "U")),]$total_length_mm <- "1"
+vts[which(is.na(vts$total_length_mm)),]$total_length_mm <- "1"
+vts$total_length_mm <- gsub("~", "", vts$total_length_mm)
 vts$total_length_mm <- as.integer(vts$total_length_mm)
 vts <- vts %>% filter(total_length_mm > 0 & total_length_mm < 2000)
 vts$season <- factor(vts$season, levels=c("spring", "summer", "fall", "winter"))
