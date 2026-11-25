@@ -62,6 +62,23 @@ vts <- rbind(vts16, vts17, vts18, vts19, vts20, vts21, vts22, vts23) %>%
   arrange(haul_date) %>% rename(onoff=`on/off reef`)
 vts <- vts[,which(names(vts) %in% names(vts24))]
 vts <- rbind(vts, vts24)
+
+vts25spring <- read_excel(file.path(root, "data/tog/RE_ ventless trap survey data",
+                              "NJDEP Trap_survey_yr_10_2025.xlsx"), sheet = "March_April")
+vts25summer <- read_excel(file.path(root, "data/tog/RE_ ventless trap survey data",
+                                    "NJDEP Trap_survey_yr_10_2025.xlsx"), sheet = "July_August")
+vts25fall <- read_excel(file.path(root, "data/tog/RE_ ventless trap survey data",
+                                    "NJDEP Trap_survey_yr_10_2025.xlsx"), sheet = "October_November")
+vts25 <- rbind(vts25spring, vts25summer)
+vts25fall$weight_g <- vts25fall$weight_Kg * 1000
+vts25fall$weight_Kg <- NULL
+vts25 <- rbind(vts25, vts25fall)
+vts25$dead <- NULL        
+vts25$missing_trap <- NULL
+vts25$empty <- NULL
+vts25$fork_length_mm <- NULL
+vts <- rbind(vts, vts25)
+
 vts[,c("season", "species")] <- apply(vts[,c("season", "species")], 2, tolower)
 vts[vts$vessel=="reef bound",]$vessel <- "reefbound"
 vts[vts$vessel=="resiliance",]$vessel <- "resilience"
