@@ -44,6 +44,7 @@ asap <- AssessUpdate(asapin, endyr, caa_out, waa0, total_weight, index, mrip,
 root <- Sys.getenv("FILEPATH")
 source("./indices/VTS/vtsage.R")
 load(file.path(root, "output/tog/index/vts_index.RData"))
-asap <- add_index(asap, "VTS", index.out_vts)
+newindex <- list(index.out_vts, cbind(age1=0,ACs[,2:12]), ACs[,13])
+asap <- add_index(asap, "VTS", newindex)
 source("./ASAP_update/functions/add_index.R")
 #writeoutasap(asap, fileout)

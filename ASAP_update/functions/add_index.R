@@ -1,3 +1,16 @@
+#' Adding an Index to an Assessment
+#'
+#' This updates an ASAP list with a new index
+#' 
+#' @param asap This is a read-in ASAP file from read_asap3_dat
+#' @param index_name The last year in the update
+#' @param new_index A list of the following structure:
+#' [1]: a data frame with Year, Index and CV
+#' [2]: (optional) age
+#' [2]: (optional) if age, then sample size
+#' @return A WHAM ASAP data frame
+#' @export
+
 add_index <- function(asap, index_name, new_index) {
 #ADD AN INDEX
 asap[[1]]$dat$n_indices <- asap[[1]]$dat$n_indices + 1
@@ -37,7 +50,7 @@ asap[[1]]$comments <- append(asap[[1]]$comments,
                              paste0("# Index-", asap[[1]]$dat$n_indices, " Data "),
                              after = 47)
 startyr <- asap[[1]]$dat$IAA_mats[[1]][1,1]
-vtsindex <- unname(as.matrix(cbind(new_index[,c("Year", "Index", "CV")], age1=0,ACs[,2:13])))
+vtsindex <- unname(as.matrix(cbind(new_index[[1]][,c("Year", "Index", "CV")], new_index[[2]], new_index[[3]])))
 indexstart <- vtsindex[1,1]
 filled <- startyr:(indexstart-1)
 filled <- unname(cbind(filled, matrix(-1, indexstart-startyr, ncol(asap[[1]]$dat$IAA_mats[[1]])-1)))
