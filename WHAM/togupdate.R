@@ -2,8 +2,8 @@
 #For the new years: need CAA, WAA, total weights, MRIP ages, ages for your indices
 #For all years: update indices and CV, ESS
 library(readxl)
-source("./WHAM/asap_update.R")
-source("./WHAM/asapwrite.R")
+source("./WHAM/functions/asap_update.R")
+source("./WHAM/functions/asapwrite.R")
 source("4-catch_at_age.R") #caa
 #INDEX DATA
 mrip <- read_xlsx(
@@ -43,5 +43,5 @@ root <- Sys.getenv("FILEPATH")
 source("./indices/VTS/vtsage.R")
 load(file.path(root, "output/tog/index/vts_index.RData"))
 asap <- add_index(asap, "VTS", index.out_vts)
-source("./indices/WHAM/add_index.R")
+source("./WHAM/functions/add_index.R")
 #writeoutasap(asap, fileout)
