@@ -1,3 +1,10 @@
+#' Write out ASAP file
+#'
+#' This writes out a file to run in ASAP
+#' 
+#' @param asap This is a read-in ASAP file from read_asap3_dat
+#' @param outfile output file name
+#' @export
 writeoutasap <- function(asap, outfile) {
 N <- asap[[1]]$dat$n_indices
 indices <- sapply(1:N, function(x) {
