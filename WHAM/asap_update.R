@@ -86,7 +86,7 @@ AssessUpdate <- function(asap, endyr, caa_out, waa0, total_weight, index, mrip, 
   for (i in 1:length(index)) {
     index_data <- index[[i]]
     which_index <- index_data[[1]]
-    if (length(index_data) > 2) {
+    if (length(index_data) > 2) { #if the index is aged...
       olddata <- asap[[1]]$dat$IAA_mats[[which_index]][, c(1, 4:(ncol(asap[[1]]$dat$IAA_mats[[which_index]]) - 1))]
       updatedata <- rbind(olddata, index_data[[3]])
       newdata <- unname(as.matrix(cbind(index_data[[2]][, c("Year", "Index", "CV")], updatedata[, 2:ncol(updatedata)], index_data[[4]])))
