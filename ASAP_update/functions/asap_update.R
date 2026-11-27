@@ -1,3 +1,25 @@
+#' Assessment Update
+#'
+#' This is for stock assessment updates where you are "just" adding years of
+#' data
+#' 
+#' @param asap This is a read-in ASAP file from read_asap3_dat
+#' @param endyr The last year in the update
+#' @param caa_out data frame of annual CAA for the new years, with ages as the columns and years as the rows
+#' @param waa0 data frame of annual WAA for the new years, with ages as the columns and years as the rows
+#' @param total_weight a vector of annual total weight, named with the new years
+#' @param index a list of indices where each element has the following structure:
+#' [1]: the index number
+#' [2]: a data frame with Year, Index and CV
+#' [3]: (optional) age
+#' [4]: (optional but necessary if 3) a vector of sample sizes
+#' @param mrip tibble or data frame of MRIP index with the following columns: Year, CPUE, CV
+#' @param mrip_prop MRIP proportions at age for the new years, with age as the columns and years as the rows
+#' @param ess data frame with the columns YEAR, ESS
+#' @param whichmrip which index number is MRIP?
+#' @return A WHAM ASAP data frame
+#' @export
+
 library(wham)
 AssessUpdate <- function(asap, endyr, caa_out, waa0, total_weight, index, mrip, mrip_prop, ess, whichmrip) {
   n <- endyr - asap[[1]]$dat$R_avg_end
@@ -86,7 +108,7 @@ AssessUpdate <- function(asap, endyr, caa_out, waa0, total_weight, index, mrip, 
   for (i in 1:length(index)) {
     index_data <- index[[i]]
     which_index <- index_data[[1]]
-    if (length(index_data) > 2) {
+    if (length(index_data) > 2) { #if the index is aged...
       olddata <- asap[[1]]$dat$IAA_mats[[which_index]][, c(1, 4:(ncol(asap[[1]]$dat$IAA_mats[[which_index]]) - 1))]
       updatedata <- rbind(olddata, index_data[[3]])
       newdata <- unname(as.matrix(cbind(index_data[[2]][, c("Year", "Index", "CV")], updatedata[, 2:ncol(updatedata)], index_data[[4]])))
@@ -105,6 +127,6 @@ AssessUpdate <- function(asap, endyr, caa_out, waa0, total_weight, index, mrip, 
   asap[[1]]$dat$catch_Neff <- ess$`NJ-NYB`
   olddata <- asap[[1]]$dat$IAA_mats[[whichmrip]][, 4:(ncol(asap[[1]]$dat$IAA_mats[[2]]) - 1)]
   updatedata <- rbind(olddata, mrip_prop)
-  asap[[1]]$dat$IAA_mats[[whichmrip]] <- unname(as.matrix(cbind(mrip[, c("Year", "CPUE", "CV")], updatedata, ess$`NJ-NYB`)))
+  asap[[1]]$dat$IAA_mats[[whichmrip]] <- unname(as.matrix(cbind(mrip[, c("Year", "CPUE", "CV")], updatedata, ess$ESS)))
   return(asap)
 }
