@@ -9,10 +9,7 @@ knitr::opts_chunk$set(
   echo = TRUE,
   cache = FALSE
 )
-root <- "C:/Users"
-usr <- "jgorzo"
-loc <- "OneDrive - New Jersey Office of Information Technology/Documents"
-root <- file.path(root, usr, loc)
+root <- Sys.getenv("FILEPATH")
 
 ########################## Index from length records:
 
