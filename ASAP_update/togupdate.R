@@ -13,6 +13,8 @@ mrip <- read_xlsx(
 ess <- read_xlsx(
   file.path(root, "data/tog/rec/Tautog_Regional_ESS_1982-2023.xlsx")
 )
+ess <- ess[,c("YEAR", "NJ-NYB")]
+names(ess)[2] <- "ESS"
 source("./indices/MRIP.R") #mrip_prop
 source("./indices/NJOT/4-age.R") #agecomp
 #these would require time-intensive model reruns

@@ -1,8 +1,8 @@
 library("ageproR")
 # Load path of ageproR's included test Example1 Input File
-inpfile <- file.path("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/AGEPRO/agepro_test/NJ-NYB 3YEAR PROJECTION 2021.inp")
+inpfile <- file.path("C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/AGEPRO/agepro_test/NJ-NYB 3YEAR PROJECTION 2021.inp")
 # Load path of ageproR's included test Example1 Bootstrap File
-bsnfile <- file.path("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/AGEPRO/agepro_test/NJ-NYB_Bootstrap_file_2021.BSN")
+bsnfile <- file.path("C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/AGEPRO/agepro_test/NJ-NYB_Bootstrap_file_2021.BSN")
 
 # Create a agepro_inp_model with default values (This will 
 test <- ageproR::agepro_inp_model$new()
@@ -22,12 +22,12 @@ test$general <- general_params$new(yr_start = 2025,
 # ageproR will check to see if agepro models will have NULL or invalid Recruitment models before being saved to file
 test$set_bootstrap_filename(bsnfile)
 
-recr <- read.csv("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/asap/vtsage/plots/ASAP_summary_vtsage.csv")
+recr <- read.csv("C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/asap/vtsage/plots/ASAP_summary_vtsage.csv")
 test$recruit$recruit_data[[1]]$observations <- as.matrix(recr$Recr)
 colnames(test$recruit$recruit_data[[1]]$observations) <- "recruit"
 test$recruit$recruit_probability #needs to be updated to named vector with all years
 
-agepro_params <- read.csv("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/asap/vtsage/plots/AGEPRO_ave_params_vtsage.csv")
+agepro_params <- read.csv("C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/output/tog/asap/vtsage/plots/AGEPRO_ave_params_vtsage.csv")
 test$fishery #sel.age
 #?fishery_selectivity
 # Set Recruit Models. 
@@ -41,7 +41,7 @@ test$set_recruit_model(c(5,5,6))
 # Using tempfile() as example filepath
 outfile <- tempfile("example1_", fileext = ".inp")
 # Load path of ageproR's included test Example1 Input File
-inpfile <- file.path("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/AGEPRO/agepro_test/NJNYB_100_F30test.inp")
+inpfile <- file.path("C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/AGEPRO/agepro_test/NJNYB_100_F30test.inp")
 # Load path of ageproR's included test Example1 Bootstrap File
-bsnfile <- file.path("C:/Users/jgorzo/OneDrive - New Jersey Office of Information Technology/Documents/AGEPRO/agepro_test/ORIG.BSN")
+bsnfile <- file.path("C:/Users/galax/OneDrive - New Jersey Office of Information Technology/Documents/AGEPRO/agepro_test/ORIG.BSN")
 #test$write_inp(outfile)
