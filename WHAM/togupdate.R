@@ -39,5 +39,9 @@ fileout <- file.path(Sys.getenv("FILEPATH"),
 ########
 asap <- AssessUpdate(asapin, endyr, caa_out, waa0, total_weight, index, mrip,
                      mrip_prop, ess, whichmrip=3)
-source("./indices/VTS/vtsupdate.R")
+root <- Sys.getenv("FILEPATH")
+source("./indices/VTS/vtsage.R")
+load(file.path(root, "output/tog/index/vts_index.RData"))
+asap <- add_index(asap, "VTS", index.out_vts)
+source("./indices/WHAM/add_index.R")
 #writeoutasap(asap, fileout)
